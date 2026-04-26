@@ -1,19 +1,25 @@
 package toro.sources
 
 import retrofit2.Retrofit
-import retrofit2.converter.scalars.ScalarsConverterFactory
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
+import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
+import okhttp3.MediaType.Companion.toMediaType
 
 
-const val url: String = "http://192.168.1.141:8000/"
+const val url: String = "http://192.168.1.141:8080/"
 
 object RetrofitClient {
+    private val networkJson = Json { ignoreUnknownKeys = true }
     private val retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(url)
-            .addConverterFactory(ScalarsConverterFactory.create()).build()
+            .client(OkHttpClient.Builder().build())
+            .addConverterFactory(networkJson.asConverterFactory("application/json".toMediaType()))
+            .build()
     }
 
-    val apiInterface: ApiInterface by lazy {
-        retrofit.create(ApiInterface::class.java)
+    val comicApiService: ComicApiService by lazy {
+        retrofit.create(ComicApiService::class.java)
     }
 }

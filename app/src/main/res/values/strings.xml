@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">sources</string>
+    <string name="login_title">Welcome Back</string>
+    <string name="login_email_hint">Email Address</string>
+    <string name="login_password_hint">Password</string>
+    <string name="login_button">Sign In</string>
+    <string name="login_error_empty">Please enter both email and password.</string>
+    <string name="cd_show_password">Show password</string>
+    <string name="cd_hide_password">Hide password</string>
 </resources>
