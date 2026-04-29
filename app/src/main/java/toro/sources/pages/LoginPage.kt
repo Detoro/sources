@@ -30,6 +30,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import toro.sources.DataModels.LoginCredentials
+import androidx.compose.ui.res.stringResource
+import toro.sources.R
 
 @Composable
 fun LoginPage(
@@ -41,7 +43,7 @@ fun LoginPage(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var isError by remember { mutableStateOf(false) }
-    val errorMessage = "Incorrect password. Please try again."
+    val errorMessage = stringResource(id = R.string.error_message)
 
     Column(
         modifier = Modifier
@@ -51,7 +53,7 @@ fun LoginPage(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Welcome Back",
+            text = stringResource(id = R.string.welcome_user, "user"),
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.primary
         )
@@ -61,11 +63,11 @@ fun LoginPage(
             value = email,
             onValueChange = { email = it },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            label = { Text("Email") },
+            label = { Text(stringResource(R.string.email)) },
             singleLine = true,
             supportingText = {
                 Text(
-                    text = "Must be a fisk email",
+                    text = stringResource(R.string.must_be_a_valid_email),
                     color = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -80,7 +82,7 @@ fun LoginPage(
                 password = it
                 isError = false
             },
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.password)) },
             singleLine = true,
 
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -90,7 +92,7 @@ fun LoginPage(
                     } else {
                     Icons.Filled.VisibilityOff
                 }
-                val description = if (passwordVisible) "Hide password" else "Show password"
+                val description = if (passwordVisible) stringResource(id = R.string.cd_hide_password) else stringResource(id = R.string.cd_show_password)
 
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(imageVector = image, contentDescription = description)
@@ -107,7 +109,7 @@ fun LoginPage(
                     )
                 } else {
                     Text(
-                        text = "Password must be at least 8 characters long and contain a special character and a number",
+                        text = stringResource(R.string.password_warning),
                         color = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -131,11 +133,11 @@ fun LoginPage(
             },
             modifier = Modifier.fillMaxWidth().height(50.dp)
         ) {
-            Text("Login")
+            Text(stringResource(R.string.login))
         }
 
         TextButton(onClick = onNavigateToSignUp) {
-            Text("Don't have an account? Sign up")
+            Text(stringResource(R.string.signup_recommendation))
         }
     }
 }
