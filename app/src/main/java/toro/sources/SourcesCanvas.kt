@@ -1,7 +1,9 @@
 package toro.sources
 
 import android.app.Application
-import toro.sources.RetrofitClient.comicApiService
+import toro.sources.db.CanvasDatabase
+import toro.sources.network.RetrofitClient.comicApiService
+import toro.sources.db.ComicRepository
 
 
 class SourcesCanvas : Application() {

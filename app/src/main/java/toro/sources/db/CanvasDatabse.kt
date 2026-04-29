@@ -1,4 +1,4 @@
-package toro.sources
+package toro.sources.db
 
 import android.content.Context
 import androidx.room.Database
@@ -9,7 +9,7 @@ import toro.sources.DataModels.Chapter
 
 @Database(
     entities = [Comic::class, Chapter::class],
-    version = 2,
+    version = 4,
     exportSchema = false
 )
 abstract class CanvasDatabase : RoomDatabase() {
@@ -28,7 +28,7 @@ abstract class CanvasDatabase : RoomDatabase() {
                     CanvasDatabase::class.java,
                     "graphic_novel_database"
                 )
-                    .fallbackToDestructiveMigration(false)
+                    .fallbackToDestructiveMigration(true)
                     .build()
 
                 INSTANCE = instance

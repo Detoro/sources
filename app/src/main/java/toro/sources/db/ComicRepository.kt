@@ -1,15 +1,17 @@
-package toro.sources
+package toro.sources.db
 
-import android.net.Uri
 import android.content.Context
+import android.net.Uri
 import android.util.Log
-import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import toro.sources.DataModels.Comic
+import toro.sources.CbzParser
+import toro.sources.network.ComicApiService
 import toro.sources.DataModels.Chapter
+import toro.sources.DataModels.Comic
 import toro.sources.DataModels.Page
+import java.io.File
 
 class ComicRepository(
     private val context: Context,
@@ -37,19 +39,22 @@ class ComicRepository(
         val chapter = chapterDao.getChapterById(chapterId)
         val comic = comicDao.getComicByIdSync(comicId)
 
-        // If the user sideloaded this comic, OR they downloaded a remote chapter
         return if (comic?.isLocalSideload == true || chapter.isDownloaded) {
             getLocalPages(comicId, chapterId)
         } else {
-            // Otherwise, fetch the image URLs from your backend server
             apiService.getPagesForChapter(chapterId)
         }
     }
 
     // for local files
-    suspend fun importLocalComic(fileUri: Uri, title: String) {
+    suspend fun importLocalComic(
+        fileUri: Uri,
+        title: String,
+        author: String,
+        description: String,
+    ) {
         try {
-            val (comic, chapter) = cbzParser.parseAndSave(fileUri, title)
+            val (comic, chapter) = cbzParser.parseAndSave(fileUri, title, author, description)
 
             comicDao.insertComic(comic)
 
@@ -58,6 +63,26 @@ class ComicRepository(
         } catch (e: Exception) {
             e.printStackTrace()
             Log.e("Parse error", "Damn error")
+        }
+    }
+
+    suspend fun removeComicFromLibrary(comicId: String) {
+        try {
+            val comic = comicDao.getComicByIdSync(comicId) ?: return
+
+            chapterDao.deleteChaptersByComicId(comicId)
+            comicDao.deleteComic(comic)
+
+            if (comic.isLocalSideload) {
+                withContext(Dispatchers.IO) {
+                    val directory = File(context.filesDir, "sideloaded_comics/$comicId")
+                    if (directory.exists()) {
+                        directory.deleteRecursively()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Repository", "Failed to remove comic", e)
         }
     }
 
@@ -71,15 +96,14 @@ class ComicRepository(
 
             if (!directory.exists()) return@withContext emptyList<Page>()
 
-            // Grab all images, sort them alphabetically (001.jpg, 002.jpg), and map to Page objects
             directory.listFiles()
                 ?.filter { it.isFile && isImage(it.name) }
                 ?.sortedBy { it.name }
                 ?.mapIndexed { index, file ->
                     Page(
                         pageNumber = index,
-                        imageUrl = "", // Blank because it's local
-                        localUri = file.toURI().toString() // Coil reads this URI perfectly
+                        imageUrl = "",
+                        localUri = file.toURI().toString()
                     )
                 } ?: emptyList()
         }
@@ -97,9 +121,18 @@ class ComicRepository(
             comicDao.insertComics(remoteComics)
         } catch (e: Exception) {
             e.printStackTrace()
-            // Here you could throw a custom error to let the ViewModel know the network failed
         }
     }
 
-    // I want the author to be able to pick whether they want vertical or horizontal scroll
+    suspend fun syncRemoteChaptersForComic(comic: Comic) {
+        val comic = comicDao.getComicByIdSync(comic.id)
+        if (comic?.isLocalSideload == false) {
+            try {
+                val remoteChapters = apiService.getChaptersForComic(comic.id)
+                chapterDao.insertChapters(remoteChapters)
+            } catch (e: Exception) {
+                Log.e("Network Error", "Failed to fetch chapters: ${e.message}")
+            }
+        }
+    }
 }

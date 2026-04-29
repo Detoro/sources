@@ -1,4 +1,4 @@
-package toro.sources
+package toro.sources.db
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -16,7 +16,7 @@ interface ChapterDao {
     @Query("SELECT * FROM chapters WHERE id = :chapterId LIMIT 1")
     suspend fun getChapterById(chapterId: String): Chapter
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun insertChapters(chapters: List<Chapter>)
 
     @Query("UPDATE chapters SET lastReadPageIndex = :pageIndex WHERE id = :chapterId")
@@ -24,4 +24,7 @@ interface ChapterDao {
 
     @Query("UPDATE chapters SET isDownloaded = :isDownloaded WHERE id = :chapterId")
     suspend fun updateDownloadState(chapterId: String, isDownloaded: Boolean)
+
+    @Query("DELETE FROM chapters WHERE comicId = :comicId")
+    suspend fun deleteChaptersByComicId(comicId: String)
 }

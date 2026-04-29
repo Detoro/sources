@@ -1,4 +1,4 @@
-package toro.sources
+package toro.sources.db
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -17,10 +17,10 @@ interface ComicDao {
     @Query("SELECT * FROM comics WHERE id = :comicId LIMIT 1")
     suspend fun getComicByIdSync(comicId: String): Comic?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun insertComics(comics: List<Comic>)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
     suspend fun insertComic(comic: Comic)
 
     @Delete
