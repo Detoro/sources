@@ -1,10 +1,23 @@
 <resources>
     <string name="app_name">sources</string>
-    <string name="login_title">Welcome Back</string>
-    <string name="login_email_hint">Email Address</string>
-    <string name="login_password_hint">Password</string>
-    <string name="login_button">Sign In</string>
+    <string name="welcome_user">Welcome back, %1$s!</string>
+    <string name="confirm_password">Confirm Password</string>
+    <string name="login">Login</string>
     <string name="login_error_empty">Please enter both email and password.</string>
     <string name="cd_show_password">Show password</string>
     <string name="cd_hide_password">Hide password</string>
+    <string name="error_message">Invalid password. Please try again.</string>
+    <string name="email">Email</string>
+    <string name="must_be_a_valid_email">Must be a valid email</string>
+    <string name="password">Password</string>
+    <string name="password_warning">Password must be at least 8 characters long and contain a special character and a number</string>
+    <string name="signup_recommendation">Don\'t have an account? Sign up</string>
+    <string name="login_recommendation">Already have an account? Login</string>
+    <string name="signup"> </string>
+    <string name="full_name">Full Name</string>
+    <string name="create_account">Create Account</string>
+    <string name="messages">Messages</string>
+    <string name="requests">Requests</string>
+    <string name="inbox">Inbox</string>
+
 </resources>

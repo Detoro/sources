@@ -24,6 +24,7 @@ roomRuntime = "2.8.4"
 roomRxjava2 = "2.8.4"
 roomRxjava3 = "2.8.4"
 roomTesting = "2.8.4"
+material3 = "1.4.0"
 
 [libraries]
 androidx-compose-material = { module = "androidx.compose.material:material", version.ref = "material" }
@@ -56,6 +57,7 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit2-kotlinx-serialization-converter = { module = "com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter", version.ref = "retrofit2KotlinxSerializationConverter" }
+androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -28,7 +28,6 @@ fun ChapterRow(chapter: Chapter, onClick: () -> Unit) {
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold
             )
-            // Show a tiny indicator if they have already started reading this issue
             if (chapter.lastReadPageIndex > 0) {
                 Text(
                     text = "Page ${chapter.lastReadPageIndex}",
