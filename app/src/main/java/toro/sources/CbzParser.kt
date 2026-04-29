@@ -13,7 +13,7 @@ import toro.sources.DataModels.Chapter
 
 class CbzParser(private val context: Context) {
 
-    suspend fun parseAndSave(fileUri: Uri, givenTitle: String): Pair<Comic, Chapter> {
+    suspend fun parseAndSave(fileUri: Uri, givenTitle: String, author: String, description: String): Pair<Comic, Chapter> {
         return withContext(Dispatchers.IO) {
 
             val comicId = UUID.randomUUID().toString()
@@ -49,8 +49,8 @@ class CbzParser(private val context: Context) {
             val comic = Comic(
                 id = comicId,
                 title = givenTitle,
-                author = "Unknown", // maybe use a ComicInfo.xml for this
-                description = "Sideloaded from device storage.",
+                author = author,
+                description = description,
                 coverImageUrl = coverPath,
                 isLocalSideload = true,
                 localFilePath = fileUri.toString()
