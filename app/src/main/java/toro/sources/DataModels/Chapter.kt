@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "chapters",
@@ -15,13 +16,15 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("comicId")] // Indexing the foreign key speeds up database queries
+    indices = [Index("comicId")]
 )
+@Serializable
 data class Chapter(
     @PrimaryKey val id: String,
     val comicId: String,
     val chapterTitle: String,
-    val chapterNumber: Float? = null,            // Float allows for decimal issues (e.g., Chapter 10.5)
-    val lastReadPageIndex: Int = 0,      // Crucial for bookmarking where the user left off
-    val isDownloaded: Boolean = false    // True if the remote chapter was cached for offline reading
+    val chapterNumber: Float? = null,
+    val lastReadPageIndex: Int = 0,
+    val isDownloaded: Boolean = false,
+    val storageBucketPath: String? = null,
 )

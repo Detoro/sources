@@ -1,7 +1,12 @@
 package toro.sources.DataModels
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Page(
-    val pageNumber: Int,                 // To keep them strictly ordered
-    val imageUrl: String,                // Remote API URL for streaming
-    val localUri: String? = null         // Local device URI for sideloaded/downloaded pages
+    val id: String = "",
+    val chapterId: String = "",
+    val pageNumber: Int,
+    val imageUrl: String,
+    val localUri: String? = null
 )
