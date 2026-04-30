@@ -14,6 +14,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
@@ -24,9 +26,12 @@ import toro.sources.components.MockEngagementData.mockCommunityPosts
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EngagementPage(viewModel: AppViewModel) {
-    // val posts by viewModel.communityPosts.collectAsState()
-    val posts = mockCommunityPosts
+fun EngagementPage(
+    viewModel: AppViewModel,
+    onCommentClick: (String) -> Unit,
+    onMakePost: () -> Unit
+) {
+    val posts by viewModel.communityPosts.collectAsState()
 
     Scaffold(
         topBar = {
@@ -36,7 +41,7 @@ fun EngagementPage(viewModel: AppViewModel) {
                     IconButton(onClick = { /* TODO: Notifications */ }) {
                         Icon(Icons.Default.NotificationsNone, contentDescription = "Notifications")
                     }
-                    IconButton(onClick = { /* TODO: DMs */ }) {
+                    IconButton(onClick = { onMakePost() }) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "DMs")
                     }
                 }
@@ -50,7 +55,7 @@ fun EngagementPage(viewModel: AppViewModel) {
         ) {
 
             item {
-                AuthorsRow()
+                AuthorsRow(viewModel)
             }
 
             item {
@@ -63,7 +68,12 @@ fun EngagementPage(viewModel: AppViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(posts) { post ->
-                        PostCard(post = post, modifier = Modifier.width(300.dp))
+                        PostCard(
+                            viewModel = viewModel,
+                            post = post,
+                            onCommentClick = { onCommentClick(post.id) },
+                            modifier = Modifier.width(300.dp)
+                        )
                     }
                 }
             }

@@ -49,7 +49,6 @@ fun AccountPage(
     viewModel: AppViewModel,
     onLogoutClick: () -> Unit
 ) {
-    // Example state for a settings toggle
     var darkThemeEnabled by remember { mutableStateOf(true) }
 
     Scaffold(

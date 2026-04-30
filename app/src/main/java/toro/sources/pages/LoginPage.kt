@@ -121,15 +121,15 @@ fun LoginPage(
 
         Button(
             onClick = {
-                if (email.isBlank() || password.isBlank() || loginError != null) {
-                    isError = true
-                } else {
+//                if (email.isBlank() || password.isBlank() || loginError != null) {
+//                    isError = true
+//                } else {
                     val credentials = LoginCredentials(
                         email = email.trim(),
                         password = password
                     )
                     onLoginSubmit(credentials)
-                }
+//                }
             },
             modifier = Modifier.fillMaxWidth().height(50.dp)
         ) {
