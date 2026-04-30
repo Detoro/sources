@@ -1,13 +1,11 @@
 package toro.sources.pages
 
-import android.util.Log
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -23,8 +21,6 @@ import toro.sources.components.ChatRequestsList
 import toro.sources.components.ActiveChatsList
 import toro.sources.R
 import androidx.compose.ui.res.stringResource
-import androidx.navigation.ActivityNavigator
-import androidx.navigation.compose.ComposeNavigator
 import toro.sources.AppViewModel
 
 

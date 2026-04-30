@@ -14,6 +14,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -22,7 +23,6 @@ import toro.sources.AppViewModel
 import toro.sources.components.AuthorsRow
 import toro.sources.components.SectionTitle
 import toro.sources.components.PostCard
-import toro.sources.components.MockEngagementData.mockCommunityPosts
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,6 +32,10 @@ fun EngagementPage(
     onMakePost: () -> Unit
 ) {
     val posts by viewModel.communityPosts.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.getCommunityPosts()
+    }
 
     Scaffold(
         topBar = {

@@ -15,12 +15,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material3.Divider
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -144,7 +143,7 @@ fun AccountPage(
                     .padding(horizontal = 24.dp)
                     .height(50.dp)
             ) {
-                Icon(Icons.Default.Logout, contentDescription = null)
+                Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Log Out", color = MaterialTheme.colorScheme.error)
             }

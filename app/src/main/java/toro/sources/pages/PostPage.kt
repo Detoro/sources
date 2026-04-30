@@ -1,8 +1,6 @@
 package toro.sources.pages
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -12,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
-import toro.sources.components.CommentItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
