@@ -26,9 +26,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import toro.sources.AppViewModel
 
 @Composable
-fun AuthorsRow() {
+fun AuthorsRow(viewModel: AppViewModel) {
     val authors = listOf("Dave", "Cench", "Nines", "Wayne")
 
     LazyRow(

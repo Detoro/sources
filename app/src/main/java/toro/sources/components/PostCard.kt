@@ -31,10 +31,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import toro.sources.AppViewModel
 import toro.sources.DataModels.Post
 
 @Composable
-fun PostCard(post: Post, modifier: Modifier = Modifier) {
+fun PostCard(
+    viewModel: AppViewModel,
+    post: Post,
+    onCommentClick: () -> Unit,
+    modifier: Modifier = Modifier) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
@@ -75,7 +80,6 @@ fun PostCard(post: Post, modifier: Modifier = Modifier) {
             Text(
                 text = post.content,
                 fontSize = 14.sp,
-                color = Color.DarkGray,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
@@ -92,11 +96,20 @@ fun PostCard(post: Post, modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    IconWithText(Icons.Default.ThumbUpOffAlt, post.likesCount.toString())
-                    IconWithText(Icons.Default.ChatBubbleOutline, "12") // Mock comment count
-                }
-                Icon(Icons.Default.BookmarkBorder, contentDescription = "Save", tint = Color.Gray)
+                LikeButton(
+                    likeCount = post.likesCount,
+                    isPostLiked = true,
+                    onLikePost = {
+                        viewModel.likePost(post.id)
+                    }
+                )
+                CommentButton(
+                    onCommentOnPost = onCommentClick
+                )
+                BookmarkButton(
+                    isPostBookmarked = true,
+                    onBookmarkPost = {}
+                )
             }
         }
     }

@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -15,26 +14,31 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import toro.sources.AppViewModel
 
 @Composable
-fun ChatRequestsList() {
-    // Mock Data
-    val requests = listOf("ArtEnthusiast", "MangaFan_01")
+fun ChatRequestsList(
+    viewModel: AppViewModel
+) {
+    val requests by viewModel.chatRequests.collectAsState()
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(requests) { username ->
+        items(requests) { request ->
             ListItem(
-                headlineContent = { Text(username, fontWeight = FontWeight.Bold) },
+                headlineContent = { Text(request.senderName, fontWeight = FontWeight.Bold) },
                 supportingContent = { Text("Wants to connect with you") },
                 leadingContent = { DefaultAvatar() },
                 trailingContent = {
                     Row {
-                        IconButton(onClick = { /* Handle Accept */ }) {
+                        IconButton(onClick = { viewModel.acceptFriend(request.id)}) {
                             Icon(Icons.Default.Check, contentDescription = "Accept", tint = MaterialTheme.colorScheme.primary)
                         }
-                        IconButton(onClick = { /* Handle Decline */ }) {
+                        IconButton(onClick = { viewModel.declineFriend(request.id) }) {
                             Icon(Icons.Default.Close, contentDescription = "Decline", tint = MaterialTheme.colorScheme.error)
                         }
                     }
