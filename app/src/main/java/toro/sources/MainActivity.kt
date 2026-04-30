@@ -1,6 +1,8 @@
 package toro.sources
 
 import android.os.Bundle
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,9 +26,8 @@ import androidx.navigation.compose.NavHost
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.LibraryBooks
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -48,6 +49,8 @@ import toro.sources.pages.UploadPage
 import toro.sources.ui.theme.SourcesTheme
 import toro.sources.pages.ChatInboxPage
 import toro.sources.pages.ChatThreadPage
+import toro.sources.pages.CommentsPage
+import toro.sources.pages.PostPage
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -61,9 +64,13 @@ sealed class Screen(val route: String) {
         fun createRoute(chapterId: String) = "reader/$chapterId"
     }
     object Overview : Screen("overview")
+    object Post : Screen("post")
     object Engagement : Screen("engagement")
     object Chat : Screen("chat_page/{userId}") {
         fun createRoute(userId: String) = "chat_page/$userId"
+    }
+    object Comments : Screen("comments/{postId}") {
+        fun createRoute(postId: String) = "comments/$postId"
     }
 }
 
@@ -105,27 +112,34 @@ fun AppNavigation(viewModel: AppViewModel) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // routes where the Bottom Navigation should be visible
     val bottomNavRoutes = listOf(
         Screen.Home.route,
         Screen.Search.route,
         Screen.Upload.route,
-        Screen.Inbox.route
+        Screen.Inbox.route,
+        Screen.Engagement.route
     )
+    val context = LocalContext.current
+    val currentUser by viewModel.currentUser.collectAsState()
+    val error by viewModel.errorMessage.collectAsState()
+
+    LaunchedEffect(error) {
+        error?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            viewModel.clearError()
+        }
+    }
 
     Scaffold(
         bottomBar = {
             if (currentRoute in bottomNavRoutes) {
                 NavigationBar {
-                    // TAB 1: LIBRARY (Home)
                     NavigationBarItem(
                         icon = { Icon(Icons.AutoMirrored.Filled.LibraryBooks, contentDescription = "Library") },
                         label = { Text("Library") },
                         selected = currentRoute == Screen.Home.route,
                         onClick = {
-                            // The dummy user ID you established earlier
-                            navController.navigate("home/user123") {
-                                // Pop up to the start destination to avoid building a massive backstack
+                            navController.navigate("home/${currentUser.username}") {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
@@ -134,7 +148,6 @@ fun AppNavigation(viewModel: AppViewModel) {
                             }
                         }
                     )
-
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.ChatBubble, contentDescription = "Chat") },
                         label = { Text("Chat") },
@@ -147,8 +160,6 @@ fun AppNavigation(viewModel: AppViewModel) {
                             }
                         }
                     )
-
-                    // TAB 2: SEARCH
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                         label = { Text("Search") },
@@ -163,8 +174,6 @@ fun AppNavigation(viewModel: AppViewModel) {
                             }
                         }
                     )
-
-                    // TAB 3: UPLOAD
                     NavigationBarItem(
                         icon = { Icon(Icons.Default.CloudUpload, contentDescription = "Upload") },
                         label = { Text("Upload") },
@@ -179,14 +188,15 @@ fun AppNavigation(viewModel: AppViewModel) {
                             }
                         }
                     )
-
                     NavigationBarItem(
-                        icon = { Icon(Icons.Default.Person, contentDescription = "Account") },
-                        label = { Text("Account") },
-                        selected = currentRoute == Screen.Account.route,
+                        icon = { Icon(Icons.Default.People, contentDescription = "Upload") },
+                        label = { Text("Engage") },
+                        selected = currentRoute == Screen.Engagement.route,
                         onClick = {
-                            navController.navigate(Screen.Account.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            navController.navigate(Screen.Engagement.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
                                 launchSingleTop = true
                                 restoreState = true
                             }
@@ -207,7 +217,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                     onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
                     onLoginSubmit = { credentials ->
                         viewModel.loginUser(credentials, onSuccess = {
-                            navController.navigate("home/user123") {
+                            navController.navigate("home/${currentUser.username}") {
                                 popUpTo(Screen.Login.route) { inclusive = true }
                             }
                         })
@@ -230,46 +240,75 @@ fun AppNavigation(viewModel: AppViewModel) {
             composable(Screen.Home.route) {
                 HomePage(
                     viewModel = viewModel,
-                    onComicClick = { comicId ->
-                        viewModel.selectComic(comicId)
+                    onComicClick = { comic ->
+                        viewModel.setCurrentComic(comic)
                         navController.navigate(Screen.Overview.route)
+                    },
+                    onAccountClick = {
+                        navController.navigate(Screen.Account.route) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }
             composable(Screen.Reader.route) { backStackEntry ->
                 val chapterId = backStackEntry.arguments?.getString("chapterId")
-                LaunchedEffect(chapterId) {
-                    if (chapterId != null) {
-                        viewModel.openChapter(chapterId)
+                val comic by viewModel.currentComic.collectAsState()
+                val pageCount by viewModel.pageCount.collectAsState()
+
+                LaunchedEffect(chapterId, comic) {
+                    if (chapterId != null && comic != null) {
+                        viewModel.openChapter(comic!!, chapterId)
                     }
                 }
-                val readerState by viewModel.readerState.collectAsState()
-                when (val state = readerState) {
-                    is ReaderUiState.Idle -> {}
-                    is ReaderUiState.Loading -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
+
+                if (comic == null) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(text = "Error: Comic data missing. Please go back.")
                     }
-                    is ReaderUiState.Success -> {
-                        ReaderScreen(
-                            pages = state.pages,
-                            startingIndex = state.startingPageIndex,
-                            onPageChanged = { newPageIndex ->
-                                if (chapterId != null) {
-                                    viewModel.onPageTurned(chapterId, newPageIndex)
-                                }
+                } else if (pageCount == 0) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    ReaderScreen(
+                        pageCount = pageCount,
+                        comic = comic!!,
+                        viewModel = viewModel,
+                        startingIndex = 0, // to track where they left off
+                        onPageChanged = { newPageIndex ->
+                            if (chapterId != null) {
+                                 viewModel.onPageTurned(chapterId, newPageIndex)
                             }
-                        )
-                    }
-                    is ReaderUiState.Error -> {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text(text = "Error: ${state.message}")
                         }
-                    }
+                    )
                 }
             }
-            composable(Screen.Engagement.route) { EngagementPage() }
+            composable(Screen.Engagement.route) {
+                EngagementPage(
+                    viewModel = viewModel,
+                    onCommentClick = { postId ->
+                        navController.navigate(Screen.Comments.createRoute(postId))
+                    },
+                    onMakePost = {
+                        navController.navigate(Screen.Post.route)
+                    }
+                )
+            }
+            composable(Screen.Comments.route) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
+                CommentsPage(
+                    viewModel = viewModel,
+                    postId = postId,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Post.route) {
+                PostPage(
+                    viewModel = viewModel,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
             composable(Screen.Overview.route) {
                 OverviewPage(
                     viewModel = viewModel,
@@ -284,7 +323,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                     viewModel = viewModel,
                     onBackClick = { navController.popBackStack() },
                     onUploadComplete = {
-                        navController.navigate("home/user123") {
+                        navController.navigate("home/${currentUser.username}") {
                             popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                         }
                     }
@@ -293,9 +332,8 @@ fun AppNavigation(viewModel: AppViewModel) {
             composable(Screen.Search.route) {
                 SearchPage(
                     viewModel = viewModel,
-                    onComicClick = { comicId ->
-                        // When a user taps a search result, select it and go to the details page
-                        viewModel.selectComic(comicId)
+                    onComicClick = { comic ->
+                        viewModel.setCurrentComic(comic)
                         navController.navigate(Screen.Overview.route)
                     }
                 )
@@ -304,26 +342,29 @@ fun AppNavigation(viewModel: AppViewModel) {
                 AccountPage(
                     viewModel = viewModel,
                     onLogoutClick = {
-                        navController.navigate(Screen.Login.route) {
-                            popUpTo(0) { inclusive = true }
-                            launchSingleTop = true
-                        }
+                        viewModel.logoutUser(onLogoutComplete = {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        })
                     }
                 )
             }
             composable(Screen.Inbox.route) {
                 ChatInboxPage(
+                    viewModel = viewModel,
                     onChatClick = { userId ->
                         navController.navigate(Screen.Chat.createRoute(userId))
                     }
                 )
             }
-
             composable(Screen.Chat.route) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
 
                 ChatThreadPage(
                     targetUserId = userId,
+                    viewModel = viewModel,
                     onBackClick = { navController.popBackStack() }
                 )
             }
