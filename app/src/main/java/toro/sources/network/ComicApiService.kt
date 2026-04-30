@@ -27,9 +27,6 @@ interface ComicApiService {
     @GET("api/comics/catalog")
     suspend fun getCatalog(): List<Comic>
 
-    @POST("api/hello")
-    suspend fun sayHello(@Body comic: Comic): ServerResponse
-
     @GET("api/comics/{comicId}/chapters")
     suspend fun getChaptersForComic(
         @Path("comicId") comicId: String
@@ -88,6 +85,15 @@ interface ComicApiService {
 
     @GET("api/community/posts")
     suspend fun getCommunityPosts(): List<Post>
+
+    @POST("api/community/posts/post")
+    suspend fun makePost(@Body postContent: String): ServerResponse
+
+    @POST("api/community/posts/{postId}/like")
+    suspend fun likePost(@Path("postId") postId: String): ServerResponse
+
+    @POST("api/community/posts/{postId}/bookmark")
+    suspend fun bookmarkPost(@Path("postId") postId: String): ServerResponse
 
     @GET("api/community/posts/{postId}/comments")
     suspend fun getPostComments(@Path("postId") postId: String): List<Comment>
