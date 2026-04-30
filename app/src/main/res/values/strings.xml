@@ -13,7 +13,7 @@
     <string name="password_warning">Password must be at least 8 characters long and contain a special character and a number</string>
     <string name="signup_recommendation">Don\'t have an account? Sign up</string>
     <string name="login_recommendation">Already have an account? Login</string>
-    <string name="signup"> </string>
+    <string name="signup">Sign up</string>
     <string name="full_name">Full Name</string>
     <string name="create_account">Create Account</string>
     <string name="messages">Messages</string>
