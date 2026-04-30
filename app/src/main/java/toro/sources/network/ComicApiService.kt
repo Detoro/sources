@@ -17,11 +17,11 @@ import toro.sources.DataModels.ChatMessage
 import toro.sources.DataModels.ChatRequest
 import toro.sources.DataModels.Comic
 import toro.sources.DataModels.Comment
+import toro.sources.DataModels.Conversation
 import toro.sources.DataModels.Page
 import toro.sources.DataModels.Post
 import toro.sources.DataModels.ServerResponse
 import toro.sources.DataModels.SubscribeResponse
-import toro.sources.DataModels.User
 
 interface ComicApiService {
     @GET("api/comics/catalog")
@@ -39,6 +39,9 @@ interface ComicApiService {
     suspend fun getPagesForChapter(
         @Path("chapterId") chapterId: String
     ): List<Page>
+
+    @GET("api/chat/conversations")
+    suspend fun getInbox(): List<Conversation>
 
     @GET("api/comics/search")
     suspend fun searchComics(@Query("q") query: String): List<Comic>
@@ -65,11 +68,14 @@ interface ComicApiService {
     @POST("api/auth/login")
     suspend fun login(@Body request: AuthRequest): AuthResponse
 
-    @GET("api/users/friends")
-    suspend fun getFriends(): List<User>
-
     @GET("api/chat/requests")
     suspend fun getChatRequests(): List<ChatRequest>
+
+    @POST("api/chat/requests/{requestId}/accept")
+    suspend fun acceptChatRequest(@Path("requestId") requestId: String): ServerResponse
+
+    @POST("api/chat/requests/{requestId}/decline")
+    suspend fun declineChatRequest(@Path("requestId") requestId: String): ServerResponse
 
     @GET("api/chat/{conversationId}/messages")
     suspend fun getChatMessages(@Path("conversationId") conversationId: String): List<ChatMessage>
