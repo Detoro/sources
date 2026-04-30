@@ -12,6 +12,7 @@ import retrofit2.http.Query
 import toro.sources.DataModels.AuthRequest
 import toro.sources.DataModels.AuthResponse
 import toro.sources.DataModels.AuthorRequest
+import toro.sources.DataModels.Bookmark
 import toro.sources.DataModels.Chapter
 import toro.sources.DataModels.ChatMessage
 import toro.sources.DataModels.ChatRequest
@@ -86,14 +87,16 @@ interface ComicApiService {
     @GET("api/community/posts")
     suspend fun getCommunityPosts(): List<Post>
 
-    @POST("api/community/posts/post")
-    suspend fun makePost(@Body postContent: String): ServerResponse
+    @POST("api/community/posts")
+    suspend fun makePost(@Body post: Post): ServerResponse
 
     @POST("api/community/posts/{postId}/like")
     suspend fun likePost(@Path("postId") postId: String): ServerResponse
 
     @POST("api/community/posts/{postId}/bookmark")
-    suspend fun bookmarkPost(@Path("postId") postId: String): ServerResponse
+    suspend fun bookmarkPost(
+        @Path("postId") postId: String,
+        @Body bookmark: Bookmark): ServerResponse
 
     @GET("api/community/posts/{postId}/comments")
     suspend fun getPostComments(@Path("postId") postId: String): List<Comment>
