@@ -25,5 +25,14 @@ data class ChatMessage(
     val id: String,
     val senderId: String,
     val content: String,
+    val timestamp: Long,
+)
+
+@Serializable
+data class Conversation(
+    val conversationId: String,
+    val otherUserId: String,
+    val otherUserName: String,
+    val lastMessage: String?,
     val timestamp: Long
 )
