@@ -20,3 +20,11 @@ data class Comment(
     val content: String,
     val timestamp: Long
 )
+
+@Serializable
+data class Bookmark(
+    val id: String = "",
+    val userId: String,
+    val postId: String,
+    val timestamp: Long = System.currentTimeMillis()
+)
