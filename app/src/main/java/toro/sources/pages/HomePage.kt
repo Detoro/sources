@@ -28,7 +28,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.DataModels.Comic
@@ -42,18 +41,16 @@ fun HomePage(
     onAccountClick: () -> Unit
 ) {
     val libraryList by viewModel.myLibrary.collectAsState()
-    val context = LocalContext.current
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
             viewModel.importLocalComic(
-                context = context,
                 title = "Imported Comic",
                 author = "Someone you appreciate",
                 description = "Imported from device",
-                comicUri = it,
+                comicUri = it
             )
         }
     }

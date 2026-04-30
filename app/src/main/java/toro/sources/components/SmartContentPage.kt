@@ -19,12 +19,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import toro.sources.AppViewModel
-import toro.sources.DataModels.Comic
 
 @Composable
-fun SmartContentPage(comic: Comic, pageIndex: Int, viewModel: AppViewModel) {
+fun SmartContentPage(pageIndex: Int, viewModel: AppViewModel) {
     val pageData by produceState<Any?>(initialValue = null, key1 = pageIndex) {
-        value = viewModel.getPageData(comic, pageIndex)
+        value = viewModel.getPageData(pageIndex)
     }
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }

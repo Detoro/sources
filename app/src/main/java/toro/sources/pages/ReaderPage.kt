@@ -37,14 +37,14 @@ fun ReaderScreen(
             state = pagerState,
             modifier = Modifier.fillMaxSize()
         ) { pageIndex ->
-            SmartContentPage(comic, pageIndex, viewModel)
+            SmartContentPage(pageIndex, viewModel)
         }
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize()
         ) {
             items(count = pageCount) { pageIndex ->
-                SmartContentPage(comic, pageIndex, viewModel)
+                SmartContentPage(pageIndex, viewModel)
             }
         }
     }
