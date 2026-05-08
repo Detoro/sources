@@ -31,10 +31,6 @@ class ComicRepository(
         return chapterDao.getChaptersForComic(comicId)
     }
 
-    suspend fun getChapterById(chapterId: String): Chapter {
-        return chapterDao.getChapterById(chapterId)
-    }
-
     suspend fun getPagesForChapter(chapterId: String, comicId: String): List<Page> {
         val chapter = chapterDao.getChapterById(chapterId)
         val comic = comicDao.getComicByIdSync(comicId)
@@ -113,15 +109,6 @@ class ComicRepository(
         val lower = filename.lowercase()
         return lower.endsWith(".jpg") || lower.endsWith(".jpeg") ||
                 lower.endsWith(".png") || lower.endsWith(".webp")
-    }
-
-    suspend fun syncRemoteCatalog() {
-        try {
-            val remoteComics = apiService.getCatalog()
-            comicDao.insertComics(remoteComics)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
     }
 
     suspend fun syncRemoteChaptersForComic(comic: Comic) {
