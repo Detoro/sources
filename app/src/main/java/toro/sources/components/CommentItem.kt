@@ -31,7 +31,7 @@ fun CommentItem(comment: Comment) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "• 2h", // Mocked relative time
+                    text = comment.timestamp.toString(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

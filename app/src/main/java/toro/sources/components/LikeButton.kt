@@ -12,15 +12,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Subscriptions
 import androidx.compose.material.icons.filled.ThumbUpAlt
-import androidx.compose.material.icons.filled.ThumbUpOffAlt
-import androidx.compose.material.icons.outlined.Subscriptions
-import androidx.compose.material.icons.outlined.ThumbDownOffAlt
+import androidx.compose.material.icons.outlined.ThumbUpOffAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,7 +63,7 @@ fun LikeButton(
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(
-                imageVector = if (isPostLiked) Icons.Default.ThumbUpAlt else Icons.Outlined.ThumbDownOffAlt,
+                imageVector = if (isPostLiked) Icons.Default.ThumbUpAlt else Icons.Outlined.ThumbUpOffAlt,
                 contentDescription = "Like Post",
                 tint = tint,
                 modifier = Modifier.scale(if (isPostLiked) scale else 1.0f)

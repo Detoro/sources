@@ -37,6 +37,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import toro.sources.DataModels.AuthorRequest
 import toro.sources.DataModels.Bookmark
+import toro.sources.DataModels.CommentRequest
 import toro.sources.DataModels.Conversation
 import kotlin.String
 
@@ -418,11 +419,21 @@ class AppViewModel(
         }
     }
     fun likePost(postId: String) {
+        val currentPosts = _communityPosts.value
+        _communityPosts.value = currentPosts.map { post ->
+            if (post.id == postId) {
+                post.copy(
+                    isLiked = !post.isLiked,
+                    likesCount = if (post.isLiked) post.likesCount - 1 else post.likesCount + 1
+                )
+            } else post
+        }
         viewModelScope.launch {
             try {
                 RetrofitClient.comicApiService.likePost(postId)
             } catch (e: Exception) {
-                _errorMessage.value = "Failed to like comment: ${e.message}"
+                _communityPosts.value = currentPosts
+                _errorMessage.value = "Failed to sync like: ${e.message}"
             }
         }
     }
@@ -444,12 +455,8 @@ class AppViewModel(
     fun makePost(postContent: String) {
         viewModelScope.launch {
             try {
-                val newPost = Post(
-                    id = "",
-                    authorId = "",
-                    authorName = "",
+                val newPost = CommentRequest(
                     content = postContent,
-                    timestamp = 0L
                 )
                 RetrofitClient.comicApiService.makePost(newPost)
             } catch (e: Exception) {
@@ -460,8 +467,8 @@ class AppViewModel(
     fun addComment(postId: String, content: String) {
         viewModelScope.launch {
             try {
-                val newComment = Comment(
-                    id = "", authorId = "", authorName = "", content = content, timestamp = 0L
+                val newComment = CommentRequest(
+                    content = content
                 )
                 RetrofitClient.comicApiService.addComment(postId, newComment)
                 getPostComments(postId)
@@ -470,7 +477,6 @@ class AppViewModel(
             }
         }
     }
-
     fun clearError() {
         _errorMessage.value = null
     }

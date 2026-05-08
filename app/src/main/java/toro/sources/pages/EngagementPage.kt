@@ -46,7 +46,7 @@ fun EngagementPage(
                         Icon(Icons.Default.NotificationsNone, contentDescription = "Notifications")
                     }
                     IconButton(onClick = { onMakePost() }) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "DMs")
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Post")
                     }
                 }
             )

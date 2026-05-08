@@ -18,6 +18,7 @@ import toro.sources.DataModels.ChatMessage
 import toro.sources.DataModels.ChatRequest
 import toro.sources.DataModels.Comic
 import toro.sources.DataModels.Comment
+import toro.sources.DataModels.CommentRequest
 import toro.sources.DataModels.Conversation
 import toro.sources.DataModels.Page
 import toro.sources.DataModels.Post
@@ -88,7 +89,7 @@ interface ComicApiService {
     suspend fun getCommunityPosts(): List<Post>
 
     @POST("api/community/posts")
-    suspend fun makePost(@Body post: Post): ServerResponse
+    suspend fun makePost(@Body postContent: CommentRequest): ServerResponse
 
     @POST("api/community/posts/{postId}/like")
     suspend fun likePost(@Path("postId") postId: String): ServerResponse
@@ -104,6 +105,6 @@ interface ComicApiService {
     @POST("api/community/posts/{postId}/comments")
     suspend fun addComment(
         @Path("postId") postId: String,
-        @Body comment: Comment
+        @Body comment: CommentRequest
     ): ServerResponse
 }

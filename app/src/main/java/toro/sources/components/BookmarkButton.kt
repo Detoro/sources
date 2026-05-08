@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.Subscriptions
-import androidx.compose.material.icons.outlined.Bookmark
-import androidx.compose.material.icons.outlined.Subscriptions
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -23,8 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -42,6 +38,11 @@ fun BookmarkButton(
         ),
         label = "bounce_animation"
     )
+
+    val tint by animateColorAsState(
+        targetValue = if (isPostBookmarked) MaterialTheme.colorScheme.primary else Color.Gray,
+        label = "color_animation"
+    )
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -54,9 +55,9 @@ fun BookmarkButton(
             .padding(8.dp)
     ) {
         Icon(
-            imageVector = if (isPostBookmarked) Icons.Filled.Bookmark else Icons.Outlined.Bookmark,
+            imageVector = if (isPostBookmarked) Icons.Default.Bookmark else Icons.Outlined.BookmarkBorder,
             contentDescription = "Bookmark Post",
-            tint = MaterialTheme.colorScheme.primary,
+            tint = tint,
             modifier = Modifier.scale(if (isPostBookmarked) scale else 1.0f)
         )
     }

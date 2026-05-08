@@ -60,7 +60,7 @@ fun PostCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = post.authorName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(text = "2 hours ago", color = Color.Gray, fontSize = 12.sp) // Mocked time
+                    Text(text = post.timestamp.toString(), color = Color.Gray, fontSize = 12.sp) // Mocked time
                 }
                 Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = Color.Yellow)
             }
@@ -95,7 +95,7 @@ fun PostCard(
             ) {
                 LikeButton(
                     likeCount = post.likesCount,
-                    isPostLiked = true,
+                    isPostLiked = post.isLiked,
                     onLikePost = {
                         viewModel.likePost(post.id)
                     }
@@ -104,7 +104,7 @@ fun PostCard(
                     onCommentOnPost = onCommentClick
                 )
                 BookmarkButton(
-                    isPostBookmarked = true,
+                    isPostBookmarked = post.isBookmarked,
                     onBookmarkPost = {
                         viewModel.bookmarkPost(post.id)
                     }
