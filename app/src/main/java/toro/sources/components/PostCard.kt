@@ -1,5 +1,7 @@
 package toro.sources.components
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,7 +32,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import toro.sources.AppViewModel
 import toro.sources.DataModels.Post
+import toro.sources.convertTimestamp
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PostCard(
     viewModel: AppViewModel,
@@ -60,7 +64,7 @@ fun PostCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(text = post.authorName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(text = post.timestamp.toString(), color = Color.Gray, fontSize = 12.sp) // Mocked time
+                    Text(text = convertTimestamp(post.timestamp), color = Color.Gray, fontSize = 12.sp) // Mocked time
                 }
                 Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = Color.Yellow)
             }

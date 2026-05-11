@@ -1,5 +1,7 @@
 package toro.sources.pages
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -13,7 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.components.CommentItem
+import androidx.compose.material3.HorizontalDivider
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentsPage(
@@ -104,6 +108,8 @@ fun CommentsPage(
                     CommentItem(comment)
                 }
             }
+            Spacer(modifier = Modifier.height(14.dp))
+            HorizontalDivider()
         }
     }
 }

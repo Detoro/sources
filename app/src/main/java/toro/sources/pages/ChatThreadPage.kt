@@ -1,8 +1,10 @@
 package toro.sources.pages
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -47,6 +49,7 @@ fun ChatThreadPage(
     }
 
     Scaffold(
+        modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
                 title = { Text("Chatting with $targetUserId") },
@@ -88,11 +91,12 @@ fun ChatThreadPage(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .consumeWindowInsets(paddingValues)
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp),
             reverseLayout = true
         ) {
-            items(messages) { msg ->
+            items(messages, key = { it.id }) { msg ->
                 ChatBubble(
                     text = msg.content,
                     isFromMe = msg.senderId == me.userId)

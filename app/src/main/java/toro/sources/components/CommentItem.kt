@@ -1,5 +1,7 @@
 package toro.sources.components
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -7,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.HorizontalDivider
+import toro.sources.convertTimestamp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import toro.sources.DataModels.Comment
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun CommentItem(comment: Comment) {
     Row(modifier = Modifier.fillMaxWidth()) {
@@ -31,7 +34,7 @@ fun CommentItem(comment: Comment) {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = comment.timestamp.toString(),
+                    text = convertTimestamp(comment.timestamp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -42,7 +45,6 @@ fun CommentItem(comment: Comment) {
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
-        Spacer(modifier = Modifier.height(10.dp))
-        HorizontalDivider()
+        Spacer(modifier = Modifier.height(14.dp))
     }
 }
