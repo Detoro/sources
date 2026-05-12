@@ -46,6 +46,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.String
+import androidx.core.net.toUri
 
 @OptIn(FlowPreview::class)
 class AppViewModel(
@@ -261,7 +262,7 @@ class AppViewModel(
 
                 val response = RetrofitClient.comicApiService.uploadAvatar(body)
 
-                _currentUser.value = _currentUser.value.copy(avatarUrl = Uri.parse(response.message))
+                _currentUser.value = _currentUser.value.copy(avatarUrl = response.message.toUri())
 
             } catch (e: Exception) {
                 Log.e("AvatarUpload", "Failed to upload avatar: ${e.message}")

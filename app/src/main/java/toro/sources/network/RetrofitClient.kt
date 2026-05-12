@@ -1,5 +1,6 @@
 package toro.sources.network
 
+import android.annotation.SuppressLint
 import retrofit2.Retrofit
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.serialization.json.Json
@@ -13,7 +14,8 @@ const val url: String = "http://192.168.1.141:8080/"
 
 object RetrofitClient {
     private val networkJson = Json { ignoreUnknownKeys = true }
-    public lateinit var tokenManager: TokenManager
+    @SuppressLint("StaticFieldLeak")
+    lateinit var tokenManager: TokenManager
 
     fun initialize(manager: TokenManager) {
         tokenManager = manager
