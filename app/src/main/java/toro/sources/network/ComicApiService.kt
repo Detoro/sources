@@ -66,6 +66,10 @@ interface ComicApiService {
     @POST("api/auth/login")
     suspend fun login(@Body request: AuthRequest): AuthResponse
 
+    @Multipart
+    @POST("api/users/avatar")
+    suspend fun uploadAvatar(@Part avatar: MultipartBody.Part): ServerResponse
+
     @GET("api/chat/requests")
     suspend fun getChatRequests(): List<ChatRequest>
 

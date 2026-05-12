@@ -40,6 +40,8 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import toro.sources.DataModels.TokenManager
+import toro.sources.network.RetrofitClient
 import toro.sources.pages.AccountPage
 import toro.sources.pages.EngagementPage
 import toro.sources.pages.HomePage
@@ -48,6 +50,7 @@ import toro.sources.pages.OverviewPage
 import toro.sources.pages.ReaderScreen
 import toro.sources.pages.SearchPage
 import toro.sources.pages.SignUpPage
+import toro.sources.pages.WelcomeScreen
 import toro.sources.pages.UploadPage
 import toro.sources.ui.theme.SourcesTheme
 import toro.sources.pages.ChatInboxPage
@@ -58,6 +61,7 @@ import toro.sources.pages.PostPage
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object SignUp : Screen("signup")
+    object Welcome : Screen("welcome")
     object Account : Screen("account")
     object Home : Screen("home/{userId}")
     object Upload : Screen("upload")
@@ -82,6 +86,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val tokenManager = TokenManager(this)
+        RetrofitClient.initialize(tokenManager)
 
         val appContainer = application as SourcesCanvas
         val appRepository = appContainer.repository
@@ -212,7 +219,6 @@ fun AppNavigation(viewModel: AppViewModel) {
             }
         }
     ) { innerPadding ->
-
         NavHost(
             navController = navController,
             startDestination = Screen.Login.route,
@@ -236,10 +242,23 @@ fun AppNavigation(viewModel: AppViewModel) {
                     onNavigateBack = { navController.navigate((Screen.Login.route)) },
                     onSignUpSuccess = {newUser ->
                         viewModel.registerNewUser(newUser, onSuccess = {
-                            navController.navigate(Screen.Home.route) {
+                            navController.navigate(Screen.Welcome.route) {
                                 popUpTo(Screen.Login.route) { inclusive = true }
                             }
                         })
+                    }
+                )
+            }
+            composable(Screen.Welcome.route) {
+                WelcomeScreen(
+                    username = viewModel.currentUser.collectAsState().value.username,
+                    onComplete = { selectedUri ->
+                        if (selectedUri != null) {
+                            viewModel.uploadAvatar(context, selectedUri)
+                        }
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                        }
                     }
                 )
             }
