@@ -1,12 +1,15 @@
 package toro.sources.pages
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -28,9 +31,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.DataModels.Comic
+import toro.sources.components.ComicCarousel
 import toro.sources.components.ComicCoverCard
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +46,7 @@ fun HomePage(
     onAccountClick: () -> Unit
 ) {
     val libraryList by viewModel.myLibrary.collectAsState()
+    val onlineRecs by viewModel.catalog.collectAsState()
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -63,20 +69,15 @@ fun HomePage(
                     IconButton(onClick = { viewModel.getCatalog() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Sync Catalog")
                     }
+                    IconButton(onClick = { filePickerLauncher.launch("application/*") }) {
+                        Icon(Icons.Default.Add, contentDescription = "Import Comic")
+                    }
                     IconButton(onClick = { onAccountClick()
                     }) {
                         Icon(Icons.Default.Person, contentDescription = "Account")
                     }
                 }
             )
-        },
-
-        floatingActionButton = {
-            FloatingActionButton(onClick = {
-                filePickerLauncher.launch("application/*")
-            }) {
-                Icon(Icons.Default.Add, contentDescription = "Import File")
-            }
         }
     ) { paddingValues ->
 
@@ -91,7 +92,7 @@ fun HomePage(
                     text = "Your library is empty.\nTap + to import a .cbz file!",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    textAlign = TextAlign.Center
                 )
             }
         } else {
@@ -112,6 +113,13 @@ fun HomePage(
                     )
                 }
             }
+            ComicCarousel(
+                title = "My catalog",
+                comics = onlineRecs,
+                viewModel = viewModel,
+                onComicClick = onComicClick,
+                modifier = Modifier,
+            )
         }
     }
 }

@@ -38,7 +38,7 @@ fun SignUpPage (
     onNavigateBack: () -> Unit,
     onSignUpSuccess: (AuthRequest) -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -64,9 +64,9 @@ fun SignUpPage (
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text(stringResource(R.string.full_name)) },
+            value = username,
+            onValueChange = { username = it },
+            label = { Text(stringResource(R.string.username)) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -144,9 +144,10 @@ fun SignUpPage (
         Button(
             onClick = {
                 val newUser = AuthRequest(
-                    username = name,
+                    username = username,
                     email = email,
-                    password = password
+                    password = password,
+                    avatarUrl = null
                 )
                 if (password == confirmPassword) {
                     isError = false

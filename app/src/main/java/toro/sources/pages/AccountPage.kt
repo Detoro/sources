@@ -1,6 +1,7 @@
 package toro.sources.pages
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -19,7 +20,13 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.magnifier
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.BubbleChart
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Difference
+import androidx.compose.material.icons.filled.Password
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -41,6 +48,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.components.SettingSectionTitle
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
+import coil.compose.AsyncImage
+import toro.sources.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +62,8 @@ fun AccountPage(
     onLogoutClick: () -> Unit
 ) {
     var darkThemeEnabled by remember { mutableStateOf(true) }
+    val uriHandler = LocalUriHandler.current
+    val avatarUrl = viewModel.currentUser.collectAsState().value.avatarUrl
 
     Scaffold(
         topBar = {
@@ -73,28 +88,37 @@ fun AccountPage(
                     modifier = Modifier
                         .size(100.dp)
                         .clip(CircleShape)
+                        .clickable(onClick = {})
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profile Picture",
-                        modifier = Modifier.size(50.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+                    if (avatarUrl != null) {
+                        AsyncImage(
+                            model = avatarUrl,
+                            contentDescription = "Profile Picture",
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Default Profile Picture",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = "Adetoro",
+                    text = viewModel.currentUser.collectAsState().value.username,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Developer Account",
+                    text = "Change username",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.clickable(onClick = {})
                 )
             }
 
@@ -119,14 +143,53 @@ fun AccountPage(
                 headlineContent = { Text("Storage") },
                 supportingContent = { Text("Manage downloaded .cbz files") },
                 leadingContent = { Icon(Icons.Default.Storage, contentDescription = null) },
+                modifier = Modifier.clickable(onClick = {})
             )
 
             SettingSectionTitle("Account Actions")
 
             ListItem(
+                headlineContent = { Text("Reset Password") },
+                supportingContent = { Text("You'll receive a link to your email") },
+                leadingContent = { Icon(Icons.Default.Password, contentDescription = null) },
+                modifier = Modifier.clickable(onClick = {})
+            )
+
+            ListItem(
                 headlineContent = { Text("Clear Image Cache") },
                 supportingContent = { Text("Free up memory used by Coil") },
                 leadingContent = { Icon(Icons.Default.DeleteOutline, contentDescription = null) },
+                modifier = Modifier.clickable(onClick = {})
+            )
+
+            SettingSectionTitle("About")
+
+            ListItem(
+                headlineContent = { Text("Motive") },
+                supportingContent = { Text("The reason behind the app") },
+                leadingContent = { Icon(Icons.Default.BubbleChart, contentDescription = null) },
+                modifier = Modifier.clickable(onClick = {})
+            )
+
+            ListItem(
+                headlineContent = { Text("Contributing") },
+                supportingContent = { Text("You can help improve the app") },
+                leadingContent = { Icon(Icons.Default.Build, contentDescription = null) },
+                modifier = Modifier.clickable(onClick = { uriHandler.openUri(R.string.github_link.toString()) })
+            )
+
+            ListItem(
+                headlineContent = { Text("Release Notes") },
+                supportingContent = { Text("Important information") },
+                leadingContent = { Icon(Icons.Default.Book, contentDescription = null) },
+                modifier = Modifier.clickable(onClick = { uriHandler.openUri(R.string.github_link.toString()) })
+            )
+
+            ListItem(
+                headlineContent = { Text("App Version") },
+                supportingContent = { Text("Current Version") },
+                leadingContent = { Icon(Icons.Default.Difference, contentDescription = null) },
+                modifier = Modifier.clickable(onClick = { uriHandler.openUri(R.string.github_link.toString()) })
             )
 
             Spacer(modifier = Modifier.height(24.dp))
