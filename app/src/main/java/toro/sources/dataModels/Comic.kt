@@ -1,4 +1,4 @@
-package toro.sources.DataModels
+package toro.sources.dataModels
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

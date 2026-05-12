@@ -1,4 +1,4 @@
-package toro.sources.DataModels
+package toro.sources.dataModels
 
 import android.net.Uri
 import kotlinx.serialization.Contextual

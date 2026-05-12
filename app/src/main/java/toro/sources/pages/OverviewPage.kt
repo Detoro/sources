@@ -34,7 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import toro.sources.AppViewModel
-import toro.sources.DataModels.Chapter
+import toro.sources.dataModels.Chapter
 import toro.sources.components.ChapterRow
 import toro.sources.components.SubscribeButton
 

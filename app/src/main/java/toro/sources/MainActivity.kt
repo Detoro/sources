@@ -40,7 +40,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import toro.sources.DataModels.TokenManager
+import toro.sources.dataModels.TokenManager
 import toro.sources.network.RetrofitClient
 import toro.sources.pages.AccountPage
 import toro.sources.pages.EngagementPage

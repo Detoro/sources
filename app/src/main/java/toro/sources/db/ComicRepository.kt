@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import toro.sources.CbzParser
 import toro.sources.network.ComicApiService
-import toro.sources.DataModels.Chapter
-import toro.sources.DataModels.Comic
-import toro.sources.DataModels.Page
+import toro.sources.dataModels.Chapter
+import toro.sources.dataModels.Comic
+import toro.sources.dataModels.Page
 import java.io.File
 
 class ComicRepository(

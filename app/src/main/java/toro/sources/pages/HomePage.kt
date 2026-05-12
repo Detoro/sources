@@ -30,7 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
-import toro.sources.DataModels.Comic
+import toro.sources.dataModels.Comic
 import toro.sources.components.ComicCarousel
 import toro.sources.components.ComicCoverCard
 

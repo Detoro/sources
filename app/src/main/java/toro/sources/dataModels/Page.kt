@@ -1,4 +1,4 @@
-package toro.sources.DataModels
+package toro.sources.dataModels
 
 import kotlinx.serialization.Serializable
 

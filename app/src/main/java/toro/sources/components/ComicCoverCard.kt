@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import toro.sources.AppViewModel
-import toro.sources.DataModels.Comic
+import toro.sources.dataModels.Comic
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

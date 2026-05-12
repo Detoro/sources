@@ -17,7 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import toro.sources.DataModels.Comment
+import toro.sources.dataModels.Comment
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable

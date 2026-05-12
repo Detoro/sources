@@ -9,20 +9,20 @@ import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
-import toro.sources.DataModels.AuthRequest
-import toro.sources.DataModels.AuthResponse
-import toro.sources.DataModels.AuthorRequest
-import toro.sources.DataModels.Chapter
-import toro.sources.DataModels.ChatMessage
-import toro.sources.DataModels.ChatRequest
-import toro.sources.DataModels.Comic
-import toro.sources.DataModels.Comment
-import toro.sources.DataModels.CommentRequest
-import toro.sources.DataModels.Conversation
-import toro.sources.DataModels.Page
-import toro.sources.DataModels.Post
-import toro.sources.DataModels.ServerResponse
-import toro.sources.DataModels.SubscribeResponse
+import toro.sources.dataModels.AuthRequest
+import toro.sources.dataModels.AuthResponse
+import toro.sources.dataModels.AuthorRequest
+import toro.sources.dataModels.Chapter
+import toro.sources.dataModels.ChatMessage
+import toro.sources.dataModels.ChatRequest
+import toro.sources.dataModels.Comic
+import toro.sources.dataModels.Comment
+import toro.sources.dataModels.CommentRequest
+import toro.sources.dataModels.Conversation
+import toro.sources.dataModels.Page
+import toro.sources.dataModels.Post
+import toro.sources.dataModels.ServerResponse
+import toro.sources.dataModels.SubscribeResponse
 
 interface ComicApiService {
     @GET("api/comics/catalog")

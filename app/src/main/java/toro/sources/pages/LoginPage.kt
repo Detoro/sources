@@ -29,7 +29,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import toro.sources.DataModels.LoginCredentials
+import toro.sources.dataModels.LoginCredentials
 import androidx.compose.ui.res.stringResource
 import toro.sources.R
 

@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import toro.sources.AppViewModel
-import toro.sources.DataModels.Comic
+import toro.sources.dataModels.Comic
 import toro.sources.components.SmartContentPage
 
 @OptIn(ExperimentalFoundationApi::class)

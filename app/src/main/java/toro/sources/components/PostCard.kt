@@ -31,7 +31,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import toro.sources.AppViewModel
-import toro.sources.DataModels.Post
+import toro.sources.dataModels.Post
 import toro.sources.convertTimestamp
 
 @RequiresApi(Build.VERSION_CODES.O)

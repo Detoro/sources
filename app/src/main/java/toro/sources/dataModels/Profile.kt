@@ -1,4 +1,4 @@
-package toro.sources.DataModels
+package toro.sources.dataModels
 
 enum class UserRole { CREATOR, READER, ADMIN }
 

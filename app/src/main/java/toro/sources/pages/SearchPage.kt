@@ -28,7 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
-import toro.sources.DataModels.Comic
+import toro.sources.dataModels.Comic
 import toro.sources.components.ComicCoverCard
 
 @OptIn(ExperimentalMaterial3Api::class)

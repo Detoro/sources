@@ -6,7 +6,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Interceptor
-import toro.sources.DataModels.TokenManager
+import toro.sources.dataModels.TokenManager
 
 
 const val url: String = "http://192.168.1.141:8080/"
