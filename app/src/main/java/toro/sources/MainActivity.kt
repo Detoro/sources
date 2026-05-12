@@ -1,11 +1,13 @@
 package toro.sources
 
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -33,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.core.view.WindowCompat
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
@@ -74,6 +77,7 @@ sealed class Screen(val route: String) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,6 +95,7 @@ class MainActivity : ComponentActivity() {
                 throw IllegalArgumentException("Unknown ViewModel class")
             }
         }
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             SourcesTheme {
                 Surface(
@@ -105,6 +110,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(viewModel: AppViewModel) {
     val navController = rememberNavController()

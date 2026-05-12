@@ -28,6 +28,8 @@ import toro.sources.DataModels.Comment
 import toro.sources.db.ComicRepository
 import toro.sources.network.RetrofitClient
 import android.content.Context
+import android.os.Build
+import androidx.annotation.RequiresApi
 import toro.sources.DataModels.Page
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -36,9 +38,12 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import toro.sources.DataModels.AuthorRequest
-import toro.sources.DataModels.Bookmark
 import toro.sources.DataModels.CommentRequest
 import toro.sources.DataModels.Conversation
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import kotlin.String
 
 @OptIn(FlowPreview::class)
@@ -303,7 +308,8 @@ class AppViewModel(
     fun getChatMessages(conversationId: String) {
         viewModelScope.launch {
             try {
-                _chatMessages.value = RetrofitClient.comicApiService.getChatMessages(conversationId)
+                val messages = RetrofitClient.comicApiService.getChatMessages(conversationId)
+                _chatMessages.value = messages.sortedByDescending { it.timestamp }
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to load chat: ${e.message}"
             }
@@ -326,6 +332,7 @@ class AppViewModel(
             }
         }
     }
+
     fun getChatRequests() {
         viewModelScope.launch {
             try {
@@ -438,17 +445,20 @@ class AppViewModel(
         }
     }
     fun bookmarkPost(postId: String) {
+        val currentPosts = _communityPosts.value
+        _communityPosts.value = currentPosts.map { post ->
+            if (post.id == postId) {
+                post.copy(
+                    isBookmarked = !post.isBookmarked
+                )
+            } else post
+        }
         viewModelScope.launch {
             try {
-                val newBookmark = Bookmark(
-                    id = "",
-                    userId = "",
-                    postId = postId,
-                    timestamp = 0L
-                )
-                RetrofitClient.comicApiService.bookmarkPost(postId, newBookmark)
+                RetrofitClient.comicApiService.bookmarkPost(postId)
             } catch (e: Exception) {
-                _errorMessage.value = "Failed to make post: ${e.message}"
+                _communityPosts.value = currentPosts
+                _errorMessage.value = "Failed to bookmark post: ${e.message}"
             }
         }
     }
@@ -480,4 +490,12 @@ class AppViewModel(
     fun clearError() {
         _errorMessage.value = null
     }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+fun convertTimestamp(timestamp: Long): String {
+    val instant = Instant.ofEpochMilli(timestamp)
+    val date = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    return date.format(formatter)
 }

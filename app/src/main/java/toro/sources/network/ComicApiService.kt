@@ -12,7 +12,6 @@ import retrofit2.http.Query
 import toro.sources.DataModels.AuthRequest
 import toro.sources.DataModels.AuthResponse
 import toro.sources.DataModels.AuthorRequest
-import toro.sources.DataModels.Bookmark
 import toro.sources.DataModels.Chapter
 import toro.sources.DataModels.ChatMessage
 import toro.sources.DataModels.ChatRequest
@@ -96,8 +95,7 @@ interface ComicApiService {
 
     @POST("api/community/posts/{postId}/bookmark")
     suspend fun bookmarkPost(
-        @Path("postId") postId: String,
-        @Body bookmark: Bookmark): ServerResponse
+        @Path("postId") postId: String): ServerResponse
 
     @GET("api/community/posts/{postId}/comments")
     suspend fun getPostComments(@Path("postId") postId: String): List<Comment>

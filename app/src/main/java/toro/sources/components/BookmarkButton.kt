@@ -43,6 +43,7 @@ fun BookmarkButton(
         targetValue = if (isPostBookmarked) MaterialTheme.colorScheme.primary else Color.Gray,
         label = "color_animation"
     )
+
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
