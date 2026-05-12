@@ -6,7 +6,6 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Interceptor
-import toro.sources.network.ComicApiService
 import toro.sources.DataModels.TokenManager
 
 
@@ -14,12 +13,17 @@ const val url: String = "http://192.168.1.141:8080/"
 
 object RetrofitClient {
     private val networkJson = Json { ignoreUnknownKeys = true }
+    public lateinit var tokenManager: TokenManager
+
+    fun initialize(manager: TokenManager) {
+        tokenManager = manager
+    }
 
     private val authInterceptor = Interceptor { chain ->
         val originalRequest = chain.request()
         val requestBuilder = originalRequest.newBuilder()
 
-        TokenManager.jwtToken?.let { token ->
+        tokenManager.getTokenSync()?.let { token ->
             requestBuilder.addHeader("Authorization", "Bearer $token")
         }
 

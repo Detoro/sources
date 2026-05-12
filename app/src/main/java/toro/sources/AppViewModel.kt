@@ -16,7 +16,6 @@ import toro.sources.DataModels.Chapter
 import toro.sources.DataModels.Comic
 import toro.sources.DataModels.LoginCredentials
 import toro.sources.DataModels.AuthRequest
-import toro.sources.DataModels.TokenManager
 import toro.sources.DataModels.Post
 import toro.sources.DataModels.ChatMessage
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -37,9 +36,11 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
+import okhttp3.RequestBody.Companion.asRequestBody
 import toro.sources.DataModels.AuthorRequest
 import toro.sources.DataModels.CommentRequest
 import toro.sources.DataModels.Conversation
+import java.io.File
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -51,7 +52,8 @@ class AppViewModel(
     private val repository: ComicRepository
 ) : ViewModel() {
 
-    val currentUser = MutableStateFlow(AuthResponse())
+    private val _currentUser = MutableStateFlow(AuthResponse())
+    val currentUser: StateFlow<AuthResponse> = _currentUser.asStateFlow()
 
     val myLibrary: StateFlow<List<Comic>> = repository.getMyLibrary()
         .stateIn(
@@ -214,12 +216,11 @@ class AppViewModel(
             try {
                 val authRequest = AuthRequest(email = credentials.email, password = credentials.password)
                 val response = RetrofitClient.comicApiService.login(authRequest)
-                currentUser.value = response
-                TokenManager.jwtToken = response.token
+                _currentUser.value = response
+                RetrofitClient.tokenManager.saveToken(response.token)
                 _currentComic.value = null
                 onSuccess()
                 Log.i("Success", "Logged in successfully as ${response.username}!")
-
             } catch (e: Exception) {
                 Log.e("Failure", "Login failed: ${e.message}")
             }
@@ -227,22 +228,43 @@ class AppViewModel(
     }
 
     fun logoutUser(onLogoutComplete: () -> Unit) {
-        currentUser.value = AuthResponse()
-        TokenManager.jwtToken = null
-        _currentComic.value = null
-        onLogoutComplete()
+        viewModelScope.launch {
+            _currentUser.value = AuthResponse()
+            RetrofitClient.tokenManager.clearToken()
+            _currentComic.value = null
+            onLogoutComplete()
+        }
     }
 
     fun registerNewUser(newUser: AuthRequest, onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
                 val response = RetrofitClient.comicApiService.signUp(newUser)
-                currentUser.value = response
-                TokenManager.jwtToken = response.token
+                _currentUser.value = response
+                RetrofitClient.tokenManager.saveToken(response.token)
                 onSuccess()
                 Log.i("Success", "Sign up successfully as ${response.username}!")
             } catch (e: Exception) {
                 Log.e("Failure", "Signup failed: ${e.message}")
+            }
+        }
+    }
+
+    fun uploadAvatar(context: Context, selectedUri: Uri) {
+        _currentUser.value = _currentUser.value.copy(avatarUrl = selectedUri)
+        viewModelScope.launch {
+            try {
+                val file = getFileFromUri(context, selectedUri)
+
+                val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                val body = MultipartBody.Part.createFormData("avatar", file.name, requestFile)
+
+                val response = RetrofitClient.comicApiService.uploadAvatar(body)
+
+                _currentUser.value = _currentUser.value.copy(avatarUrl = Uri.parse(response.message))
+
+            } catch (e: Exception) {
+                Log.e("AvatarUpload", "Failed to upload avatar: ${e.message}")
             }
         }
     }
@@ -498,4 +520,14 @@ fun convertTimestamp(timestamp: Long): String {
     val date = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
     return date.format(formatter)
+}
+
+fun getFileFromUri(context: Context, uri: Uri): File {
+    val inputStream = context.contentResolver.openInputStream(uri)
+    val tempFile = File(context.cacheDir, "temp_avatar_upload.jpg")
+
+    tempFile.outputStream().use { outputStream ->
+        inputStream?.copyTo(outputStream)
+    }
+    return tempFile
 }
