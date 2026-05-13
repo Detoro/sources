@@ -36,7 +36,7 @@ fun ComicCarousel(
         HorizontalUncontainedCarousel(
             state = rememberCarouselState { comics.size },
             modifier = Modifier.fillMaxWidth(),
-            itemWidth = 160.dp,
+            itemWidth = 100.dp,
             itemSpacing = 8.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) { index ->

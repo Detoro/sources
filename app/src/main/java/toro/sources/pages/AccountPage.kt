@@ -1,5 +1,8 @@
 package toro.sources.pages
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -20,7 +23,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.magnifier
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.BubbleChart
@@ -49,10 +51,10 @@ import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.components.SettingSectionTitle
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import coil.compose.AsyncImage
+import androidx.compose.ui.res.stringResource
 import toro.sources.R
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,7 +65,14 @@ fun AccountPage(
 ) {
     var darkThemeEnabled by remember { mutableStateOf(true) }
     val uriHandler = LocalUriHandler.current
-    val avatarUrl = viewModel.currentUser.collectAsState().value.avatarUrl
+    val githubLink = stringResource(R.string.github_link)
+    var avatarUri = viewModel.currentUser.collectAsState().value.avatarUrl
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            avatarUri = uri
+        }
+    )
 
     Scaffold(
         topBar = {
@@ -88,13 +97,17 @@ fun AccountPage(
                     modifier = Modifier
                         .size(100.dp)
                         .clip(CircleShape)
-                        .clickable(onClick = {})
+                        .clickable(onClick = {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        })
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (avatarUrl != null) {
+                    if (avatarUri != null) {
                         AsyncImage(
-                            model = avatarUrl,
+                            model = avatarUri,
                             contentDescription = "Profile Picture",
                             contentScale = ContentScale.Crop
                         )
@@ -175,21 +188,21 @@ fun AccountPage(
                 headlineContent = { Text("Contributing") },
                 supportingContent = { Text("You can help improve the app") },
                 leadingContent = { Icon(Icons.Default.Build, contentDescription = null) },
-                modifier = Modifier.clickable(onClick = { uriHandler.openUri(R.string.github_link.toString()) })
+                modifier = Modifier.clickable(onClick = { uriHandler.openUri(githubLink) })
             )
 
             ListItem(
                 headlineContent = { Text("Release Notes") },
                 supportingContent = { Text("Important information") },
                 leadingContent = { Icon(Icons.Default.Book, contentDescription = null) },
-                modifier = Modifier.clickable(onClick = { uriHandler.openUri(R.string.github_link.toString()) })
+                modifier = Modifier.clickable(onClick = { uriHandler.openUri(githubLink) })
             )
 
             ListItem(
                 headlineContent = { Text("App Version") },
                 supportingContent = { Text("Current Version") },
                 leadingContent = { Icon(Icons.Default.Difference, contentDescription = null) },
-                modifier = Modifier.clickable(onClick = { uriHandler.openUri(R.string.github_link.toString()) })
+                modifier = Modifier.clickable(onClick = { uriHandler.openUri(githubLink) })
             )
 
             Spacer(modifier = Modifier.height(24.dp))

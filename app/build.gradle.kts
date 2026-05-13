@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.converter.scalars)
     implementation(libs.coil.compose)
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.retrofit2.kotlinx.serialization.converter)
     annotationProcessor(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)

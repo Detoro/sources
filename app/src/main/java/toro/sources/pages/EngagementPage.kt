@@ -1,5 +1,7 @@
 package toro.sources.pages
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -24,6 +26,7 @@ import toro.sources.components.AuthorsRow
 import toro.sources.components.SectionTitle
 import toro.sources.components.PostCard
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EngagementPage(
