@@ -62,7 +62,8 @@ class CbzParser(private val context: Context) {
                 chapterTitle = "One-Shot", // Sideloaded .cbz files are usually single issues hopefully
                 chapterNumber = 1f,
                 lastReadPageIndex = 0,
-                isDownloaded = true
+                isDownloaded = true,
+                pageCount = pagePaths.size
             )
 
             Pair(comic, chapter)

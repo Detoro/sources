@@ -74,6 +74,14 @@ fun ComicCoverCard(comic: Comic, viewModel: AppViewModel, onClick: () -> Unit) {
             )
 
             DropdownMenuItem(
+                text = { Text("Share") },
+                onClick = {
+                    showOptionsMenu = false
+                    onClick()
+                }
+            )
+
+            DropdownMenuItem(
                 text = { Text("Remove") },
                 onClick = {
                     showOptionsMenu = false

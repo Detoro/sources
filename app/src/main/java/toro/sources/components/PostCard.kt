@@ -3,9 +3,11 @@ package toro.sources.components
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +15,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,6 +37,10 @@ import androidx.compose.ui.unit.sp
 import toro.sources.AppViewModel
 import toro.sources.dataModels.Post
 import toro.sources.convertTimestamp
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -40,7 +48,14 @@ fun PostCard(
     viewModel: AppViewModel,
     post: Post,
     onCommentClick: () -> Unit,
-    modifier: Modifier = Modifier) {
+    modifier: Modifier = Modifier
+) {
+    val tagList by viewModel.tags.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.getTags(post.id)
+    }
+
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
@@ -56,7 +71,10 @@ fun PostCard(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
-                        .background(Color.LightGray),
+                        .background(Color.LightGray)
+                        .clickable(
+                            onClick = {}
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(post.authorName.first().toString(), fontSize = 14.sp)
@@ -66,7 +84,7 @@ fun PostCard(
                     Text(text = post.authorName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Text(text = convertTimestamp(post.timestamp), color = Color.Gray, fontSize = 12.sp) // Mocked time
                 }
-                Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = Color.Yellow)
+                Icon(Icons.Default.MoreVert, contentDescription = "More options")
             }
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -85,11 +103,18 @@ fun PostCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // Tags
-            Row(modifier = Modifier.padding(vertical = 12.dp)) {
-                TagChip("#graphic novel")
-                Spacer(modifier = Modifier.width(8.dp))
-                TagChip("#discussion")
+            LazyHorizontalGrid(
+                rows = GridCells.Fixed(2),
+                contentPadding = PaddingValues(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .height(80.dp)
+                    .padding()
+            ) {
+                items(tagList) { tag ->
+                    TagChip(tag.content)
+                }
             }
 
             Row(

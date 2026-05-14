@@ -36,6 +36,7 @@ import coil.compose.AsyncImage
 import toro.sources.AppViewModel
 import toro.sources.dataModels.Chapter
 import toro.sources.components.ChapterRow
+import toro.sources.components.ReadingProgressBar
 import toro.sources.components.SubscribeButton
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -126,6 +127,22 @@ fun OverviewPage(
                                     viewModel.subscribeToAuthor(safeComic.author)
                                 }
                             )
+
+                            val overallProgress = if (chapters.isNotEmpty()) {
+                                chapters.map {
+                                    if (it.pageCount > 0) it.lastReadPageIndex.toFloat() / it.pageCount else 0f
+                                }.sum() / chapters.size
+                            } else 0f
+
+                            if (overallProgress > 0) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "Reading Progress",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                ReadingProgressBar(progress = overallProgress)
+                            }
                         }
                     }
                 }

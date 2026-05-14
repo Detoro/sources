@@ -39,7 +39,9 @@ import kotlinx.coroutines.flow.map
 import okhttp3.RequestBody.Companion.asRequestBody
 import toro.sources.dataModels.AuthorRequest
 import toro.sources.dataModels.CommentRequest
+import toro.sources.dataModels.PostRequest
 import toro.sources.dataModels.Conversation
+import toro.sources.dataModels.Tag
 import java.io.File
 import java.time.Instant
 import java.time.LocalDateTime
@@ -47,6 +49,10 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.String
 import androidx.core.net.toUri
+
+enum class SearchSource {
+    LOCAL, ONLINE
+}
 
 @OptIn(FlowPreview::class)
 class AppViewModel(
@@ -66,15 +72,35 @@ class AppViewModel(
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    private val _searchSource = MutableStateFlow(SearchSource.LOCAL)
+    val searchSource: StateFlow<SearchSource> = _searchSource.asStateFlow()
+
+    fun updateSearchSource(source: SearchSource) {
+        _searchSource.value = source
+    }
+
+    private val _catalog = MutableStateFlow<List<Comic>>(emptyList())
+    val catalog = _catalog.asStateFlow()
+
     val searchResults: StateFlow<List<Comic>> = combine(
-        myLibrary, _searchQuery
-    ) { library, query ->
+        myLibrary, _catalog, _searchQuery, _searchSource
+    ) { library, online, query, source ->
         if (query.isBlank()) {
             emptyList()
         } else {
-            library.filter { comic ->
-                comic.title.contains(query, ignoreCase = true) ||
-                        comic.author.contains(query, ignoreCase = true)
+            when (source) {
+                SearchSource.LOCAL -> {
+                    library.filter { comic ->
+                        comic.title.contains(query, ignoreCase = true) ||
+                                comic.author.contains(query, ignoreCase = true)
+                    }
+                }
+                SearchSource.ONLINE -> {
+                    online.filter { comic ->
+                        comic.title.contains(query, ignoreCase = true) ||
+                                comic.author.contains(query, ignoreCase = true)
+                    }
+                }
             }
         }
     }.stateIn(
@@ -88,9 +114,6 @@ class AppViewModel(
     val pendingRequestsCount: StateFlow<Int> = _chatRequests
         .map { it.size }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
-
-    private val _catalog = MutableStateFlow<List<Comic>>(emptyList())
-    val catalog = _catalog.asStateFlow()
 
     private val _chapters = MutableStateFlow<List<Chapter>>(emptyList())
     val chapters = _chapters.asStateFlow()
@@ -118,6 +141,9 @@ class AppViewModel(
     private val _isSubscribed = MutableStateFlow(false)
     val isSubscribed = _isSubscribed.asStateFlow()
 
+    private val _tags = MutableStateFlow<List<Tag>>(emptyList())
+    val tags = _tags.asStateFlow()
+
     private var chapterPages: List<Page> = emptyList()
 
     init {
@@ -125,10 +151,12 @@ class AppViewModel(
         getChatRequests()
 
         viewModelScope.launch {
-            _searchQuery
+            combine(_searchQuery, _searchSource) { query, source ->
+                query to source
+            }
                 .debounce(500L)
-                .filter { it.isNotBlank() }
-                .collectLatest { readyQuery ->
+                .filter { it.first.isNotBlank() && it.second == SearchSource.ONLINE }
+                .collectLatest { (readyQuery, _) ->
                     searchComics(readyQuery)
                 }
         }
@@ -485,13 +513,16 @@ class AppViewModel(
             }
         }
     }
-    fun makePost(postContent: String) {
+    fun makePost(postContent: String, tags: List<String> = emptyList()) {
         viewModelScope.launch {
             try {
-                val newPost = CommentRequest(
+                val request = PostRequest(
                     content = postContent,
+                    tags = tags
                 )
-                RetrofitClient.comicApiService.makePost(newPost)
+                val response = RetrofitClient.comicApiService.makePost(request)
+                Log.i("Post", "Post created: ${response.message}")
+                getCommunityPosts()
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to make post: ${e.message}"
             }
@@ -507,6 +538,16 @@ class AppViewModel(
                 getPostComments(postId)
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to post comment: ${e.message}"
+            }
+        }
+    }
+
+    fun getTags(postId: String) {
+        viewModelScope.launch {
+            try {
+                _tags.value = RetrofitClient.comicApiService.getTagsByPostId(postId)
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to get Tags: ${e.message}"
             }
         }
     }

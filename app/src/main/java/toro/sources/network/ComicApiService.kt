@@ -21,6 +21,8 @@ import toro.sources.dataModels.CommentRequest
 import toro.sources.dataModels.Conversation
 import toro.sources.dataModels.Page
 import toro.sources.dataModels.Post
+import toro.sources.dataModels.PostRequest
+import toro.sources.dataModels.Tag
 import toro.sources.dataModels.ServerResponse
 import toro.sources.dataModels.SubscribeResponse
 
@@ -92,7 +94,12 @@ interface ComicApiService {
     suspend fun getCommunityPosts(): List<Post>
 
     @POST("api/community/posts")
-    suspend fun makePost(@Body postContent: CommentRequest): ServerResponse
+    suspend fun makePost(
+        @Body request: PostRequest
+    ): ServerResponse
+
+    @GET("api/community/posts/{postId}/tags")
+    suspend fun getTagsByPostId(@Path("postId") postId: String): List<Tag>
 
     @POST("api/community/posts/{postId}/like")
     suspend fun likePost(@Path("postId") postId: String): ServerResponse

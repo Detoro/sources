@@ -1,15 +1,22 @@
 package toro.sources.pages
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Close
@@ -26,8 +33,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
+import toro.sources.SearchSource
 import toro.sources.dataModels.Comic
 import toro.sources.components.ComicCoverCard
 
@@ -39,10 +49,11 @@ fun SearchPage(
 ) {
     val searchQuery by viewModel.searchQuery.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
+    val searchSource by viewModel.searchSource.collectAsState()
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Search Library") })
+            TopAppBar(title = { Text("Search ${if (searchSource == SearchSource.LOCAL) "Library" else "Online"}") })
         }
     ) { paddingValues ->
         Column(
@@ -50,7 +61,48 @@ fun SearchPage(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // 1. The Search Bar
+            // Pill Search Source
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .fillMaxWidth()
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(4.dp)
+            ) {
+                SearchSource.entries.forEach { source ->
+                    val selected = source == searchSource
+                    val backgroundColor by animateColorAsState(
+                        targetValue = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                        animationSpec = tween(durationMillis = 600),
+                        label = "background"
+                    )
+                    val textColor by animateColorAsState(
+                        targetValue = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        animationSpec = tween(durationMillis = 600),
+                        label = "text"
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(CircleShape)
+                            .background(backgroundColor)
+                            .clickable { viewModel.updateSearchSource(source) }
+                            .padding(vertical = 8.dp)
+                            .animateContentSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = source.name,
+                            color = textColor,
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                }
+            }
+
+            // The Search Bar
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.updateSearchQuery(it) },
@@ -69,7 +121,7 @@ fun SearchPage(
                 singleLine = true
             )
 
-            // 2. The Results Area
+            // The Results Area
             if (searchQuery.isBlank()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),

@@ -27,4 +27,5 @@ data class Chapter(
     val lastReadPageIndex: Int = 0,
     val isDownloaded: Boolean = false,
     val storageBucketPath: String? = null,
+    val pageCount: Int = 0,
 )
