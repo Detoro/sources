@@ -1,13 +1,13 @@
 package toro.sources
 
-import android.os.Build
+import android.app.PictureInPictureParams
 import android.os.Bundle
+import android.util.Rational
 import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -27,9 +27,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -57,6 +57,7 @@ import toro.sources.pages.ChatInboxPage
 import toro.sources.pages.ChatThreadPage
 import toro.sources.pages.CommentsPage
 import toro.sources.pages.PostPage
+import toro.sources.pages.ReadingList
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -73,6 +74,7 @@ sealed class Screen(val route: String) {
     object Overview : Screen("overview")
     object Post : Screen("post")
     object Engagement : Screen("engagement")
+    object ReadingList : Screen("reading_list")
     object Chat : Screen("chat_page/{userId}") {
         fun createRoute(userId: String) = "chat_page/$userId"
     }
@@ -81,8 +83,14 @@ sealed class Screen(val route: String) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 class MainActivity : ComponentActivity() {
+    override fun onUserLeaveHint() {
+        val params = PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(16, 9))
+            .build()
+        enterPictureInPictureMode(params)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -117,7 +125,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(viewModel: AppViewModel) {
     val navController = rememberNavController()
@@ -130,7 +137,7 @@ fun AppNavigation(viewModel: AppViewModel) {
         Screen.Search.route,
         Screen.Upload.route,
         Screen.Inbox.route,
-        Screen.Engagement.route
+        Screen.ReadingList.route
     )
     val context = LocalContext.current
     val currentUser by viewModel.currentUser.collectAsState()
@@ -202,11 +209,11 @@ fun AppNavigation(viewModel: AppViewModel) {
                         }
                     )
                     NavigationBarItem(
-                        icon = { Icon(Icons.Default.People, contentDescription = "Upload") },
-                        label = { Text("Engage") },
-                        selected = currentRoute == Screen.Engagement.route,
+                        icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = "Reading List") },
+                        label = { Text("Reading") },
+                        selected = currentRoute == Screen.ReadingList.route,
                         onClick = {
-                            navController.navigate(Screen.Engagement.route) {
+                            navController.navigate(Screen.ReadingList.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
@@ -224,6 +231,15 @@ fun AppNavigation(viewModel: AppViewModel) {
             startDestination = Screen.Login.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(Screen.ReadingList.route) {
+                ReadingList(
+                    viewModel = viewModel,
+                    onComicClick = { comic ->
+                        viewModel.setCurrentComic(comic)
+                        navController.navigate(Screen.Overview.route)
+                    }
+                )
+            }
             composable(Screen.Login.route) {
                 LoginPage(
                     onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
@@ -280,10 +296,12 @@ fun AppNavigation(viewModel: AppViewModel) {
                 val chapterId = backStackEntry.arguments?.getString("chapterId")
                 val comic by viewModel.currentComic.collectAsState()
                 val pageCount by viewModel.pageCount.collectAsState()
+                val chapters by viewModel.chapters.collectAsState()
 
                 LaunchedEffect(chapterId, comic) {
                     if (chapterId != null && comic != null) {
                         viewModel.openChapter(comic!!, chapterId)
+                        viewModel.getPostComments(chapterId)
                     }
                 }
 
@@ -296,14 +314,38 @@ fun AppNavigation(viewModel: AppViewModel) {
                         CircularProgressIndicator()
                     }
                 } else {
+                    val currentChapterIndex = chapters.indexOfFirst { it.id == chapterId }
+                    
                     ReaderScreen(
                         pageCount = pageCount,
                         comic = comic!!,
+                        chapterId = chapterId ?: "",
                         viewModel = viewModel,
-                        startingIndex = 0, // to track where they left off
+                        startingIndex = 0,
                         onPageChanged = { newPageIndex ->
                             if (chapterId != null) {
                                  viewModel.onPageTurned(chapterId, newPageIndex)
+                            }
+                        },
+                        onNextChapter = {
+                            if (currentChapterIndex != -1 && currentChapterIndex < chapters.size - 1) {
+                                val nextId = chapters[currentChapterIndex + 1].id
+                                navController.navigate(Screen.Reader.createRoute(nextId)) {
+                                    popUpTo(Screen.Reader.route) { inclusive = true }
+                                }
+                            }
+                        },
+                        onPreviousChapter = {
+                            if (currentChapterIndex > 0) {
+                                val prevId = chapters[currentChapterIndex - 1].id
+                                navController.navigate(Screen.Reader.createRoute(prevId)) {
+                                    popUpTo(Screen.Reader.route) { inclusive = true }
+                                }
+                            }
+                        },
+                        onLikeChapter = {
+                            if (chapterId != null) {
+                                viewModel.likePost(chapterId)
                             }
                         }
                     )
@@ -317,7 +359,8 @@ fun AppNavigation(viewModel: AppViewModel) {
                     },
                     onMakePost = {
                         navController.navigate(Screen.Post.route)
-                    }
+                    },
+                    onBackClick = { navController.popBackStack() }
                 )
             }
             composable(Screen.Comments.route) { backStackEntry ->
@@ -338,6 +381,9 @@ fun AppNavigation(viewModel: AppViewModel) {
                 OverviewPage(
                     viewModel = viewModel,
                     onBackClick = { navController.popBackStack() },
+                    onAuthorClick = {
+                        navController.navigate(Screen.Engagement.route)
+                                    },
                     onChapterClick = { chapter ->
                         navController.navigate(Screen.Reader.createRoute(chapter.id))
                     }
