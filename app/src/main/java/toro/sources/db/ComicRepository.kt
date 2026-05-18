@@ -31,6 +31,22 @@ class ComicRepository(
         return chapterDao.getChaptersForComic(comicId)
     }
 
+    fun getSubscribedComics(): Flow<List<Comic>> {
+        return comicDao.getSubscribedComics()
+    }
+
+    fun getRecentlyReadComics(): Flow<List<Comic>> {
+        return comicDao.getRecentlyReadComics()
+    }
+
+    suspend fun updateLastRead(comicId: String) {
+        comicDao.updateLastReadTimestamp(comicId, System.currentTimeMillis())
+    }
+
+    suspend fun toggleLocalSubscription(comicId: String, isSubscribed: Boolean) {
+        comicDao.updateSubscription(comicId, isSubscribed)
+    }
+
     suspend fun getPagesForChapter(chapterId: String, comicId: String): List<Page> {
         val chapter = chapterDao.getChapterById(chapterId)
         val comic = comicDao.getComicByIdSync(comicId)
@@ -121,5 +137,13 @@ class ComicRepository(
                 Log.e("Network Error", "Failed to fetch chapters: ${e.message}")
             }
         }
+    }
+
+    suspend fun insertComics(comics: List<Comic>) {
+        comicDao.insertComics(comics)
+    }
+
+    suspend fun insertChapters(chapters: List<Chapter>) {
+        chapterDao.insertChapters(chapters)
     }
 }

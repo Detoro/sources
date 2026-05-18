@@ -9,7 +9,7 @@ import toro.sources.dataModels.Chapter
 
 @Database(
     entities = [Comic::class, Chapter::class],
-    version = 5,
+    version = 7,
     exportSchema = false
 )
 abstract class CanvasDatabase : RoomDatabase() {
