@@ -1,13 +1,10 @@
 package toro.sources.pages
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,9 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.components.CommentItem
+import toro.sources.components.SmartInput
 import androidx.compose.material3.HorizontalDivider
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentsPage(
@@ -26,7 +23,6 @@ fun CommentsPage(
     onBackClick: () -> Unit
 ) {
     val comments by viewModel.comments.collectAsState()
-    var commentText by remember { mutableStateOf("") }
 
     LaunchedEffect(postId) {
         viewModel.getPostComments(postId)
@@ -44,47 +40,13 @@ fun CommentsPage(
             )
         },
         bottomBar = {
-            Surface(
-                tonalElevation = 4.dp,
-                shadowElevation = 8.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .navigationBarsPadding()
-                        .imePadding(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextField(
-                        value = commentText,
-                        onValueChange = { commentText = it },
-                        placeholder = { Text("Add a comment...") },
-                        modifier = Modifier.weight(1f),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                            unfocusedIndicatorColor = MaterialTheme.colorScheme.outline
-                        ),
-                        shape = MaterialTheme.shapes.medium
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    IconButton(
-                        onClick = {
-                            if (commentText.isNotBlank()) {
-                                viewModel.addComment(postId, commentText)
-                                commentText = ""
-                            }
-                        },
-                        colors = IconButtonDefaults.iconButtonColors(
-                            contentColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
-                    }
-                }
-            }
+            SmartInput(
+                onSend = { text, _, mentions, _ ->
+                    viewModel.addComment(postId, text, mentions)
+                },
+                placeholder = "Add a comment...",
+                viewModel = viewModel
+            )
         }
     ) { paddingValues ->
         if (comments.isEmpty()) {

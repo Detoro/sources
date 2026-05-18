@@ -1,12 +1,11 @@
 package toro.sources.pages
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,13 +25,13 @@ import toro.sources.components.AuthorsRow
 import toro.sources.components.SectionTitle
 import toro.sources.components.PostCard
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EngagementPage(
     viewModel: AppViewModel,
     onCommentClick: (String) -> Unit,
-    onMakePost: () -> Unit
+    onMakePost: () -> Unit,
+    onBackClick: () -> Unit
 ) {
     val posts by viewModel.communityPosts.collectAsState()
 
@@ -44,6 +43,11 @@ fun EngagementPage(
         topBar = {
             TopAppBar(
                 title = { Text("Community") },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
                 actions = {
                     IconButton(onClick = { /* TODO: Notifications */ }) {
                         Icon(Icons.Default.NotificationsNone, contentDescription = "Notifications")

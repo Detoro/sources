@@ -1,5 +1,6 @@
 package toro.sources.pages
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,6 +45,7 @@ import toro.sources.components.SubscribeButton
 fun OverviewPage(
     viewModel: AppViewModel,
     onBackClick: () -> Unit,
+    onAuthorClick: () -> Unit,
     onChapterClick: (Chapter) -> Unit
 ) {
     val comic by viewModel.currentComic.collectAsState()
@@ -113,6 +115,9 @@ fun OverviewPage(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "By ${safeComic.author}",
+                                modifier = Modifier.clickable(
+                                    onClick = onAuthorClick
+                                ),
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -134,15 +139,13 @@ fun OverviewPage(
                                 }.sum() / chapters.size
                             } else 0f
 
-                            if (overallProgress > 0) {
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
                                 Text(
                                     text = "Reading Progress",
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 ReadingProgressBar(progress = overallProgress)
-                            }
                         }
                     }
                 }

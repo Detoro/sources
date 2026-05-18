@@ -56,6 +56,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import coil.compose.AsyncImage
 import androidx.compose.ui.res.stringResource
 import toro.sources.R
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,12 +66,16 @@ fun AccountPage(
 ) {
     var darkThemeEnabled by remember { mutableStateOf(true) }
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
     val githubLink = stringResource(R.string.github_link)
-    var avatarUri = viewModel.currentUser.collectAsState().value.avatarUrl
+    val currentUser by viewModel.currentUser.collectAsState()
+    val avatarUri = currentUser.avatarUrl
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            avatarUri = uri
+            uri?.let {
+                viewModel.uploadAvatar(context, it)
+            }
         }
     )
 

@@ -8,7 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import toro.sources.AppViewModel
+import toro.sources.components.SmartInput
 import toro.sources.components.TagChip
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -28,12 +28,8 @@ fun PostPage(
     onBackClick: () -> Unit
 ) {
     var postText by remember { mutableStateOf("") }
-    var tagsText by remember { mutableStateOf("") }
+    var tagList by remember { mutableStateOf(emptyList<String>()) }
     val currentUser by viewModel.currentUser.collectAsState()
-
-    val tagList = remember(tagsText) {
-        if (tagsText.isBlank()) emptyList() else tagsText.split(",").map { it.trim() }.filter { it.isNotBlank() }
-    }
 
     Scaffold(
         topBar = {
@@ -47,63 +43,15 @@ fun PostPage(
             )
         },
         bottomBar = {
-            Surface(
-                tonalElevation = 4.dp,
-                shadowElevation = 8.dp
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                        .navigationBarsPadding()
-                        .imePadding()
-                ) {
-                    TextField(
-                        value = postText,
-                        onValueChange = { postText = it },
-                        placeholder = { Text("create a post...") },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                            unfocusedIndicatorColor = MaterialTheme.colorScheme.outline
-                        ),
-                        shape = MaterialTheme.shapes.medium
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        TextField(
-                            value = tagsText,
-                            onValueChange = { tagsText = it },
-                            placeholder = { Text("add tags (comma separated)...") },
-                            modifier = Modifier.weight(1f),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                                unfocusedIndicatorColor = MaterialTheme.colorScheme.outline
-                            ),
-                            shape = MaterialTheme.shapes.medium
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        IconButton(
-                            onClick = {
-                                if (postText.isNotBlank()) {
-                                    viewModel.makePost(postText, tagList)
-                                    postText = ""
-                                    tagsText = ""
-                                }
-                            },
-                            colors = IconButtonDefaults.iconButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary
-                            )
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send")
-                        }
-                    }
-                }
-            }
+            SmartInput(
+                onSend = { text, tags, _, _ ->
+                    viewModel.makePost(text, tags)
+                },
+                placeholder = "create a post...",
+                supportTags = true,
+                supportUpload = true,
+                viewModel = viewModel
+            )
         }
     ) { paddingValues ->
         Column(
