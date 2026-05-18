@@ -25,6 +25,7 @@ import toro.sources.dataModels.PostRequest
 import toro.sources.dataModels.Tag
 import toro.sources.dataModels.ServerResponse
 import toro.sources.dataModels.SubscribeResponse
+import toro.sources.dataModels.UserProfile
 
 interface ComicApiService {
     @GET("api/comics/catalog")
@@ -89,6 +90,9 @@ interface ComicApiService {
         @Path("conversationId") conversationId: String,
         @Body message: ChatMessage
     ): ServerResponse
+
+    @GET("api/users/search")
+    suspend fun searchUsers(@Query("q") query: String): List<UserProfile>
 
     @GET("api/community/posts")
     suspend fun getCommunityPosts(): List<Post>
