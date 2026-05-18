@@ -28,10 +28,15 @@ import toro.sources.dataModels.Comic
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ComicCoverCard(comic: Comic, viewModel: AppViewModel, onClick: () -> Unit) {
+fun ComicCoverCard(
+    comic: Comic,
+    viewModel: AppViewModel,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     var showOptionsMenu by remember { mutableStateOf(false) }
 
-    Box {
+    Box(modifier = modifier) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
