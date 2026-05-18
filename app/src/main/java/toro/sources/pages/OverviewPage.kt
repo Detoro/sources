@@ -139,12 +139,12 @@ fun OverviewPage(
                                 }.sum() / chapters.size
                             } else 0f
 
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Reading Progress",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Reading Progress",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                                 ReadingProgressBar(progress = overallProgress)
                         }
                     }
