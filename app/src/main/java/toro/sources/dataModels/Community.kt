@@ -33,7 +33,8 @@ data class Comment(
 
 @Serializable
 data class CommentRequest(
-    val content: String
+    val content: String,
+    val mentionedUserIds: List<String> = emptyList()
 )
 
 @Serializable

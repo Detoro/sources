@@ -14,5 +14,8 @@ data class Comic(
     val coverImageUrl: String,
     val isLocalSideload: Boolean = false,
     val localFilePath: String? = null,
-    val scrollDirection: String = "VERTICAL"
+    val scrollDirection: String = "VERTICAL",
+    val hasMusic: Boolean = false,
+    val isSubscribed: Boolean = false,
+    val lastReadTimestamp: Long = 0L
 )
