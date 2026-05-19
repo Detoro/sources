@@ -120,4 +120,7 @@ interface ComicApiService {
         @Path("postId") postId: String,
         @Body comment: CommentRequest
     ): ServerResponse
+
+    @POST("api/community/comments/{commentId}/like")
+    suspend fun likeComment(@Path("commentId") commentId: String): ServerResponse
 }
