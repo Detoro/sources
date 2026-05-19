@@ -4,12 +4,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -17,60 +23,84 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun ChatBubble(text: String, isFromMe: Boolean) {
+fun ChatBubble(
+    text: String,
+    isFromMe: Boolean,
+    isDelivered: Boolean = false,
+    showStatus: Boolean = false
+) {
     var showOptionsMenu by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 2.dp)
             .combinedClickable(
                 onClick = {},
                 onLongClick = { showOptionsMenu = true }
             ),
         horizontalArrangement = if (isFromMe) Arrangement.End else Arrangement.Start
     ) {
-        Box(
-            modifier = Modifier
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 16.dp,
-                        topEnd = 16.dp,
-                        bottomStart = if (isFromMe) 16.dp else 4.dp,
-                        bottomEnd = if (isFromMe) 4.dp else 16.dp
+        Column(horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start) {
+            Box(
+                modifier = Modifier
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 16.dp,
+                            topEnd = 16.dp,
+                            bottomStart = if (isFromMe) 16.dp else 4.dp,
+                            bottomEnd = if (isFromMe) 4.dp else 16.dp
+                        )
                     )
-                )
-                .background(
-                    if (isFromMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
-                )
-                .padding(12.dp)
-        ) {
-            Text(
-                text = text,
-                color = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            DropdownMenu(
-                expanded = showOptionsMenu,
-                onDismissRequest = { showOptionsMenu = false }
+                    .background(
+                        if (isFromMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                DropdownMenuItem(
-                    text = { Text("Edit") },
-                    onClick = {
-                        showOptionsMenu = false
-                    }
-                )
+                Column {
+                    Text(
+                        text = text,
+                        color = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
 
-                DropdownMenuItem(
-                    text = { Text("Delete") },
-                    onClick = {
-                        showOptionsMenu = false
-                    }
-                )
+                DropdownMenu(
+                    expanded = showOptionsMenu,
+                    onDismissRequest = { showOptionsMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Edit") },
+                        onClick = {
+                            showOptionsMenu = false
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = { Text("Delete") },
+                        onClick = {
+                            showOptionsMenu = false
+                        }
+                    )
+                }
+            }
+            if (isFromMe && showStatus) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 2.dp, end = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isDelivered) Icons.Default.DoneAll else Icons.Default.Done,
+                        contentDescription = if (isDelivered) "Delivered" else "Sent",
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                    )
+                }
             }
         }
     }

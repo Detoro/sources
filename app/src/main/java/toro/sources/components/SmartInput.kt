@@ -47,7 +47,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import toro.sources.AppViewModel
-import toro.sources.dataModels.UserProfile
 
 @Composable
 fun SmartInput(
@@ -62,7 +61,7 @@ fun SmartInput(
     var tagsText by remember { mutableStateOf("") }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var showTagInput by remember { mutableStateOf(false) }
-    val userSuggestions by viewModel?.userSuggestions?.collectAsState() ?: remember { mutableStateOf(emptyList<UserProfile>()) }
+    val userSuggestions by viewModel?.userSuggestions?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
     var showMentions by remember { mutableStateOf(false) }
     val mentionedUserIds = remember { mutableStateListOf<String>() }
 
@@ -90,7 +89,7 @@ fun SmartInput(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(10.dp)
                 .navigationBarsPadding()
                 .imePadding()
         ) {
