@@ -55,7 +55,9 @@ import toro.sources.pages.UploadPage
 import toro.sources.ui.theme.SourcesTheme
 import toro.sources.pages.ChatInboxPage
 import toro.sources.pages.ChatThreadPage
+import toro.sources.pages.CommentThreadPage
 import toro.sources.pages.CommentsPage
+import toro.sources.pages.FriendRequestPage
 import toro.sources.pages.PostPage
 import toro.sources.pages.ReadingList
 
@@ -74,12 +76,16 @@ sealed class Screen(val route: String) {
     object Overview : Screen("overview")
     object Post : Screen("post")
     object Engagement : Screen("engagement")
+    object FriendRequest : Screen("friend_request")
     object ReadingList : Screen("reading_list")
     object Chat : Screen("chat_page/{userId}") {
         fun createRoute(userId: String) = "chat_page/$userId"
     }
     object Comments : Screen("comments/{postId}") {
         fun createRoute(postId: String) = "comments/$postId"
+    }
+    object CommentThread : Screen("comment_thread/{postId}/{commentId}") {
+        fun createRoute(postId: String, commentId: String) = "comment_thread/$postId/$commentId"
     }
 }
 
@@ -347,6 +353,12 @@ fun AppNavigation(viewModel: AppViewModel) {
                             if (chapterId != null) {
                                 viewModel.likePost(chapterId)
                             }
+                        },
+                        onViewAllComments = { id ->
+                            navController.navigate(Screen.Comments.createRoute(id))
+                        },
+                        onCommentThreadClick = { postId, commentId ->
+                            navController.navigate(Screen.CommentThread.createRoute(postId, commentId))
                         }
                     )
                 }
@@ -367,6 +379,19 @@ fun AppNavigation(viewModel: AppViewModel) {
                 val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
                 CommentsPage(
                     viewModel = viewModel,
+                    postId = postId,
+                    onBackClick = { navController.popBackStack() },
+                    onCommentClick = { comment ->
+                        navController.navigate(Screen.CommentThread.createRoute(postId, comment.id))
+                    }
+                )
+            }
+            composable(Screen.CommentThread.route) { backStackEntry ->
+                val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
+                val commentId = backStackEntry.arguments?.getString("commentId") ?: return@composable
+                CommentThreadPage(
+                    viewModel = viewModel,
+                    commentId = commentId,
                     postId = postId,
                     onBackClick = { navController.popBackStack() }
                 )
@@ -427,7 +452,16 @@ fun AppNavigation(viewModel: AppViewModel) {
                     viewModel = viewModel,
                     onChatClick = { userId ->
                         navController.navigate(Screen.Chat.createRoute(userId))
+                    },
+                    onFriendRequest = {
+                        navController.navigate(Screen.FriendRequest.route)
                     }
+                )
+            }
+            composable(Screen.FriendRequest.route) {
+                FriendRequestPage(
+                    viewModel = viewModel,
+                    onDismiss = { navController.popBackStack() }
                 )
             }
             composable(Screen.Chat.route) { backStackEntry ->
