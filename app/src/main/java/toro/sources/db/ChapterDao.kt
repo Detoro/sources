@@ -16,7 +16,7 @@ interface ChapterDao {
     @Query("SELECT * FROM chapters WHERE id = :chapterId LIMIT 1")
     suspend fun getChapterById(chapterId: String): Chapter
 
-    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChapters(chapters: List<Chapter>)
 
     @Query("UPDATE chapters SET lastReadPageIndex = :pageIndex WHERE id = :chapterId")

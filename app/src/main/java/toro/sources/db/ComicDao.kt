@@ -3,6 +3,7 @@ package toro.sources.db
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import toro.sources.dataModels.Comic
@@ -28,10 +29,10 @@ interface ComicDao {
     @Query("UPDATE comics SET isSubscribed = :isSubscribed WHERE id = :comicId")
     suspend fun updateSubscription(comicId: String, isSubscribed: Boolean)
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertComics(comics: List<Comic>)
 
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertComic(comic: Comic)
 
     @Delete
