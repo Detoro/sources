@@ -3,17 +3,12 @@ package toro.sources.pages
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
@@ -33,8 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
+import toro.sources.components.BillboardCarousel
 import toro.sources.components.ComicCarousel
-import toro.sources.components.ComicCoverCard
 import toro.sources.dataModels.Comic
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,7 +40,7 @@ fun HomePage(
     onAccountClick: () -> Unit
 ) {
     val libraryList by viewModel.myLibrary.collectAsState()
-    val onlineRecs by viewModel.catalog.collectAsState()
+    val catalog by viewModel.catalog.collectAsState()
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -63,7 +58,7 @@ fun HomePage(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Library") },
+                title = { Text("Toro Sources") },
                 actions = {
                     IconButton(onClick = { viewModel.getCatalog() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Sync Catalog")
@@ -71,16 +66,14 @@ fun HomePage(
                     IconButton(onClick = { filePickerLauncher.launch("application/*") }) {
                         Icon(Icons.Default.Add, contentDescription = "Import Comic")
                     }
-                    IconButton(onClick = { onAccountClick()
-                    }) {
+                    IconButton(onClick = { onAccountClick() }) {
                         Icon(Icons.Default.Person, contentDescription = "Account")
                     }
                 }
             )
         }
     ) { paddingValues ->
-
-        if (libraryList.isEmpty() && onlineRecs.isEmpty()) {
+        if (libraryList.isEmpty() && catalog.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -95,35 +88,54 @@ fun HomePage(
                 )
             }
         } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 100.dp),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                items(libraryList) { comic ->
-                    ComicCoverCard(
-                        comic = comic,
-                        viewModel,
-                        onClick = { onComicClick(comic) }
-                    )
-                }
 
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Spacer(modifier = Modifier.height(32.dp))
-                }
-
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    ComicCarousel(
-                        title = "My catalog",
-                        comics = onlineRecs,
-                        viewModel = viewModel,
+                item {
+                    BillboardCarousel(
+                        comics = catalog.take(5),
                         onComicClick = onComicClick,
-                        modifier = Modifier.padding(bottom = 16.dp),
+                        modifier = Modifier.padding(vertical = 16.dp)
                     )
+                }
+
+                // My Library Section
+                if (libraryList.isNotEmpty()) {
+                    item {
+                        ComicCarousel(
+                            title = "My Library",
+                            comics = libraryList,
+                            viewModel = viewModel,
+                            onComicClick = onComicClick
+                        )
+                    }
+                }
+
+                // Top Stories Section
+                item {
+                    ComicCarousel(
+                        title = "Top Stories",
+                        comics = catalog.shuffled().take(8),
+                        viewModel = viewModel,
+                        onComicClick = onComicClick
+                    )
+                }
+
+                // For You Section
+                item {
+                    ComicCarousel(
+                        title = "For You",
+                        comics = catalog.shuffled().take(8),
+                        viewModel = viewModel,
+                        onComicClick = onComicClick
+                    )
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(32.dp))
                 }
             }
         }

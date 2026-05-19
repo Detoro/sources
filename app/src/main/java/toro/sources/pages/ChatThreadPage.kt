@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,6 +61,8 @@ fun ChatThreadPage(
             )
         }
     ) { paddingValues ->
+        val lastUserMessageIndex = messages.indexOfFirst { it.senderId == me.userId }
+
         // The Messages List
         LazyColumn(
             modifier = Modifier
@@ -70,10 +72,20 @@ fun ChatThreadPage(
                 .padding(horizontal = 16.dp),
             reverseLayout = true
         ) {
-            items(messages, key = { it.id }) { msg ->
+            itemsIndexed(messages, key = { _, msg -> msg.id }) { index, msg ->
+                val isFromMe = msg.senderId == me.userId
+                val displayContent = if (msg.isEncrypted) {
+                    viewModel.decryptMessage(msg.content)
+                } else {
+                    msg.content
+                }
+
                 ChatBubble(
-                    text = msg.content,
-                    isFromMe = msg.senderId == me.userId)
+                    text = displayContent,
+                    isFromMe = isFromMe,
+                    isDelivered = msg.isDelivered,
+                    showStatus = isFromMe && index == lastUserMessageIndex
+                )
             }
         }
     }

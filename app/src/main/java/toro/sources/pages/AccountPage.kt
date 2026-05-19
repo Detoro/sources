@@ -57,14 +57,25 @@ import coil.compose.AsyncImage
 import androidx.compose.ui.res.stringResource
 import toro.sources.R
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import coil.ImageLoader
+import coil.annotation.ExperimentalCoilApi
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
 fun AccountPage(
     viewModel: AppViewModel,
     onLogoutClick: () -> Unit
 ) {
     var darkThemeEnabled by remember { mutableStateOf(true) }
+    var showUsernameDialog by remember { mutableStateOf(false) }
+    var showMotiveDialog by remember { mutableStateOf(false) }
+    var showResetPasswordDialog by remember { mutableStateOf(false) }
+    var showStorageDialog by remember { mutableStateOf(false) }
+    var newUsername by remember { mutableStateOf("") }
+    
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
     val githubLink = stringResource(R.string.github_link)
@@ -78,6 +89,72 @@ fun AccountPage(
             }
         }
     )
+
+    if (showUsernameDialog) {
+        AlertDialog(
+            onDismissRequest = { showUsernameDialog = false },
+            title = { Text("Change Username") },
+            text = {
+                TextField(
+                    value = newUsername,
+                    onValueChange = { newUsername = it },
+                    label = { Text("New Username") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    // In a real app, call viewModel.updateUsername(newUsername)
+                    showUsernameDialog = false
+                }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUsernameDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showMotiveDialog) {
+        AlertDialog(
+            onDismissRequest = { showMotiveDialog = false },
+            title = { Text("Motive") },
+            text = { Text("The goal of Toro Sources is to provide a seamless, community-driven platform for reading and sharing comics, focused on accessibility and user privacy.") },
+            confirmButton = {
+                TextButton(onClick = { showMotiveDialog = false }) {
+                    Text("Close")
+                }
+            }
+        )
+    }
+
+    if (showResetPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetPasswordDialog = false },
+            title = { Text("Reset Password") },
+            text = { Text("A password reset link has been sent to your registered email address.") },
+            confirmButton = {
+                TextButton(onClick = { showResetPasswordDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
+    if (showStorageDialog) {
+        AlertDialog(
+            onDismissRequest = { showStorageDialog = false },
+            title = { Text("Storage Info") },
+            text = { Text("Local Comics: 124MB\nCached Data: 45MB\nTotal: 169MB") },
+            confirmButton = {
+                TextButton(onClick = { showStorageDialog = false }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -128,7 +205,7 @@ fun AccountPage(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = viewModel.currentUser.collectAsState().value.username,
+                    text = currentUser.username,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -136,7 +213,7 @@ fun AccountPage(
                     text = "Change username",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.clickable(onClick = {})
+                    modifier = Modifier.clickable(onClick = { showUsernameDialog = true })
                 )
             }
 
@@ -161,7 +238,7 @@ fun AccountPage(
                 headlineContent = { Text("Storage") },
                 supportingContent = { Text("Manage downloaded .cbz files") },
                 leadingContent = { Icon(Icons.Default.Storage, contentDescription = null) },
-                modifier = Modifier.clickable(onClick = {})
+                modifier = Modifier.clickable(onClick = { showStorageDialog = true })
             )
 
             SettingSectionTitle("Account Actions")
@@ -170,14 +247,18 @@ fun AccountPage(
                 headlineContent = { Text("Reset Password") },
                 supportingContent = { Text("You'll receive a link to your email") },
                 leadingContent = { Icon(Icons.Default.Password, contentDescription = null) },
-                modifier = Modifier.clickable(onClick = {})
+                modifier = Modifier.clickable(onClick = { showResetPasswordDialog = true })
             )
 
             ListItem(
                 headlineContent = { Text("Clear Image Cache") },
                 supportingContent = { Text("Free up memory used by Coil") },
                 leadingContent = { Icon(Icons.Default.DeleteOutline, contentDescription = null) },
-                modifier = Modifier.clickable(onClick = {})
+                modifier = Modifier.clickable(onClick = {
+                    val imageLoader = ImageLoader(context)
+                    imageLoader.memoryCache?.clear()
+                    imageLoader.diskCache?.clear()
+                })
             )
 
             SettingSectionTitle("About")
@@ -186,7 +267,7 @@ fun AccountPage(
                 headlineContent = { Text("Motive") },
                 supportingContent = { Text("The reason behind the app") },
                 leadingContent = { Icon(Icons.Default.BubbleChart, contentDescription = null) },
-                modifier = Modifier.clickable(onClick = {})
+                modifier = Modifier.clickable(onClick = { showMotiveDialog = true })
             )
 
             ListItem(
@@ -205,7 +286,7 @@ fun AccountPage(
 
             ListItem(
                 headlineContent = { Text("App Version") },
-                supportingContent = { Text("Current Version") },
+                supportingContent = { Text("Version 1.0") },
                 leadingContent = { Icon(Icons.Default.Difference, contentDescription = null) },
                 modifier = Modifier.clickable(onClick = { uriHandler.openUri(githubLink) })
             )

@@ -30,7 +30,9 @@ fun ReaderScreen(
     onPageChanged: (Int) -> Unit,
     onNextChapter: () -> Unit = {},
     onPreviousChapter: () -> Unit = {},
-    onLikeChapter: () -> Unit = {}
+    onLikeChapter: () -> Unit = {},
+    onViewAllComments: (String) -> Unit = {},
+    onCommentThreadClick: (String, String) -> Unit = { _, _ -> }
 ) {
     if (pageCount == 0) return
 
@@ -54,7 +56,11 @@ fun ReaderScreen(
                 if (pageIndex < pageCount) {
                     SmartContentPage(pageIndex, viewModel)
                 } else {
-                    CommentsSection(viewModel)
+                    CommentsSection(
+                        viewModel = viewModel,
+                        onViewAllClick = { onViewAllComments(chapterId) },
+                        onCommentClick = { comment -> onCommentThreadClick(chapterId, comment.id) }
+                    )
                 }
             }
         } else {
@@ -65,7 +71,11 @@ fun ReaderScreen(
                     SmartContentPage(pageIndex, viewModel)
                 }
                 item {
-                    CommentsSection(viewModel)
+                    CommentsSection(
+                        viewModel = viewModel,
+                        onViewAllClick = { onViewAllComments(chapterId) },
+                        onCommentClick = { comment -> onCommentThreadClick(chapterId, comment.id) }
+                    )
                 }
             }
         }
