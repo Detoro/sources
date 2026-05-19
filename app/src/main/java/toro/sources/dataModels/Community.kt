@@ -28,13 +28,18 @@ data class Comment(
     val authorId: String,
     val authorName: String,
     val content: String,
-    val timestamp: Long
+    val timestamp: Long,
+    val parentId: String? = null,
+    val likesCount: Int = 0,
+    val isLiked: Boolean = false,
+    val repliesCount: Int = 0
 )
 
 @Serializable
 data class CommentRequest(
     val content: String,
-    val mentionedUserIds: List<String> = emptyList()
+    val mentionedUserIds: List<String> = emptyList(),
+    val parentId: String? = null
 )
 
 @Serializable

@@ -6,13 +6,6 @@ import kotlinx.serialization.Serializable
 enum class ChatStatus { PENDING, ACCEPTED, REJECTED }
 
 @Serializable
-data class User(
-    val id: String,
-    val username: String,
-    val profileImageUrl: String? = null
-)
-
-@Serializable
 data class ChatRequest(
     val id: String,
     val senderId: String,
@@ -26,6 +19,9 @@ data class ChatMessage(
     val senderId: String,
     val content: String,
     val timestamp: Long,
+    val isDelivered: Boolean = false,
+    val isRead: Boolean = false,
+    val isEncrypted: Boolean = false
 )
 
 @Serializable
