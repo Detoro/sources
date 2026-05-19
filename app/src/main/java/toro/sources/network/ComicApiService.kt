@@ -76,6 +76,9 @@ interface ComicApiService {
     @GET("api/chat/requests")
     suspend fun getChatRequests(): List<ChatRequest>
 
+    @POST("api/chat/requests")
+    suspend fun sendChatRequest(@Query("receiverId") receiverId: String): ServerResponse
+
     @POST("api/chat/requests/{requestId}/accept")
     suspend fun acceptChatRequest(@Path("requestId") requestId: String): ServerResponse
 
