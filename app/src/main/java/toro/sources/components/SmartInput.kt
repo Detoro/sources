@@ -52,12 +52,13 @@ import toro.sources.dataModels.UserProfile
 @Composable
 fun SmartInput(
     onSend: (text: String, tags: List<String>, mentions: List<String>, attachment: Uri?) -> Unit,
+    initialText: String = "",
     placeholder: String = "Type a message...",
     supportTags: Boolean = false,
     supportUpload: Boolean = false,
     viewModel: AppViewModel? = null
 ) {
-    var inputText by remember { mutableStateOf("") }
+    var inputText by remember(initialText) { mutableStateOf(initialText) }
     var tagsText by remember { mutableStateOf("") }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var showTagInput by remember { mutableStateOf(false) }
