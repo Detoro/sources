@@ -58,6 +58,7 @@ import toro.sources.pages.ChatThreadPage
 import toro.sources.pages.CommentThreadPage
 import toro.sources.pages.CommentsPage
 import toro.sources.pages.FriendRequestPage
+import toro.sources.pages.NotificationsPage
 import toro.sources.pages.PostPage
 import toro.sources.pages.ReadingList
 
@@ -78,6 +79,7 @@ sealed class Screen(val route: String) {
     object Engagement : Screen("engagement")
     object FriendRequest : Screen("friend_request")
     object ReadingList : Screen("reading_list")
+    object Notifications : Screen("notifications")
     object Chat : Screen("chat_page/{userId}") {
         fun createRoute(userId: String) = "chat_page/$userId"
     }
@@ -325,7 +327,6 @@ fun AppNavigation(viewModel: AppViewModel) {
                     ReaderScreen(
                         pageCount = pageCount,
                         comic = comic!!,
-                        chapterId = chapterId ?: "",
                         viewModel = viewModel,
                         startingIndex = 0,
                         onPageChanged = { newPageIndex ->
@@ -372,6 +373,18 @@ fun AppNavigation(viewModel: AppViewModel) {
                     onMakePost = {
                         navController.navigate(Screen.Post.route)
                     },
+                    onNotificationsClick = {
+                        navController.navigate(Screen.Notifications.route)
+                    },
+                    onAddAuthorClick = {
+                        viewModel.updateSearchSource(SearchSource.ONLINE)
+                        navController.navigate(Screen.Search.route)
+                    },
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Notifications.route) {
+                NotificationsPage(
                     onBackClick = { navController.popBackStack() }
                 )
             }
