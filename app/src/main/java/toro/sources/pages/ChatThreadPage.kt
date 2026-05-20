@@ -52,8 +52,8 @@ fun ChatThreadPage(
         },
         bottomBar = {
             SmartInput(
-                onSend = { text, _, _, _ ->
-                    viewModel.sendMessage(targetUserId, text)
+                onSend = { text, _, _, sharedComicIds, _ ->
+                    viewModel.sendMessage(targetUserId, text, sharedComicIds.firstOrNull())
                 },
                 placeholder = "Type a message...",
                 supportUpload = true,
@@ -84,7 +84,9 @@ fun ChatThreadPage(
                     text = displayContent,
                     isFromMe = isFromMe,
                     isDelivered = msg.isDelivered,
-                    showStatus = isFromMe && index == lastUserMessageIndex
+                    showStatus = isFromMe && index == lastUserMessageIndex,
+                    sharedComicId = msg.sharedComicId,
+                    viewModel = viewModel
                 )
             }
         }
