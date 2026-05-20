@@ -1,7 +1,5 @@
 package toro.sources.components
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -41,8 +39,13 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PostCard(
     viewModel: AppViewModel,
@@ -51,6 +54,7 @@ fun PostCard(
     modifier: Modifier = Modifier
 ) {
     val tagList by viewModel.tags.collectAsState()
+    var showMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.getTags(post.id)
@@ -84,7 +88,28 @@ fun PostCard(
                     Text(text = post.authorName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Text(text = convertTimestamp(post.timestamp), color = Color.Gray, fontSize = 12.sp) // Mocked time
                 }
-                Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Report") },
+                            onClick = { showMenu = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Share") },
+                            onClick = { showMenu = false }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Not Interested") },
+                            onClick = { showMenu = false }
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(12.dp))

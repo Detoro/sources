@@ -36,7 +36,7 @@ fun ComicRow(comic: Comic, viewModel: AppViewModel, onClick: (Comic) -> Unit) {
             ComicCoverCard(
                 comic = comic,
                 viewModel = viewModel,
-                modifier = Modifier.size(60.dp, 80.dp),
+                modifier = Modifier.size(30.dp, 50.dp),
                 onClick = { onClick(comic) }
             )
             Spacer(modifier = Modifier.width(16.dp))

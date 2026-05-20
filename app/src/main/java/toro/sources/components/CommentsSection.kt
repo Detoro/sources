@@ -21,6 +21,7 @@ import toro.sources.dataModels.Comment
 @Composable
 fun CommentsSection(
     viewModel: AppViewModel,
+    comicId: String,
     onViewAllClick: () -> Unit = {},
     onCommentClick: (Comment) -> Unit = {}
 ) {
@@ -50,6 +51,16 @@ fun CommentsSection(
         }
         
         Spacer(modifier = Modifier.height(16.dp))
+
+        SmartInput(
+            onSend = { text, _, mentions, _, _ ->
+                viewModel.addComicComment(comicId, text, mentions)
+            },
+            placeholder = "Add a comment...",
+            viewModel = viewModel
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
         
         if (topThree.isEmpty()) {
             Text(

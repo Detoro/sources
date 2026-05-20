@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -19,18 +20,25 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import toro.sources.AppViewModel
 
 @Composable
-fun AuthorsRow(viewModel: AppViewModel) {
-    val authors = listOf("Dave", "Cench", "Nines", "Wayne")
+fun AuthorsRow(
+    viewModel: AppViewModel,
+    onAddAuthorClick: () -> Unit
+) {
+    val authors by viewModel.userSuggestions.collectAsState()
 
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -42,7 +50,7 @@ fun AuthorsRow(viewModel: AppViewModel) {
                     modifier = Modifier
                         .size(64.dp)
                         .border(1.dp, Color.LightGray, CircleShape)
-                        .clickable { /* Open Add Author Screen */ },
+                        .clickable { onAddAuthorClick() },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Add, contentDescription = "Add Author", tint = Color.DarkGray)
@@ -52,7 +60,7 @@ fun AuthorsRow(viewModel: AppViewModel) {
             }
         }
 
-        items(authors) { authorName ->
+        items(authors) { user ->
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     modifier = Modifier
@@ -62,11 +70,19 @@ fun AuthorsRow(viewModel: AppViewModel) {
                         .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    // use real image later abeg
-                    Text(authorName.first().toString(), fontWeight = FontWeight.Bold)
+                    if (user.avatarUrl != null) {
+                        AsyncImage(
+                            model = user.avatarUrl,
+                            contentDescription = user.username,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(user.username.first().toString(), fontWeight = FontWeight.Bold)
+                    }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(authorName, fontSize = 12.sp, color = Color.DarkGray)
+                Text(user.username, fontSize = 12.sp, color = Color.DarkGray)
             }
         }
     }

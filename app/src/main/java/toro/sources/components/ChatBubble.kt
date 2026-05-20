@@ -2,40 +2,35 @@ package toro.sources.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import toro.sources.AppViewModel
+import toro.sources.dataModels.Comic
 
 @Composable
 fun ChatBubble(
     text: String,
     isFromMe: Boolean,
     isDelivered: Boolean = false,
-    showStatus: Boolean = false
+    showStatus: Boolean = false,
+    sharedComicId: String? = null,
+    viewModel: AppViewModel? = null
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
+    val catalog by viewModel?.catalog?.collectAsState() ?: remember { mutableStateOf(emptyList<Comic>()) }
+    val sharedComic = remember(sharedComicId, catalog) {
+        catalog.find { it.id == sharedComicId }
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -63,11 +58,17 @@ fun ChatBubble(
                     .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Column {
-                    Text(
-                        text = text,
-                        color = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
+                    if (sharedComic != null) {
+                        SharedComicCard(sharedComic)
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    if (text.isNotBlank()) {
+                        Text(
+                            text = text,
+                            color = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
 
                 DropdownMenu(
@@ -76,16 +77,11 @@ fun ChatBubble(
                 ) {
                     DropdownMenuItem(
                         text = { Text("Edit") },
-                        onClick = {
-                            showOptionsMenu = false
-                        }
+                        onClick = { showOptionsMenu = false }
                     )
-
                     DropdownMenuItem(
                         text = { Text("Delete") },
-                        onClick = {
-                            showOptionsMenu = false
-                        }
+                        onClick = { showOptionsMenu = false }
                     )
                 }
             }
@@ -101,6 +97,28 @@ fun ChatBubble(
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun SharedComicCard(comic: Comic) {
+    Card(
+        modifier = Modifier.width(200.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column {
+            coil.compose.AsyncImage(
+                model = comic.coverImageUrl,
+                contentDescription = null,
+                modifier = Modifier.fillMaxWidth().height(100.dp),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop
+            )
+            Column(modifier = Modifier.padding(8.dp)) {
+                Text(text = comic.title, style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                Text(text = comic.author, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
