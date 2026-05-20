@@ -21,7 +21,8 @@ data class ChatMessage(
     val timestamp: Long,
     val isDelivered: Boolean = false,
     val isRead: Boolean = false,
-    val isEncrypted: Boolean = false
+    val isEncrypted: Boolean = false,
+    val sharedComicId: String? = null
 )
 
 @Serializable
