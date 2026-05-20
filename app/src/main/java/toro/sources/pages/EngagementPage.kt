@@ -24,6 +24,7 @@ import toro.sources.AppViewModel
 import toro.sources.components.AuthorsRow
 import toro.sources.components.SectionTitle
 import toro.sources.components.PostCard
+import androidx.compose.material3.HorizontalDivider
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +32,8 @@ fun EngagementPage(
     viewModel: AppViewModel,
     onCommentClick: (String) -> Unit,
     onMakePost: () -> Unit,
+    onNotificationsClick: () -> Unit,
+    onAddAuthorClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
     val posts by viewModel.communityPosts.collectAsState()
@@ -49,7 +52,7 @@ fun EngagementPage(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO: Notifications */ }) {
+                    IconButton(onClick = { onNotificationsClick() }) {
                         Icon(Icons.Default.NotificationsNone, contentDescription = "Notifications")
                     }
                     IconButton(onClick = { onMakePost() }) {
@@ -66,7 +69,10 @@ fun EngagementPage(
         ) {
 
             item {
-                AuthorsRow(viewModel)
+                AuthorsRow(
+                    viewModel = viewModel,
+                    onAddAuthorClick = onAddAuthorClick
+                )
             }
 
             item {
@@ -76,9 +82,10 @@ fun EngagementPage(
             item {
                 LazyRow(
                     contentPadding = PaddingValues(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.padding(bottom = 16.dp)
                 ) {
-                    items(posts) { post ->
+                    items(posts.take(5)) { post ->
                         PostCard(
                             viewModel = viewModel,
                             post = post,
@@ -87,6 +94,26 @@ fun EngagementPage(
                         )
                     }
                 }
+            }
+
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                SectionTitle(title = "Community Feed", onExploreClick = {})
+            }
+
+            items(posts) { post ->
+                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    PostCard(
+                        viewModel = viewModel,
+                        post = post,
+                        onCommentClick = { onCommentClick(post.id) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+            
+            item {
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }

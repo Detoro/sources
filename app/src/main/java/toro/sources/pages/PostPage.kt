@@ -44,7 +44,7 @@ fun PostPage(
         },
         bottomBar = {
             SmartInput(
-                onSend = { text, tags, _, _ ->
+                onSend = { text, tags, _, _, _ ->
                     viewModel.makePost(text, tags)
                 },
                 placeholder = "create a post...",

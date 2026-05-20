@@ -24,7 +24,6 @@ import toro.sources.dataModels.Comic
 fun ReaderScreen(
     pageCount: Int,
     comic: Comic,
-    chapterId: String,
     viewModel: AppViewModel,
     startingIndex: Int = 0,
     onPageChanged: (Int) -> Unit,
@@ -35,6 +34,10 @@ fun ReaderScreen(
     onCommentThreadClick: (String, String) -> Unit = { _, _ -> }
 ) {
     if (pageCount == 0) return
+
+    LaunchedEffect(comic.id) {
+        viewModel.getComicComments(comic.id)
+    }
 
     val pagerState = rememberPagerState(
         initialPage = startingIndex,
@@ -58,8 +61,9 @@ fun ReaderScreen(
                 } else {
                     CommentsSection(
                         viewModel = viewModel,
-                        onViewAllClick = { onViewAllComments(chapterId) },
-                        onCommentClick = { comment -> onCommentThreadClick(chapterId, comment.id) }
+                        comicId = comic.id,
+                        onViewAllClick = { onViewAllComments(comic.id) },
+                        onCommentClick = { comment -> onCommentThreadClick(comic.id, comment.id) }
                     )
                 }
             }
@@ -73,8 +77,9 @@ fun ReaderScreen(
                 item {
                     CommentsSection(
                         viewModel = viewModel,
-                        onViewAllClick = { onViewAllComments(chapterId) },
-                        onCommentClick = { comment -> onCommentThreadClick(chapterId, comment.id) }
+                        comicId = comic.id,
+                        onViewAllClick = { onViewAllComments(comic.id) },
+                        onCommentClick = { comment -> onCommentThreadClick(comic.id, comment.id) }
                     )
                 }
             }

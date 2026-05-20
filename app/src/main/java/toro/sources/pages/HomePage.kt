@@ -58,7 +58,7 @@ fun HomePage(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Toro Sources") },
+                title = { Text("Explore Sources") },
                 actions = {
                     IconButton(onClick = { viewModel.getCatalog() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Sync Catalog")
@@ -105,6 +105,7 @@ fun HomePage(
                 // My Library Section
                 if (libraryList.isNotEmpty()) {
                     item {
+                        Spacer(modifier = Modifier.height(32.dp))
                         ComicCarousel(
                             title = "My Library",
                             comics = libraryList,
@@ -113,9 +114,9 @@ fun HomePage(
                         )
                     }
                 }
-
                 // Top Stories Section
                 item {
+                    Spacer(modifier = Modifier.height(32.dp))
                     ComicCarousel(
                         title = "Top Stories",
                         comics = catalog.shuffled().take(8),
@@ -126,6 +127,7 @@ fun HomePage(
 
                 // For You Section
                 item {
+                    Spacer(modifier = Modifier.height(32.dp))
                     ComicCarousel(
                         title = "For You",
                         comics = catalog.shuffled().take(8),
