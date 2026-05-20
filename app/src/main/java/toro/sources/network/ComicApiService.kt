@@ -119,11 +119,32 @@ interface ComicApiService {
     suspend fun getPostComments(@Path("postId") postId: String): List<Comment>
 
     @POST("api/community/posts/{postId}/comments")
-    suspend fun addComment(
+    suspend fun addPostComment(
         @Path("postId") postId: String,
         @Body comment: CommentRequest
     ): ServerResponse
 
     @POST("api/community/comments/{commentId}/like")
     suspend fun likeComment(@Path("commentId") commentId: String): ServerResponse
+
+    @GET("api/comics/{comicId}/comments")
+    suspend fun getComicComments(@Path("comicId") comicId: String): List<Comment>
+
+    @POST("api/comics/{comicId}/comments")
+    suspend fun addComicComment(
+        @Path("comicId") comicId: String,
+        @Body comment: CommentRequest
+    ): ServerResponse
+
+    @GET("api/users/{userId}/profile")
+    suspend fun getUserProfile(@Path("userId") userId: String): UserProfile
+
+    @GET("api/users/{userId}/posts")
+    suspend fun getUserPosts(@Path("userId") userId: String): List<Post>
+
+    @GET("api/users/{userId}/works")
+    suspend fun getUserWorks(@Path("userId") userId: String): List<Comic>
+
+    @POST("api/users/profile/privacy")
+    suspend fun toggleProfilePrivacy(): ServerResponse
 }
