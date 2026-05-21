@@ -10,7 +10,7 @@ import toro.sources.network.ComicApiService
 import toro.sources.DataModels.TokenManager
 
 
-const val url: String = "http://192.168.1.141:8080/"
+const val url: String = "http://10.0.2.2:8080"
 
 object RetrofitClient {
     private val networkJson = Json { ignoreUnknownKeys = true }
