@@ -18,30 +18,27 @@ import toro.sources.dataModels.Comment
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CommentsPage(
+fun CommentThreadPage(
     viewModel: AppViewModel,
     postId: String,
-    onBackClick: () -> Unit,
-    onCommentClick: (Comment) -> Unit = {}
+    commentId: String,
+    onBackClick: () -> Unit
 ) {
     val comments by viewModel.comments.collectAsState()
+    val mainComment = remember(comments, commentId) { comments.find { it.id == commentId } }
+    val replies = remember(comments, commentId) { comments.filter { it.parentId == commentId } }
+    
     var replyingTo by remember { mutableStateOf<Comment?>(null) }
+    var initialText by remember { mutableStateOf("") }
 
     LaunchedEffect(postId) {
         viewModel.getPostComments(postId)
     }
 
-    // Process comments into top-level only (we show replies in thread page now)
-    val topLevelComments = remember(comments) {
-        comments.filter { it.parentId == null }
-    }
-
-    var initialText by remember { mutableStateOf("") }
-
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Comments", style = MaterialTheme.typography.titleLarge) },
+                title = { Text("Thread", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -76,43 +73,64 @@ fun CommentsPage(
                 }
                 SmartInput(
                     onSend = { text, _, mentions, _, _ ->
-                        viewModel.addPostComment(postId, text, mentions, replyingTo?.id)
+                        // All replies on this page belong to this thread (parentId = commentId)
+                        // UNLESS specifically replying to another reply within the thread.
+                        val targetParentId = replyingTo?.id ?: commentId
+                        viewModel.addPostComment(postId, text, mentions, targetParentId)
+
                         replyingTo = null
                         initialText = ""
                     },
                     initialText = initialText,
-                    placeholder = if (replyingTo == null) "Add a comment..." else "Write a reply...",
+                    placeholder = "Write a reply...",
                     viewModel = viewModel
                 )
             }
         }
     ) { paddingValues ->
-        if (comments.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("No comments yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(topLevelComments) { comment ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(16.dp)
+        ) {
+            if (mainComment != null) {
+                item {
                     CommentItem(
-                        comment = comment,
+                        comment = mainComment,
+                        isThreadHeader = true,
+                        onReplyClick = {},
+                        onLikeClick = { viewModel.likeComment(it.id) }
+                    )
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    Text(
+                        text = "Replies",
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
+            }
+
+            if (replies.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No replies yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            } else {
+                items(replies) { reply ->
+                    CommentItem(
+                        comment = reply,
                         onReplyClick = {
-                            replyingTo = it
-                            initialText = "@${it.authorName} "
+                            "@${it.authorName} "
                         },
                         onLikeClick = { viewModel.likeComment(it.id) },
-                        onCommentClick = { onCommentClick(it) }
+                        onCommentClick = { /* Already in thread. Don't want to do anything */ }
                     )
                 }
             }
