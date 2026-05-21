@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    id("com.google.gms.google-services")
     kotlin("plugin.serialization") version "2.0.21"
 }
 
@@ -74,5 +75,8 @@ dependencies {
     implementation(libs.androidx.room.guava)
     testImplementation(libs.androidx.room.testing)
     implementation(libs.androidx.room.paging)
+    implementation(platform(libs.firebase.bom))
     ksp(libs.androidx.room.compiler)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.messaging)
 }
