@@ -35,6 +35,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.util.Log
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -99,9 +106,63 @@ class MainActivity : ComponentActivity() {
         enterPictureInPictureMode(params)
     }
 
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            Log.i("requestPermission", "Permission granted")
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasPermission) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?, viewModel: AppViewModel) {
+        intent?.let {
+            val type = it.getStringExtra("type")
+            val conversationId = it.getStringExtra("conversationId")
+            val postId = it.getStringExtra("postId")
+
+            when (type) {
+                "CHAT" -> {
+                    if (conversationId != null) {
+                        viewModel.handleNavigation(Screen.Chat.createRoute(conversationId))
+                    }
+                }
+                "LIKE", "COMMENT", "FOLLOW" -> {
+                    if (postId != null) {
+                        viewModel.handleNavigation(Screen.Comments.createRoute(postId))
+                    } else {
+                        viewModel.handleNavigation(Screen.Notifications.route)
+                    }
+                }
+            }
+            it.removeExtra("type")
+            it.removeExtra("conversationId")
+            it.removeExtra("postId")
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        requestNotificationPermission()
 
         val tokenManager = TokenManager(this)
         RetrofitClient.initialize(tokenManager)
@@ -126,6 +187,11 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val viewModel: AppViewModel = viewModel(factory = factory)
+
+                    LaunchedEffect(intent) {
+                        handleIntent(intent, viewModel)
+                    }
+
                     AppNavigation(viewModel)
                 }
             }
@@ -150,6 +216,14 @@ fun AppNavigation(viewModel: AppViewModel) {
     val context = LocalContext.current
     val currentUser by viewModel.currentUser.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
+    val pendingNav by viewModel.pendingNavigation.collectAsState()
+
+    LaunchedEffect(pendingNav) {
+        pendingNav?.let { route ->
+            navController.navigate(route)
+            viewModel.onNavigationHandled()
+        }
+    }
 
     LaunchedEffect(error) {
         error?.let { message ->
@@ -385,6 +459,7 @@ fun AppNavigation(viewModel: AppViewModel) {
             }
             composable(Screen.Notifications.route) {
                 NotificationsPage(
+                    viewModel = viewModel,
                     onBackClick = { navController.popBackStack() }
                 )
             }
