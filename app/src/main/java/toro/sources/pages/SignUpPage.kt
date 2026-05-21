@@ -1,6 +1,8 @@
 package toro.sources.pages
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,6 +38,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import toro.sources.dataModels.AuthRequest
 import toro.sources.R
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +55,8 @@ fun SignUpPage (
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var isError by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var selectedDateText by remember { mutableStateOf("") }
     val errorMessage = stringResource(id = R.string.error_message)
 
     Column(
@@ -83,10 +90,39 @@ fun SignUpPage (
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
-        DatePickerModalInput(
-            onDateSelected = {},
-            onDismiss = {}
-        )
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showDatePicker = true }
+        ) {
+            OutlinedTextField(
+                value = selectedDateText,
+                onValueChange = { },
+                label = { Text("Birth Date") },
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledSupportingTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        }
+
+        if (showDatePicker) {
+            DatePickerModalInput(
+                onDateSelected = { millis ->
+                    millis?.let {
+                        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                        selectedDateText = formatter.format(Date(it))
+                    }
+                },
+                onDismiss = { showDatePicker = false }
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = password,
