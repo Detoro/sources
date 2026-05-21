@@ -14,10 +14,11 @@
     <string name="signup_recommendation">Don\'t have an account? Sign up</string>
     <string name="login_recommendation">Already have an account? Login</string>
     <string name="signup">Sign up</string>
-    <string name="full_name">Full Name</string>
+    <string name="username">User Name</string>
     <string name="create_account">Create Account</string>
     <string name="messages">Messages</string>
     <string name="requests">Requests</string>
     <string name="inbox">Inbox</string>
+    <string name="github_link">https://github.com/Detoro/sources</string>
 
 </resources>

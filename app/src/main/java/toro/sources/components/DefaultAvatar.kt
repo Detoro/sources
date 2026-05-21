@@ -15,9 +15,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DefaultAvatar() {
+fun DefaultAvatar(modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(48.dp)
             .clip(CircleShape)
             .background(MaterialTheme.colorScheme.surfaceVariant),

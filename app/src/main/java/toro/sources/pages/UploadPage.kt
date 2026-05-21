@@ -45,6 +45,7 @@ fun UploadPage(
     onBackClick: () -> Unit,
     onUploadComplete: () -> Unit
 ) {
+    // currently only uploads chapter by chapter
     var title by remember { mutableStateOf("") }
     var author by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }

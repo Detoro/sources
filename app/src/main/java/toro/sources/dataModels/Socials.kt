@@ -1,16 +1,9 @@
-package toro.sources.DataModels
+package toro.sources.dataModels
 
 import kotlinx.serialization.Serializable
 
 @Serializable
 enum class ChatStatus { PENDING, ACCEPTED, REJECTED }
-
-@Serializable
-data class User(
-    val id: String,
-    val username: String,
-    val profileImageUrl: String? = null
-)
 
 @Serializable
 data class ChatRequest(
@@ -26,6 +19,10 @@ data class ChatMessage(
     val senderId: String,
     val content: String,
     val timestamp: Long,
+    val isDelivered: Boolean = false,
+    val isRead: Boolean = false,
+    val isEncrypted: Boolean = false,
+    val sharedComicId: String? = null
 )
 
 @Serializable

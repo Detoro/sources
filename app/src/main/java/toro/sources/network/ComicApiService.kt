@@ -9,21 +9,24 @@ import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
-import toro.sources.DataModels.AuthRequest
-import toro.sources.DataModels.AuthResponse
-import toro.sources.DataModels.AuthorRequest
-import toro.sources.DataModels.Bookmark
-import toro.sources.DataModels.Chapter
-import toro.sources.DataModels.ChatMessage
-import toro.sources.DataModels.ChatRequest
-import toro.sources.DataModels.Comic
-import toro.sources.DataModels.Comment
-import toro.sources.DataModels.CommentRequest
-import toro.sources.DataModels.Conversation
-import toro.sources.DataModels.Page
-import toro.sources.DataModels.Post
-import toro.sources.DataModels.ServerResponse
-import toro.sources.DataModels.SubscribeResponse
+import toro.sources.dataModels.AuthRequest
+import toro.sources.dataModels.AuthResponse
+import toro.sources.dataModels.AuthorRequest
+import toro.sources.dataModels.Chapter
+import toro.sources.dataModels.ChatMessage
+import toro.sources.dataModels.ChatRequest
+import toro.sources.dataModels.Comic
+import toro.sources.dataModels.Comment
+import toro.sources.dataModels.CommentRequest
+import toro.sources.dataModels.Conversation
+import toro.sources.dataModels.Page
+import toro.sources.dataModels.Post
+import toro.sources.dataModels.PostRequest
+import toro.sources.dataModels.Tag
+import toro.sources.dataModels.ServerResponse
+import toro.sources.dataModels.SubscribeResponse
+import toro.sources.dataModels.UserProfile
+import toro.sources.dataModels.FcmTokenRequest
 
 interface ComicApiService {
     @GET("api/comics/catalog")
@@ -67,8 +70,15 @@ interface ComicApiService {
     @POST("api/auth/login")
     suspend fun login(@Body request: AuthRequest): AuthResponse
 
+    @Multipart
+    @POST("api/users/avatar")
+    suspend fun uploadAvatar(@Part avatar: MultipartBody.Part): ServerResponse
+
     @GET("api/chat/requests")
     suspend fun getChatRequests(): List<ChatRequest>
+
+    @POST("api/chat/requests")
+    suspend fun sendChatRequest(@Query("receiverId") receiverId: String): ServerResponse
 
     @POST("api/chat/requests/{requestId}/accept")
     suspend fun acceptChatRequest(@Path("requestId") requestId: String): ServerResponse
@@ -85,26 +95,60 @@ interface ComicApiService {
         @Body message: ChatMessage
     ): ServerResponse
 
+    @GET("api/users/search")
+    suspend fun searchUsers(@Query("q") query: String): List<UserProfile>
+
     @GET("api/community/posts")
     suspend fun getCommunityPosts(): List<Post>
 
     @POST("api/community/posts")
-    suspend fun makePost(@Body postContent: CommentRequest): ServerResponse
+    suspend fun makePost(
+        @Body request: PostRequest
+    ): ServerResponse
+
+    @GET("api/community/posts/{postId}/tags")
+    suspend fun getTagsByPostId(@Path("postId") postId: String): List<Tag>
 
     @POST("api/community/posts/{postId}/like")
     suspend fun likePost(@Path("postId") postId: String): ServerResponse
 
     @POST("api/community/posts/{postId}/bookmark")
     suspend fun bookmarkPost(
-        @Path("postId") postId: String,
-        @Body bookmark: Bookmark): ServerResponse
+        @Path("postId") postId: String): ServerResponse
 
     @GET("api/community/posts/{postId}/comments")
     suspend fun getPostComments(@Path("postId") postId: String): List<Comment>
 
     @POST("api/community/posts/{postId}/comments")
-    suspend fun addComment(
+    suspend fun addPostComment(
         @Path("postId") postId: String,
         @Body comment: CommentRequest
     ): ServerResponse
+
+    @POST("api/community/comments/{commentId}/like")
+    suspend fun likeComment(@Path("commentId") commentId: String): ServerResponse
+
+    @GET("api/comics/{comicId}/comments")
+    suspend fun getComicComments(@Path("comicId") comicId: String): List<Comment>
+
+    @POST("api/comics/{comicId}/comments")
+    suspend fun addComicComment(
+        @Path("comicId") comicId: String,
+        @Body comment: CommentRequest
+    ): ServerResponse
+
+    @GET("api/users/{userId}/profile")
+    suspend fun getUserProfile(@Path("userId") userId: String): UserProfile
+
+    @GET("api/users/{userId}/posts")
+    suspend fun getUserPosts(@Path("userId") userId: String): List<Post>
+
+    @GET("api/users/{userId}/works")
+    suspend fun getUserWorks(@Path("userId") userId: String): List<Comic>
+
+    @POST("api/users/profile/privacy")
+    suspend fun toggleProfilePrivacy(): ServerResponse
+
+    @POST("api/users/fcm-token")
+    suspend fun registerFcmToken(@Body request: FcmTokenRequest): ServerResponse
 }

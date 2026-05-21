@@ -1,16 +1,23 @@
 package toro.sources.pages
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
-import toro.sources.DataModels.Comic
+import toro.sources.components.CommentsSection
+import toro.sources.components.MuteToggleButton
+import toro.sources.components.ReaderNavigationBar
 import toro.sources.components.SmartContentPage
+import toro.sources.dataModels.Comic
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -19,33 +26,78 @@ fun ReaderScreen(
     comic: Comic,
     viewModel: AppViewModel,
     startingIndex: Int = 0,
-    onPageChanged: (Int) -> Unit
+    onPageChanged: (Int) -> Unit,
+    onNextChapter: () -> Unit = {},
+    onPreviousChapter: () -> Unit = {},
+    onLikeChapter: () -> Unit = {},
+    onViewAllComments: (String) -> Unit = {},
+    onCommentThreadClick: (String, String) -> Unit = { _, _ -> }
 ) {
     if (pageCount == 0) return
 
+    LaunchedEffect(comic.id) {
+        viewModel.getComicComments(comic.id)
+    }
+
     val pagerState = rememberPagerState(
         initialPage = startingIndex,
-        pageCount = { pageCount }
+        pageCount = { if (comic.scrollDirection == "HORIZONTAL") pageCount + 1 else pageCount }
     )
 
     LaunchedEffect(pagerState.currentPage) {
-        onPageChanged(pagerState.currentPage)
+        if (pagerState.currentPage < pageCount) {
+            onPageChanged(pagerState.currentPage)
+        }
     }
 
-    if (comic.scrollDirection == "HORIZONTAL") {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { pageIndex ->
-            SmartContentPage(pageIndex, viewModel)
-        }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(count = pageCount) { pageIndex ->
-                SmartContentPage(pageIndex, viewModel)
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (comic.scrollDirection == "HORIZONTAL") {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { pageIndex ->
+                if (pageIndex < pageCount) {
+                    SmartContentPage(pageIndex, viewModel)
+                } else {
+                    CommentsSection(
+                        viewModel = viewModel,
+                        comicId = comic.id,
+                        onViewAllClick = { onViewAllComments(comic.id) },
+                        onCommentClick = { comment -> onCommentThreadClick(comic.id, comment.id) }
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(count = pageCount) { pageIndex ->
+                    SmartContentPage(pageIndex, viewModel)
+                }
+                item {
+                    CommentsSection(
+                        viewModel = viewModel,
+                        comicId = comic.id,
+                        onViewAllClick = { onViewAllComments(comic.id) },
+                        onCommentClick = { comment -> onCommentThreadClick(comic.id, comment.id) }
+                    )
+                }
             }
         }
+
+        if (comic.hasMusic) {
+            MuteToggleButton(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(16.dp)
+            )
+        }
+
+        ReaderNavigationBar(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            onPrev = onPreviousChapter,
+            onNext = onNextChapter,
+            onLike = onLikeChapter
+        )
     }
 }

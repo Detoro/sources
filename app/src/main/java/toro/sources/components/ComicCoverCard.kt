@@ -24,14 +24,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import toro.sources.AppViewModel
-import toro.sources.DataModels.Comic
+import toro.sources.dataModels.Comic
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ComicCoverCard(comic: Comic, viewModel: AppViewModel, onClick: () -> Unit) {
+fun ComicCoverCard(
+    comic: Comic,
+    viewModel: AppViewModel,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
     var showOptionsMenu by remember { mutableStateOf(false) }
 
-    Box {
+    Box(modifier = modifier) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -67,6 +72,14 @@ fun ComicCoverCard(comic: Comic, viewModel: AppViewModel, onClick: () -> Unit) {
         ) {
             DropdownMenuItem(
                 text = { Text("Open") },
+                onClick = {
+                    showOptionsMenu = false
+                    onClick()
+                }
+            )
+
+            DropdownMenuItem(
+                text = { Text("Share") },
                 onClick = {
                     showOptionsMenu = false
                     onClick()

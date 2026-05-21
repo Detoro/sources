@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import toro.sources.CbzParser
 import toro.sources.network.ComicApiService
-import toro.sources.DataModels.Chapter
-import toro.sources.DataModels.Comic
-import toro.sources.DataModels.Page
+import toro.sources.dataModels.Chapter
+import toro.sources.dataModels.Comic
+import toro.sources.dataModels.Page
 import java.io.File
 
 class ComicRepository(
@@ -29,6 +29,22 @@ class ComicRepository(
     // issues
     fun getChaptersForComic(comicId: String): Flow<List<Chapter>> {
         return chapterDao.getChaptersForComic(comicId)
+    }
+
+    fun getSubscribedComics(): Flow<List<Comic>> {
+        return comicDao.getSubscribedComics()
+    }
+
+    fun getRecentlyReadComics(): Flow<List<Comic>> {
+        return comicDao.getRecentlyReadComics()
+    }
+
+    suspend fun updateLastRead(comicId: String) {
+        comicDao.updateLastReadTimestamp(comicId, System.currentTimeMillis())
+    }
+
+    suspend fun toggleLocalSubscription(comicId: String, isSubscribed: Boolean) {
+        comicDao.updateSubscription(comicId, isSubscribed)
     }
 
     suspend fun getPagesForChapter(chapterId: String, comicId: String): List<Page> {
@@ -121,5 +137,13 @@ class ComicRepository(
                 Log.e("Network Error", "Failed to fetch chapters: ${e.message}")
             }
         }
+    }
+
+    suspend fun insertComics(comics: List<Comic>) {
+        comicDao.insertComics(comics)
+    }
+
+    suspend fun insertChapters(chapters: List<Chapter>) {
+        chapterDao.insertChapters(chapters)
     }
 }

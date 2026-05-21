@@ -5,7 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
-import toro.sources.DataModels.Chapter
+import toro.sources.dataModels.Chapter
 
 @Dao
 interface ChapterDao {
@@ -16,7 +16,7 @@ interface ChapterDao {
     @Query("SELECT * FROM chapters WHERE id = :chapterId LIMIT 1")
     suspend fun getChapterById(chapterId: String): Chapter
 
-    @Insert(onConflict = OnConflictStrategy.Companion.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChapters(chapters: List<Chapter>)
 
     @Query("UPDATE chapters SET lastReadPageIndex = :pageIndex WHERE id = :chapterId")

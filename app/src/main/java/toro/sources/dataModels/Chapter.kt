@@ -1,4 +1,4 @@
-package toro.sources.DataModels
+package toro.sources.dataModels
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -27,4 +27,5 @@ data class Chapter(
     val lastReadPageIndex: Int = 0,
     val isDownloaded: Boolean = false,
     val storageBucketPath: String? = null,
+    val pageCount: Int = 0,
 )

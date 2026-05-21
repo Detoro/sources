@@ -3,7 +3,11 @@ package toro.sources.pages
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.PrimaryTabRow
@@ -28,7 +32,8 @@ import toro.sources.AppViewModel
 @Composable
 fun ChatInboxPage(
     viewModel: AppViewModel,
-    onChatClick: (String) -> Unit
+    onChatClick: (String) -> Unit,
+    onFriendRequest: () -> Unit
 ) {
     var selectedTabIndex by remember { mutableStateOf(0) }
     val pendingRequestsCount by viewModel.pendingRequestsCount.collectAsState()
@@ -47,7 +52,12 @@ fun ChatInboxPage(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.inbox)) }) }
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.inbox)) }) },
+        floatingActionButton = {
+            FloatingActionButton(onClick = { onFriendRequest() }) {
+                Icon(Icons.Filled.Add, contentDescription = "Send Friend Request")
+            }
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier

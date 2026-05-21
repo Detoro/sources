@@ -1,4 +1,4 @@
-package toro.sources.DataModels
+package toro.sources.dataModels
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -14,5 +14,8 @@ data class Comic(
     val coverImageUrl: String,
     val isLocalSideload: Boolean = false,
     val localFilePath: String? = null,
-    val scrollDirection: String = "VERTICAL"
+    val scrollDirection: String = "VERTICAL",
+    val hasMusic: Boolean = false,
+    val isSubscribed: Boolean = false,
+    val lastReadTimestamp: Long = 0L
 )

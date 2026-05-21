@@ -1,6 +1,8 @@
 package toro.sources.pages
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,7 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.PersonPinCircle
 import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -18,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,8 +36,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import toro.sources.DataModels.AuthRequest
+import toro.sources.dataModels.AuthRequest
 import toro.sources.R
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,13 +48,15 @@ fun SignUpPage (
     onNavigateBack: () -> Unit,
     onSignUpSuccess: (AuthRequest) -> Unit
 ) {
-    var name by remember { mutableStateOf("") }
+    var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var isError by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var selectedDateText by remember { mutableStateOf("") }
     val errorMessage = stringResource(id = R.string.error_message)
 
     Column(
@@ -64,9 +76,10 @@ fun SignUpPage (
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text(stringResource(R.string.full_name)) },
+            value = username,
+            onValueChange = { username = it },
+            label = { Text(stringResource(R.string.username)) },
+            leadingIcon = { Icons.Outlined.PersonPinCircle },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -76,6 +89,40 @@ fun SignUpPage (
             label = { Text(stringResource(R.string.email)) },
             modifier = Modifier.fillMaxWidth()
         )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showDatePicker = true }
+        ) {
+            OutlinedTextField(
+                value = selectedDateText,
+                onValueChange = { },
+                label = { Text("Birth Date") },
+                readOnly = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledSupportingTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            )
+        }
+
+        if (showDatePicker) {
+            DatePickerModalInput(
+                onDateSelected = { millis ->
+                    millis?.let {
+                        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                        selectedDateText = formatter.format(Date(it))
+                    }
+                },
+                onDismiss = { showDatePicker = false }
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         OutlinedTextField(
             value = password,
@@ -144,9 +191,10 @@ fun SignUpPage (
         Button(
             onClick = {
                 val newUser = AuthRequest(
-                    username = name,
+                    username = username,
                     email = email,
-                    password = password
+                    password = password,
+                    avatarUrl = null
                 )
                 if (password == confirmPassword) {
                     isError = false
@@ -163,5 +211,32 @@ fun SignUpPage (
         TextButton(onClick = onNavigateBack) {
             Text(stringResource(R.string.login_recommendation))
         }
+    }
+}
+
+@Composable
+fun DatePickerModalInput(
+    onDateSelected: (Long?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val datePickerState = rememberDatePickerState(initialDisplayMode = DisplayMode.Input)
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                onDateSelected(datePickerState.selectedDateMillis)
+                onDismiss()
+            }) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    ) {
+        DatePicker(state = datePickerState)
     }
 }

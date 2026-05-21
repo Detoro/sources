@@ -4,12 +4,12 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import toro.sources.DataModels.Comic
-import toro.sources.DataModels.Chapter
+import toro.sources.dataModels.Comic
+import toro.sources.dataModels.Chapter
 
 @Database(
     entities = [Comic::class, Chapter::class],
-    version = 4,
+    version = 7,
     exportSchema = false
 )
 abstract class CanvasDatabase : RoomDatabase() {

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
@@ -29,7 +30,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import toro.sources.DataModels.LoginCredentials
+import toro.sources.dataModels.LoginCredentials
 import androidx.compose.ui.res.stringResource
 import toro.sources.R
 
@@ -64,6 +65,7 @@ fun LoginPage(
             onValueChange = { email = it },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             label = { Text(stringResource(R.string.email)) },
+            leadingIcon = { Icons.Filled.Email },
             singleLine = true,
             supportingText = {
                 Text(
