@@ -26,6 +26,7 @@ import toro.sources.dataModels.Tag
 import toro.sources.dataModels.ServerResponse
 import toro.sources.dataModels.SubscribeResponse
 import toro.sources.dataModels.UserProfile
+import toro.sources.dataModels.FcmTokenRequest
 
 interface ComicApiService {
     @GET("api/comics/catalog")
@@ -147,4 +148,7 @@ interface ComicApiService {
 
     @POST("api/users/profile/privacy")
     suspend fun toggleProfilePrivacy(): ServerResponse
+
+    @POST("api/users/fcm-token")
+    suspend fun registerFcmToken(@Body request: FcmTokenRequest): ServerResponse
 }

@@ -8,22 +8,21 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import toro.sources.AppViewModel
+import toro.sources.convertTimestamp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsPage(
+    viewModel: AppViewModel,
     onBackClick: () -> Unit
 ) {
-    // Mock notifications for now
-    val notifications = listOf(
-        "AstraNova liked your post",
-        "ElenaShadow commented: 'Amazing chapter!'",
-        "SpaceTraveler started following you",
-        "New comic 'Solar Winds' is now available!"
-    )
+    val notifications by viewModel.notifications.collectAsState()
 
     Scaffold(
         topBar = {
@@ -59,7 +58,10 @@ fun NotificationsPage(
             ) {
                 items(notifications) { notification ->
                     ListItem(
-                        headlineContent = { Text(notification) },
+                        headlineContent = { Text(notification.message) },
+                        supportingContent = {
+                            Text(text = convertTimestamp(notification.timestamp))
+                        },
                         leadingContent = {
                             Icon(
                                 Icons.Default.Notifications,
