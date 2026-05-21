@@ -16,6 +16,7 @@ import toro.sources.dataModels.Chapter
 import toro.sources.dataModels.Comic
 import toro.sources.dataModels.LoginCredentials
 import toro.sources.dataModels.AuthRequest
+import toro.sources.dataModels.Notification
 import toro.sources.dataModels.Post
 import toro.sources.dataModels.ChatMessage
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -38,6 +39,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import toro.sources.dataModels.AuthorRequest
 import toro.sources.dataModels.CommentRequest
 import toro.sources.dataModels.PostRequest
+import toro.sources.dataModels.FcmTokenRequest
 import toro.sources.dataModels.Conversation
 import toro.sources.dataModels.Tag
 import java.io.File
@@ -48,6 +50,8 @@ import java.time.format.DateTimeFormatter
 import kotlin.String
 import androidx.core.net.toUri
 import toro.sources.dataModels.UserProfile
+import com.google.firebase.messaging.FirebaseMessaging
+import toro.sources.notifications.NotificationEventBus
 
 enum class SearchSource {
     LOCAL, ONLINE
@@ -155,6 +159,12 @@ class AppViewModel(
     private val _userSuggestions = MutableStateFlow<List<UserProfile>>(emptyList())
     val userSuggestions = _userSuggestions.asStateFlow()
 
+    private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
+    val notifications = _notifications.asStateFlow()
+
+    private val _pendingNavigation = MutableStateFlow<String?>(null)
+    val pendingNavigation = _pendingNavigation.asStateFlow()
+
     val subscribedComics: StateFlow<List<Comic>> = repository.getSubscribedComics()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -167,6 +177,16 @@ class AppViewModel(
         getCatalog()
         getChatRequests()
         seedTestData()
+
+        if (RetrofitClient.tokenManager.getTokenSync() != null) {
+            fetchAndRegisterFcmToken()
+        }
+
+        viewModelScope.launch {
+            NotificationEventBus.notifications.collect { newNotification ->
+                _notifications.value = listOf(newNotification) + _notifications.value
+            }
+        }
 
         viewModelScope.launch {
             combine(_searchQuery, _searchSource) { query, source ->
@@ -279,6 +299,7 @@ class AppViewModel(
                 val response = RetrofitClient.comicApiService.login(authRequest)
                 _currentUser.value = response
                 RetrofitClient.tokenManager.saveToken(response.token)
+                fetchAndRegisterFcmToken()
                 _currentComic.value = null
                 onSuccess()
                 Log.i("Success", "Logged in successfully as ${response.username}!")
@@ -301,6 +322,7 @@ class AppViewModel(
                 val response = RetrofitClient.comicApiService.signUp(newUser)
                 _currentUser.value = response
                 RetrofitClient.tokenManager.saveToken(response.token)
+                fetchAndRegisterFcmToken()
                 onSuccess()
                 Log.i("Success", "Sign up successfully as ${response.username}!")
             } catch (e: Exception) {
@@ -401,7 +423,7 @@ class AppViewModel(
                 val newMessage = ChatMessage(
                     id = "",
                     senderId = "",
-                    content = content,
+                    content = encryptedContent,
                     timestamp = System.currentTimeMillis(),
                     isEncrypted = true,
                     sharedComicId = sharedComicId
@@ -416,12 +438,12 @@ class AppViewModel(
     private fun encryptMessage(content: String): String {
         // reading e2e stuff
         Log.i("encrypt", "encrypted")
-        return ""
+        return content
     }
     fun decryptMessage(content: String): String {
         // same as above
         Log.i("decrypt", "decrypted")
-        return ""
+        return content
     }
     fun getChatRequests() {
         viewModelScope.launch {
@@ -678,6 +700,33 @@ class AppViewModel(
                 _errorMessage.value = "Failed to toggle privacy: ${e.message}"
             }
         }
+    }
+
+    fun registerFcmToken(token: String) {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.comicApiService.registerFcmToken(FcmTokenRequest(token))
+                Log.i("FCM", "Token registered successfully")
+            } catch (e: Exception) {
+                Log.e("FCM", "Failed to register token: ${e.message}")
+            }
+        }
+    }
+
+    fun fetchAndRegisterFcmToken() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                Log.i("fcm", "fcm fetch success")
+                task.result?.let { registerFcmToken(it) }
+            }
+        }
+    }
+    fun handleNavigation(route: String) {
+        _pendingNavigation.value = route
+    }
+
+    fun onNavigationHandled() {
+        _pendingNavigation.value = null
     }
 
     fun clearError() {
