@@ -415,6 +415,10 @@ class AppViewModel(
             }
         }
     }
+
+    fun clearChatMessages() {
+        _chatMessages.value = emptyList()
+    }
     fun sendMessage(conversationId: String, content: String, sharedComicId: String? = null) {
         viewModelScope.launch {
             try {

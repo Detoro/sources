@@ -15,6 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,7 +36,14 @@ fun ChatThreadPage(
     val me by viewModel.currentUser.collectAsState()
 
     LaunchedEffect(targetUserId) {
+        viewModel.clearChatMessages()
         viewModel.getChatMessages(targetUserId)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.clearChatMessages()
+        }
     }
 
     Scaffold(
