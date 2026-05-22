@@ -34,10 +34,12 @@ fun ChatThreadPage(
 ) {
     val messages by viewModel.chatMessages.collectAsState()
     val me by viewModel.currentUser.collectAsState()
+    val targetProfile by viewModel.userProfile.collectAsState()
 
     LaunchedEffect(targetUserId) {
         viewModel.clearChatMessages()
         viewModel.getChatMessages(targetUserId)
+        viewModel.getUserProfile(targetUserId)
     }
 
     DisposableEffect(Unit) {
@@ -50,7 +52,7 @@ fun ChatThreadPage(
         modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
-                title = { Text("Chatting with $targetUserId") },
+                title = { Text("Chatting with ${targetProfile?.username ?: targetUserId}") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

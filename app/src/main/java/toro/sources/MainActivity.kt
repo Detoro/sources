@@ -554,7 +554,6 @@ fun AppNavigation(viewModel: AppViewModel) {
             }
             composable(Screen.Chat.route) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
-
                 ChatThreadPage(
                     targetUserId = userId,
                     viewModel = viewModel,
