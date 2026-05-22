@@ -60,11 +60,10 @@ fun AccountPage(
             uri?.let { viewModel.uploadAvatar(context, it) }
         }
     )
-
     // Dialogs
     if (showBioDialog) {
         AlertDialog(
-            onDismissRequest = { },
+            onDismissRequest = { showBioDialog = false },
             title = { Text("Update Bio") },
             text = {
                 TextField(
@@ -77,10 +76,11 @@ fun AccountPage(
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.updateBio(newBio)
+                    showBioDialog = false
                 }) { Text("Save") }
             },
             dismissButton = {
-                TextButton(onClick = { }) { Text("Cancel") }
+                TextButton(onClick = { showBioDialog = false }) { Text("Cancel") }
             }
         )
     }
@@ -170,6 +170,7 @@ fun AccountPage(
                         .padding(horizontal = 32.dp)
                         .clickable{
                             newBio = userProfile?.bio ?: ""
+                            showBioDialog = true
                         }
                 )
 

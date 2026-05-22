@@ -123,40 +123,40 @@ fun SettingsPage(
 
     if (showMotiveDialog) {
         AlertDialog(
-            onDismissRequest = { },
+            onDismissRequest = { showMotiveDialog = false },
             title = { Text("Motive") },
             text = { Text("The goal of Toro Sources is to provide a seamless, community-driven platform for reading and sharing comics, focused on accessibility and user privacy.") },
             confirmButton = {
-                TextButton(onClick = { }) { Text("Close") }
+                TextButton(onClick = { showMotiveDialog = false }) { Text("Close") }
             }
         )
     }
 
     if (showResetPasswordDialog) {
         AlertDialog(
-            onDismissRequest = { },
+            onDismissRequest = { showResetPasswordDialog = false },
             title = { Text("Reset Password") },
             text = { Text("A password reset link has been sent to your registered email address.") },
             confirmButton = {
-                TextButton(onClick = { }) { Text("OK") }
+                TextButton(onClick = { showResetPasswordDialog = false }) { Text("OK") }
             }
         )
     }
 
     if (showStorageDialog) {
         AlertDialog(
-            onDismissRequest = { },
+            onDismissRequest = { showStorageDialog = false },
             title = { Text("Storage Info") },
             text = { Text("Local Comics: 124MB\nCached Data: 45MB\nTotal: 169MB") },
             confirmButton = {
-                TextButton(onClick = { }) { Text("OK") }
+                TextButton(onClick = { showStorageDialog = false }) { Text("OK") }
             }
         )
     }
 
     if (showUsernameDialog) {
         AlertDialog(
-            onDismissRequest = { },
+            onDismissRequest = { showUsernameDialog = false },
             title = { Text("Change Username") },
             text = {
                 TextField(
@@ -170,10 +170,11 @@ fun SettingsPage(
                     if (newUsername.isNotBlank()) {
                         viewModel.updateUsername(newUsername)
                     }
+                    showUsernameDialog = false
                 }) { Text("Save") }
             },
             dismissButton = {
-                TextButton(onClick = { }) { Text("Cancel") }
+                TextButton(onClick = { showUsernameDialog = false }) { Text("Cancel") }
             }
         )
     }
