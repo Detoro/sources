@@ -49,6 +49,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.String
 import androidx.core.net.toUri
+import toro.sources.dataModels.UpdateBioRequest
+import toro.sources.dataModels.UpdateUsernameRequest
 import toro.sources.dataModels.UserProfile
 import com.google.firebase.messaging.FirebaseMessaging
 import toro.sources.notifications.NotificationEventBus
@@ -327,6 +329,39 @@ class AppViewModel(
                 Log.i("Success", "Sign up successfully as ${response.username}!")
             } catch (e: Exception) {
                 Log.e("Failure", "Signup failed: ${e.message}")
+            }
+        }
+    }
+
+    fun updateBio(bio: String) {
+        viewModelScope.launch {
+            try {
+                val userId = _currentUser.value.userId
+                if (userId.isEmpty()) return@launch
+                
+                val response = RetrofitClient.comicApiService.updateBio(userId, UpdateBioRequest(bio))
+                _userProfile.value?.bio = response.message
+                Log.i("Success", "Bio updated successfully")
+            } catch (e: Exception) {
+                Log.e("AppViewModel", "Failed to update bio: ${e.message}")
+                _errorMessage.value = "Failed to update bio"
+            }
+        }
+    }
+
+    fun updateUsername(newUsername: String) {
+        viewModelScope.launch {
+            try {
+                val userId = _currentUser.value.userId
+                if (userId.isEmpty()) return@launch
+
+                val response = RetrofitClient.comicApiService.updateUsername(userId, UpdateUsernameRequest(newUsername))
+                _userProfile.value?.username = response.message
+                _currentUser.value = _currentUser.value.copy(username = response.message)
+                Log.i("Success", "Username updated successfully")
+            } catch (e: Exception) {
+                Log.e("AppViewModel", "Failed to update username: ${e.message}")
+                _errorMessage.value = "Failed to update username"
             }
         }
     }
@@ -694,10 +729,10 @@ class AppViewModel(
         }
     }
 
-    fun toggleProfilePrivacy() {
+    fun toggleProfilePrivacy(userId: String) {
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.comicApiService.toggleProfilePrivacy()
+                val response = RetrofitClient.comicApiService.toggleProfilePrivacy(userId)
                 _userProfile.value = _userProfile.value?.copy(isPrivate = !_userProfile.value!!.isPrivate)
                 Log.i("Profile", "Privacy toggled: ${response.message}")
             } catch (e: Exception) {

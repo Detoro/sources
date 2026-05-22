@@ -26,6 +26,8 @@ import toro.sources.dataModels.Tag
 import toro.sources.dataModels.ServerResponse
 import toro.sources.dataModels.SubscribeResponse
 import toro.sources.dataModels.UserProfile
+import toro.sources.dataModels.UpdateBioRequest
+import toro.sources.dataModels.UpdateUsernameRequest
 import toro.sources.dataModels.FcmTokenRequest
 
 interface ComicApiService {
@@ -140,14 +142,20 @@ interface ComicApiService {
     @GET("api/users/{userId}/profile")
     suspend fun getUserProfile(@Path("userId") userId: String): UserProfile
 
+    @POST("api/users/{userId}/profile/bio")
+    suspend fun updateBio(@Path("userId") userId: String, @Body request: UpdateBioRequest): ServerResponse
+
+    @POST("api/users/{userId}/profile/username")
+    suspend fun updateUsername(@Path("userId") userId: String, @Body request: UpdateUsernameRequest): ServerResponse
+
     @GET("api/users/{userId}/posts")
     suspend fun getUserPosts(@Path("userId") userId: String): List<Post>
 
     @GET("api/users/{userId}/works")
     suspend fun getUserWorks(@Path("userId") userId: String): List<Comic>
 
-    @POST("api/users/profile/privacy")
-    suspend fun toggleProfilePrivacy(): ServerResponse
+    @POST("api/users/{userId}/profile/privacy")
+    suspend fun toggleProfilePrivacy(@Path("userId") userId: String): ServerResponse
 
     @POST("api/users/fcm-token")
     suspend fun registerFcmToken(@Body request: FcmTokenRequest): ServerResponse

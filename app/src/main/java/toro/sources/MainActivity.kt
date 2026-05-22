@@ -69,6 +69,7 @@ import toro.sources.pages.FriendRequestPage
 import toro.sources.pages.NotificationsPage
 import toro.sources.pages.PostPage
 import toro.sources.pages.ReadingList
+import toro.sources.pages.SettingsPage
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -85,6 +86,7 @@ sealed class Screen(val route: String) {
     object Overview : Screen("overview")
     object Post : Screen("post")
     object Engagement : Screen("engagement")
+    object Settings : Screen("settings")
     object FriendRequest : Screen("friend_request")
     object ReadingList : Screen("reading_list")
     object Notifications : Screen("notifications")
@@ -525,6 +527,14 @@ fun AppNavigation(viewModel: AppViewModel) {
             }
             composable(Screen.Account.route) {
                 AccountPage(
+                    viewModel = viewModel,
+                    onSettingsClick = {
+                        navController.navigate(Screen.Settings.route)
+                    }
+                )
+            }
+            composable(Screen.Settings.route) {
+                SettingsPage(
                     viewModel = viewModel,
                     onLogoutClick = {
                         viewModel.logoutUser(onLogoutComplete = {

@@ -26,13 +26,20 @@ data class AuthResponse(
 @Serializable
 data class UserProfile(
     val id: String,
-    val username: String,
+    var username: String,
     val avatarUrl: String? = null,
     val isAuthor: Boolean = false,
-    val bio: String? = null,
+    var bio: String? = null,
     val worksCount: Int = 0,
     val postsCount: Int = 0,
     val followersCount: Int = 0,
+    val friendsCount: Int = 0,
     val isPrivate: Boolean = false,
     val isFollowing: Boolean = false
 )
+
+@Serializable
+data class UpdateBioRequest(val bio: String)
+
+@Serializable
+data class UpdateUsernameRequest(val username: String)
