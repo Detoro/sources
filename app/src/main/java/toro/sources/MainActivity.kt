@@ -60,6 +60,7 @@ import toro.sources.pages.SignUpPage
 import toro.sources.pages.WelcomeScreen
 import toro.sources.pages.UploadPage
 import toro.sources.ui.theme.SourcesTheme
+import toro.sources.pages.AuthorSearchPage
 import toro.sources.pages.ChatInboxPage
 import toro.sources.pages.ChatThreadPage
 import toro.sources.pages.CommentThreadPage
@@ -90,6 +91,7 @@ sealed class Screen(val route: String) {
     object Chat : Screen("chat_page/{userId}") {
         fun createRoute(userId: String) = "chat_page/$userId"
     }
+    object AuthorSearch : Screen("author_search")
     object Comments : Screen("comments/{postId}") {
         fun createRoute(postId: String) = "comments/$postId"
     }
@@ -451,8 +453,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                         navController.navigate(Screen.Notifications.route)
                     },
                     onAddAuthorClick = {
-                        viewModel.updateSearchSource(SearchSource.ONLINE)
-                        navController.navigate(Screen.Search.route)
+                        navController.navigate(Screen.AuthorSearch.route)
                     },
                     onBackClick = { navController.popBackStack() }
                 )
@@ -548,6 +549,12 @@ fun AppNavigation(viewModel: AppViewModel) {
             }
             composable(Screen.FriendRequest.route) {
                 FriendRequestPage(
+                    viewModel = viewModel,
+                    onDismiss = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.AuthorSearch.route) {
+                AuthorSearchPage(
                     viewModel = viewModel,
                     onDismiss = { navController.popBackStack() }
                 )
