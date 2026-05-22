@@ -373,7 +373,10 @@ fun AppNavigation(viewModel: AppViewModel) {
                         navController.navigate(Screen.Account.route) {
                             launchSingleTop = true
                         }
-                    }
+                    },
+                    onNotificationsClick = {
+                        navController.navigate(Screen.Notifications.route)
+                    },
                 )
             }
             composable(Screen.Reader.route) { backStackEntry ->
@@ -448,9 +451,6 @@ fun AppNavigation(viewModel: AppViewModel) {
                     },
                     onMakePost = {
                         navController.navigate(Screen.Post.route)
-                    },
-                    onNotificationsClick = {
-                        navController.navigate(Screen.Notifications.route)
                     },
                     onAddAuthorClick = {
                         navController.navigate(Screen.AuthorSearch.route)
