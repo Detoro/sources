@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.PersonPinCircle
@@ -79,7 +80,7 @@ fun SignUpPage (
             value = username,
             onValueChange = { username = it },
             label = { Text(stringResource(R.string.username)) },
-            leadingIcon = { Icons.Outlined.PersonPinCircle },
+            leadingIcon = { Icon(Icons.Outlined.PersonPinCircle, contentDescription = null) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -87,6 +88,7 @@ fun SignUpPage (
             value = email,
             onValueChange = { email = it },
             label = { Text(stringResource(R.string.email)) },
+            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
