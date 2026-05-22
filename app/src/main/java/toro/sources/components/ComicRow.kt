@@ -25,7 +25,7 @@ fun ComicRow(comic: Comic, viewModel: AppViewModel, onClick: (Comic) -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick(comic) },
-        shape = MaterialTheme.shapes.medium
+        shape = MaterialTheme.shapes.large
     ) {
         Row(
             modifier = Modifier

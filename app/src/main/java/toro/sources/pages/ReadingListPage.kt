@@ -64,13 +64,13 @@ fun ReadingList(
             ) {
                 if (selectedTabIndex == 0) {
                     items(recentlyRead) { comic ->
-                        Spacer(modifier = Modifier.height(8.dp))
                         ComicRow(comic, viewModel, onComicClick)
+                        HorizontalDivider()
                     }
                 } else {
                     items(subscribed) { comic ->
-                        Spacer(modifier = Modifier.height(8.dp))
                         ComicRow(comic, viewModel, onComicClick)
+                        HorizontalDivider()
                     }
                 }
 
