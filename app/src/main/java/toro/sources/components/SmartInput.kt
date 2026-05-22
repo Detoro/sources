@@ -24,8 +24,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import toro.sources.AppViewModel
-import toro.sources.dataModels.Comic
-import toro.sources.dataModels.UserProfile
 
 @Composable
 fun SmartInput(
@@ -34,15 +32,23 @@ fun SmartInput(
     placeholder: String = "Type a message...",
     supportTags: Boolean = false,
     supportUpload: Boolean = false,
-    viewModel: AppViewModel? = null
+    viewModel: AppViewModel? = null,
+    onValueChange: ((String, List<String>) -> Unit)? = null
 ) {
     var inputText by remember(initialText) { mutableStateOf(initialText) }
     var tagsText by remember { mutableStateOf("") }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var showTagInput by remember { mutableStateOf(false) }
+
+    LaunchedEffect(inputText, tagsText) {
+        onValueChange?.invoke(
+            inputText,
+            if (tagsText.isBlank()) emptyList() else tagsText.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        )
+    }
     
-    val userSuggestions by viewModel?.userSuggestions?.collectAsState() ?: remember { mutableStateOf(emptyList<UserProfile>()) }
-    val comicSuggestions by viewModel?.catalog?.collectAsState() ?: remember { mutableStateOf(emptyList<Comic>()) }
+    val userSuggestions by viewModel?.userSuggestions?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
+    val comicSuggestions by viewModel?.catalog?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
     
     var showMentions by remember { mutableStateOf(false) }
     var showComicSearch by remember { mutableStateOf(false) }

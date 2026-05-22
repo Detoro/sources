@@ -50,7 +50,9 @@ fun PostPage(
                 placeholder = "create a post...",
                 supportTags = true,
                 supportUpload = true,
-                viewModel = viewModel
+                viewModel = viewModel,
+                onValueChange = { _, _ ->
+                }
             )
         }
     ) { paddingValues ->
