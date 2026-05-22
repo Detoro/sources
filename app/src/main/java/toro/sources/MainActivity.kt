@@ -90,8 +90,8 @@ sealed class Screen(val route: String) {
     object FriendRequest : Screen("friend_request")
     object ReadingList : Screen("reading_list")
     object Notifications : Screen("notifications")
-    object Chat : Screen("chat_page/{userId}") {
-        fun createRoute(userId: String) = "chat_page/$userId"
+    object Chat : Screen("chat_page/{conversationId}") {
+        fun createRoute(conversationId: String) = "chat_page/$conversationId"
     }
     object AuthorSearch : Screen("author_search")
     object Comments : Screen("comments/{postId}") {
@@ -154,6 +154,9 @@ class MainActivity : ComponentActivity() {
                     } else {
                         viewModel.handleNavigation(Screen.Notifications.route)
                     }
+                }
+                "FRIEND_REQUEST" -> {
+                    viewModel.handleNavigation(Screen.FriendRequest.route)
                 }
             }
             it.removeExtra("type")
@@ -570,9 +573,9 @@ fun AppNavigation(viewModel: AppViewModel) {
                 )
             }
             composable(Screen.Chat.route) { backStackEntry ->
-                val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+                val conversationId = backStackEntry.arguments?.getString("conversationId") ?: return@composable
                 ChatThreadPage(
-                    targetUserId = userId,
+                    conversationId = conversationId,
                     viewModel = viewModel,
                     onBackClick = { navController.popBackStack() }
                 )

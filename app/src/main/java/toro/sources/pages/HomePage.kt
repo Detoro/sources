@@ -13,13 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,6 +36,8 @@ fun HomePage(
 ) {
     val libraryList by viewModel.myLibrary.collectAsState()
     val catalog by viewModel.catalog.collectAsState()
+    val notifications by viewModel.notifications.collectAsState()
+    val unreadCount = notifications.count { !it.isRead }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -62,7 +58,17 @@ fun HomePage(
                 title = { Text("Explore Sources") },
                 actions = {
                     IconButton(onClick = { onNotificationsClick() }) {
-                        Icon(Icons.Default.NotificationsNone, contentDescription = "Notifications")
+                        BadgedBox(
+                            badge = {
+                                if (unreadCount > 0) {
+                                    Badge {
+                                        Text(unreadCount.toString())
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.NotificationsNone, contentDescription = "Notifications")
+                        }
                     }
                     IconButton(onClick = { filePickerLauncher.launch("application/*") }) {
                         Icon(Icons.Default.Add, contentDescription = "Import Comic")

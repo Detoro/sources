@@ -454,20 +454,20 @@ class AppViewModel(
     fun clearChatMessages() {
         _chatMessages.value = emptyList()
     }
-    fun sendMessage(conversationId: String, content: String, sharedComicId: String? = null) {
+    fun sendMessage(conversationId: String, targetUserId: String, content: String, sharedComicId: String? = null) {
         viewModelScope.launch {
             try {
                 val encryptedContent = encryptMessage(content)
                 
                 val newMessage = ChatMessage(
                     id = "",
-                    senderId = "",
+                    senderId = _currentUser.value.userId,
                     content = encryptedContent,
                     timestamp = System.currentTimeMillis(),
                     isEncrypted = true,
                     sharedComicId = sharedComicId
                 )
-                RetrofitClient.comicApiService.sendMessage(conversationId, newMessage)
+                RetrofitClient.comicApiService.sendMessage(conversationId, targetUserId, newMessage)
                 getChatMessages(conversationId)
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to send message: ${e.message}"
@@ -498,6 +498,7 @@ class AppViewModel(
             try {
                 RetrofitClient.comicApiService.acceptChatRequest(requestId)
                 _chatRequests.value = _chatRequests.value.filter { it.id != requestId }
+                getInbox()
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to accept request: ${e.message}"
             }

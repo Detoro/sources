@@ -10,7 +10,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -24,7 +23,7 @@ fun ActiveChatsList(
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(activeChats) { chat ->
-            val userId = chat.otherUserId
+            val conversationId = chat.conversationId
             val username = chat.otherUserName
             val lastMessage = chat.lastMessage!!
 
@@ -34,7 +33,7 @@ fun ActiveChatsList(
                     Text(lastMessage, overflow = TextOverflow.Ellipsis)
                 },
                 leadingContent = { DefaultAvatar() },
-                modifier = Modifier.clickable { onChatClick(userId) }
+                modifier = Modifier.clickable { onChatClick(conversationId) }
             )
             HorizontalDivider()
         }

@@ -19,6 +19,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
@@ -28,18 +29,26 @@ import toro.sources.components.SmartInput
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatThreadPage(
-    targetUserId: String,
+    conversationId: String,
     viewModel: AppViewModel,
     onBackClick: () -> Unit
 ) {
     val messages by viewModel.chatMessages.collectAsState()
     val me by viewModel.currentUser.collectAsState()
+    val inbox by viewModel.inbox.collectAsState()
+
+    val activeChat = remember(conversationId, inbox) {
+        inbox.find { it.conversationId == conversationId }
+    }
+    val targetUserId = activeChat?.otherUserId ?: ""
     val targetProfile by viewModel.userProfile.collectAsState()
 
-    LaunchedEffect(targetUserId) {
+    LaunchedEffect(conversationId, targetUserId) {
         viewModel.clearChatMessages()
-        viewModel.getChatMessages(targetUserId)
-        viewModel.getUserProfile(targetUserId)
+        viewModel.getChatMessages(conversationId)
+        if (targetUserId.isNotEmpty()) {
+            viewModel.getUserProfile(targetUserId)
+        }
     }
 
     DisposableEffect(Unit) {
@@ -52,7 +61,7 @@ fun ChatThreadPage(
         modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
-                title = { Text("Chatting with ${targetProfile?.username ?: targetUserId}") },
+                title = { Text("Chatting with ${targetProfile?.username ?: activeChat?.otherUserName ?: "..."}") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -63,7 +72,9 @@ fun ChatThreadPage(
         bottomBar = {
             SmartInput(
                 onSend = { _, text, _, _, sharedComicIds, _ ->
-                    viewModel.sendMessage(targetUserId, text, sharedComicIds.firstOrNull())
+                    if (targetUserId.isNotEmpty()) {
+                        viewModel.sendMessage(conversationId, targetUserId, text, sharedComicIds.firstOrNull())
+                    }
                 },
                 placeholder = "Type a message...",
                 supportUpload = true,

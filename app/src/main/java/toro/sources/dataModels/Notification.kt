@@ -7,7 +7,9 @@ enum class NotificationType {
     LIKE,
     COMMENT,
     FOLLOW,
-    SYSTEM;
+    FRIEND_REQUEST,
+    SYSTEM,
+    CHAT;
 
     companion object {
         fun fromString(value: String): NotificationType? {

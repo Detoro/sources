@@ -94,6 +94,7 @@ interface ComicApiService {
     @POST("api/chat/{conversationId}/messages")
     suspend fun sendMessage(
         @Path("conversationId") conversationId: String,
+        @Query("targetUserId") targetUserId: String,
         @Body message: ChatMessage
     ): ServerResponse
 
