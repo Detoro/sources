@@ -51,14 +51,6 @@ data class PostRequest(
 )
 
 @Serializable
-data class Bookmark(
-    val id: String = "",
-    val userId: String,
-    val postId: String,
-    val timestamp: Long = System.currentTimeMillis()
-)
-
-@Serializable
 data class FcmTokenRequest(
     val token: String
 )

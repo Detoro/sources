@@ -11,9 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation.compose.rememberNavController
 import toro.sources.AppViewModel
-import toro.sources.Screen
 import toro.sources.components.CommentItem
 import toro.sources.components.SmartInput
 import toro.sources.dataModels.Comment
@@ -26,7 +24,6 @@ fun CommentsPage(
     onBackClick: () -> Unit,
     onCommentClick: (Comment) -> Unit = {}
 ) {
-    val navController = rememberNavController()
     val comments by viewModel.comments.collectAsState()
     var replyingTo by remember { mutableStateOf<Comment?>(null) }
 
@@ -111,10 +108,6 @@ fun CommentsPage(
                     CommentItem(
                         comment = comment,
                         onReplyClick = {onCommentClick(it)},
-//                        onReplyClick = {
-//                            replyingTo = it
-//                            initialText = "@${it.authorName} "
-//                        },
                         onLikeClick = { viewModel.likeComment(it.id) },
                         onCommentClick = { onCommentClick(it) }
                     )
