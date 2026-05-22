@@ -11,12 +11,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,19 +25,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.AsyncImage
 import toro.sources.AppViewModel
 import toro.sources.components.PostCard
 import toro.sources.components.ComicCoverCard
-import toro.sources.components.SettingSectionTitle
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
 fun AccountPage(
     viewModel: AppViewModel,
-    onLogoutClick: () -> Unit
+    onSettingsClick: () -> Unit
 ) {
     val context = LocalContext.current
     
@@ -50,14 +45,8 @@ fun AccountPage(
     val userWorks by viewModel.userWorks.collectAsState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
-    var darkThemeEnabled by remember { mutableStateOf(true) }
-    
-    // Dialog states
-    var showUsernameDialog by remember { mutableStateOf(false) }
-    var showMotiveDialog by remember { mutableStateOf(false) }
-    var showResetPasswordDialog by remember { mutableStateOf(false) }
-    var showStorageDialog by remember { mutableStateOf(false) }
-    var newUsername by remember { mutableStateOf("") }
+    var showBioDialog by remember { mutableStateOf(false) }
+    var newBio by remember { mutableStateOf("") }
 
     LaunchedEffect(currentUser.userId) {
         if (currentUser.userId.isNotEmpty()) {
@@ -71,57 +60,27 @@ fun AccountPage(
             uri?.let { viewModel.uploadAvatar(context, it) }
         }
     )
-
     // Dialogs
-    if (showUsernameDialog) {
+    if (showBioDialog) {
         AlertDialog(
-            onDismissRequest = { showUsernameDialog = false },
-            title = { Text("Change Username") },
+            onDismissRequest = { showBioDialog = false },
+            title = { Text("Update Bio") },
             text = {
                 TextField(
-                    value = newUsername,
-                    onValueChange = { newUsername = it },
-                    label = { Text("New Username") }
+                    value = newBio,
+                    onValueChange = { newBio = it },
+                    label = { Text("Bio") },
+                    modifier = Modifier.fillMaxWidth()
                 )
             },
             confirmButton = {
-                TextButton(onClick = { showUsernameDialog = false }) { Text("Save") }
+                TextButton(onClick = {
+                    viewModel.updateBio(newBio)
+                    showBioDialog = false
+                }) { Text("Save") }
             },
             dismissButton = {
-                TextButton(onClick = { showUsernameDialog = false }) { Text("Cancel") }
-            }
-        )
-    }
-
-    if (showMotiveDialog) {
-        AlertDialog(
-            onDismissRequest = { showMotiveDialog = false },
-            title = { Text("Motive") },
-            text = { Text("The goal of Toro Sources is to provide a seamless, community-driven platform for reading and sharing comics, focused on accessibility and user privacy.") },
-            confirmButton = {
-                TextButton(onClick = { showMotiveDialog = false }) { Text("Close") }
-            }
-        )
-    }
-
-    if (showResetPasswordDialog) {
-        AlertDialog(
-            onDismissRequest = { showResetPasswordDialog = false },
-            title = { Text("Reset Password") },
-            text = { Text("A password reset link has been sent to your registered email address.") },
-            confirmButton = {
-                TextButton(onClick = { showResetPasswordDialog = false }) { Text("OK") }
-            }
-        )
-    }
-
-    if (showStorageDialog) {
-        AlertDialog(
-            onDismissRequest = { showStorageDialog = false },
-            title = { Text("Storage Info") },
-            text = { Text("Local Comics: 124MB\nCached Data: 45MB\nTotal: 169MB") },
-            confirmButton = {
-                TextButton(onClick = { showStorageDialog = false }) { Text("OK") }
+                TextButton(onClick = { showBioDialog = false }) { Text("Cancel") }
             }
         )
     }
@@ -131,8 +90,8 @@ fun AccountPage(
             TopAppBar(
                 title = { Text("Profile") },
                 actions = {
-                    IconButton(onClick = { /* Share profile */ }) {
-                        Icon(Icons.Default.Share, contentDescription = "Share Profile")
+                    IconButton(onClick = { onSettingsClick()}) {
+                        Icon(Icons.Default.Settings, contentDescription = "Share Profile")
                     }
                 }
             )
@@ -207,7 +166,12 @@ fun AccountPage(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 32.dp)
+                    modifier = Modifier
+                        .padding(horizontal = 32.dp)
+                        .clickable{
+                            newBio = userProfile?.bio ?: ""
+                            showBioDialog = true
+                        }
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -218,7 +182,10 @@ fun AccountPage(
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     ProfileStat("Posts", userProfile?.postsCount ?: 0)
-                    ProfileStat("Followers", userProfile?.followersCount ?: 0)
+                    if (userProfile?.isAuthor == true) {
+                        ProfileStat("Followers", userProfile?.followersCount ?: 0)
+                    }
+                    ProfileStat("Friends", userProfile?.friendsCount ?: 0)
                     if (userProfile?.isAuthor == true) {
                         ProfileStat("Works", userProfile?.worksCount ?: 0)
                     }
@@ -226,9 +193,8 @@ fun AccountPage(
             }
 
             // 2. Tabs
-            val tabs = mutableListOf("Posts")
+            val tabs = mutableListOf("Posts", "Friends")
             if (userProfile?.isAuthor == true) tabs.add("Works")
-            tabs.add("Settings")
 
             SecondaryTabRow(selectedTabIndex = selectedTab) {
                 tabs.forEachIndexed { index, title ->
@@ -270,65 +236,7 @@ fun AccountPage(
                             }
                         }
                     }
-                    "Settings" -> {
-                        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                            SettingSectionTitle("Profile Privacy")
-                            ListItem(
-                                headlineContent = { Text("Private Profile") },
-                                supportingContent = { Text("Only followers can see your posts and works") },
-                                leadingContent = { Icon(Icons.Default.Lock, contentDescription = null) },
-                                trailingContent = {
-                                    Switch(
-                                        checked = userProfile?.isPrivate ?: false,
-                                        onCheckedChange = { viewModel.toggleProfilePrivacy() }
-                                    )
-                                }
-                            )
-
-                            SettingSectionTitle("App Settings")
-                            ListItem(
-                                headlineContent = { Text("Dark Theme") },
-                                leadingContent = { Icon(Icons.Default.ColorLens, contentDescription = null) },
-                                trailingContent = {
-                                    Switch(checked = darkThemeEnabled, onCheckedChange = { darkThemeEnabled = it })
-                                }
-                            )
-
-                            SettingSectionTitle("Account Actions")
-                            ListItem(
-                                headlineContent = { Text("Change Username") },
-                                leadingContent = { Icon(Icons.Default.Edit, contentDescription = null) },
-                                modifier = Modifier.clickable { showUsernameDialog = true }
-                            )
-                            ListItem(
-                                headlineContent = { Text("Reset Password") },
-                                leadingContent = { Icon(Icons.Default.Password, contentDescription = null) },
-                                modifier = Modifier.clickable { showResetPasswordDialog = true }
-                            )
-                            ListItem(
-                                headlineContent = { Text("Clear Image Cache") },
-                                leadingContent = { Icon(Icons.Default.DeleteOutline, contentDescription = null) },
-                                modifier = Modifier.clickable {
-                                    val imageLoader = ImageLoader(context)
-                                    imageLoader.memoryCache?.clear()
-                                    imageLoader.diskCache?.clear()
-                                }
-                            )
-                            ListItem(
-                                headlineContent = { Text("Motive") },
-                                leadingContent = { Icon(Icons.Default.BubbleChart, contentDescription = null) },
-                                modifier = Modifier.clickable { showMotiveDialog = true }
-                            )
-                            ListItem(
-                                headlineContent = { Text("Log Out") },
-                                leadingContent = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null) },
-                                modifier = Modifier.clickable { viewModel.logoutUser(onLogoutClick) },
-                                colors = ListItemDefaults.colors(headlineColor = MaterialTheme.colorScheme.error)
-                            )
-                            
-                            Spacer(modifier = Modifier.height(32.dp))
-                        }
-                    }
+                    "Friends" -> {}
                 }
             }
         }

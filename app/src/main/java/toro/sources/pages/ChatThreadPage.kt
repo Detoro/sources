@@ -15,6 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,16 +34,25 @@ fun ChatThreadPage(
 ) {
     val messages by viewModel.chatMessages.collectAsState()
     val me by viewModel.currentUser.collectAsState()
+    val targetProfile by viewModel.userProfile.collectAsState()
 
     LaunchedEffect(targetUserId) {
+        viewModel.clearChatMessages()
         viewModel.getChatMessages(targetUserId)
+        viewModel.getUserProfile(targetUserId)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.clearChatMessages()
+        }
     }
 
     Scaffold(
         modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
-                title = { Text("Chatting with $targetUserId") },
+                title = { Text("Chatting with ${targetProfile?.username ?: targetUserId}") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")

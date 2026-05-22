@@ -60,6 +60,7 @@ import toro.sources.pages.SignUpPage
 import toro.sources.pages.WelcomeScreen
 import toro.sources.pages.UploadPage
 import toro.sources.ui.theme.SourcesTheme
+import toro.sources.pages.AuthorSearchPage
 import toro.sources.pages.ChatInboxPage
 import toro.sources.pages.ChatThreadPage
 import toro.sources.pages.CommentThreadPage
@@ -68,6 +69,7 @@ import toro.sources.pages.FriendRequestPage
 import toro.sources.pages.NotificationsPage
 import toro.sources.pages.PostPage
 import toro.sources.pages.ReadingList
+import toro.sources.pages.SettingsPage
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -84,12 +86,14 @@ sealed class Screen(val route: String) {
     object Overview : Screen("overview")
     object Post : Screen("post")
     object Engagement : Screen("engagement")
+    object Settings : Screen("settings")
     object FriendRequest : Screen("friend_request")
     object ReadingList : Screen("reading_list")
     object Notifications : Screen("notifications")
     object Chat : Screen("chat_page/{userId}") {
         fun createRoute(userId: String) = "chat_page/$userId"
     }
+    object AuthorSearch : Screen("author_search")
     object Comments : Screen("comments/{postId}") {
         fun createRoute(postId: String) = "comments/$postId"
     }
@@ -371,7 +375,10 @@ fun AppNavigation(viewModel: AppViewModel) {
                         navController.navigate(Screen.Account.route) {
                             launchSingleTop = true
                         }
-                    }
+                    },
+                    onNotificationsClick = {
+                        navController.navigate(Screen.Notifications.route)
+                    },
                 )
             }
             composable(Screen.Reader.route) { backStackEntry ->
@@ -447,12 +454,8 @@ fun AppNavigation(viewModel: AppViewModel) {
                     onMakePost = {
                         navController.navigate(Screen.Post.route)
                     },
-                    onNotificationsClick = {
-                        navController.navigate(Screen.Notifications.route)
-                    },
                     onAddAuthorClick = {
-                        viewModel.updateSearchSource(SearchSource.ONLINE)
-                        navController.navigate(Screen.Search.route)
+                        navController.navigate(Screen.AuthorSearch.route)
                     },
                     onBackClick = { navController.popBackStack() }
                 )
@@ -525,6 +528,14 @@ fun AppNavigation(viewModel: AppViewModel) {
             composable(Screen.Account.route) {
                 AccountPage(
                     viewModel = viewModel,
+                    onSettingsClick = {
+                        navController.navigate(Screen.Settings.route)
+                    }
+                )
+            }
+            composable(Screen.Settings.route) {
+                SettingsPage(
+                    viewModel = viewModel,
                     onLogoutClick = {
                         viewModel.logoutUser(onLogoutComplete = {
                             navController.navigate(Screen.Login.route) {
@@ -552,9 +563,14 @@ fun AppNavigation(viewModel: AppViewModel) {
                     onDismiss = { navController.popBackStack() }
                 )
             }
+            composable(Screen.AuthorSearch.route) {
+                AuthorSearchPage(
+                    viewModel = viewModel,
+                    onDismiss = { navController.popBackStack() }
+                )
+            }
             composable(Screen.Chat.route) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
-
                 ChatThreadPage(
                     targetUserId = userId,
                     viewModel = viewModel,

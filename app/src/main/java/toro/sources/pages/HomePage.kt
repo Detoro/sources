@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,7 +37,8 @@ import toro.sources.dataModels.Comic
 fun HomePage(
     viewModel: AppViewModel,
     onComicClick: (Comic) -> Unit,
-    onAccountClick: () -> Unit
+    onAccountClick: () -> Unit,
+    onNotificationsClick: () -> Unit
 ) {
     val libraryList by viewModel.myLibrary.collectAsState()
     val catalog by viewModel.catalog.collectAsState()
@@ -60,8 +61,8 @@ fun HomePage(
             TopAppBar(
                 title = { Text("Explore Sources") },
                 actions = {
-                    IconButton(onClick = { viewModel.getCatalog() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Sync Catalog")
+                    IconButton(onClick = { onNotificationsClick() }) {
+                        Icon(Icons.Default.NotificationsNone, contentDescription = "Notifications")
                     }
                     IconButton(onClick = { filePickerLauncher.launch("application/*") }) {
                         Icon(Icons.Default.Add, contentDescription = "Import Comic")

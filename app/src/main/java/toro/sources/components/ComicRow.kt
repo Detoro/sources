@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,37 +20,31 @@ import toro.sources.dataModels.Comic
 
 @Composable
 fun ComicRow(comic: Comic, viewModel: AppViewModel, onClick: (Comic) -> Unit) {
-    Card(
+    Row(
         modifier = Modifier
+            .padding(8.dp)
             .fillMaxWidth()
             .clickable { onClick(comic) },
-        shape = MaterialTheme.shapes.medium
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .padding(8.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            ComicCoverCard(
-                comic = comic,
-                viewModel = viewModel,
-                modifier = Modifier.size(30.dp, 50.dp),
-                onClick = { onClick(comic) }
+        ComicCoverCard(
+            comic = comic,
+            viewModel = viewModel,
+            modifier = Modifier.size(30.dp, 50.dp),
+            onClick = { onClick(comic) }
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(
+                text = comic.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = comic.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = comic.author,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = comic.author,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.NotificationsNone
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,7 +31,6 @@ fun EngagementPage(
     viewModel: AppViewModel,
     onCommentClick: (String) -> Unit,
     onMakePost: () -> Unit,
-    onNotificationsClick: () -> Unit,
     onAddAuthorClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
@@ -52,9 +50,6 @@ fun EngagementPage(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { onNotificationsClick() }) {
-                        Icon(Icons.Default.NotificationsNone, contentDescription = "Notifications")
-                    }
                     IconButton(onClick = { onMakePost() }) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Post")
                     }

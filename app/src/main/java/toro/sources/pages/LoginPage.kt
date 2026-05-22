@@ -65,7 +65,7 @@ fun LoginPage(
             onValueChange = { email = it },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             label = { Text(stringResource(R.string.email)) },
-            leadingIcon = { Icons.Filled.Email },
+            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
             singleLine = true,
             supportingText = {
                 Text(
