@@ -72,7 +72,7 @@ fun CommentThreadPage(
                     }
                 }
                 SmartInput(
-                    onSend = { text, _, mentions, _, _ ->
+                    onSend = { _, text, _, mentions, _, _ ->
                         // All replies on this page belong to this thread (parentId = commentId)
                         // UNLESS specifically replying to another reply within the thread.
                         val targetParentId = replyingTo?.id ?: commentId
@@ -98,6 +98,7 @@ fun CommentThreadPage(
                 item {
                     CommentItem(
                         comment = mainComment,
+                        isReply = true,
                         isThreadHeader = true,
                         onReplyClick = {},
                         onLikeClick = { viewModel.likeComment(it.id) }
@@ -129,6 +130,7 @@ fun CommentThreadPage(
                         onReplyClick = {
                             "@${it.authorName} "
                         },
+                        isReply = true,
                         onLikeClick = { viewModel.likeComment(it.id) },
                         onCommentClick = { /* Already in thread. Don't want to do anything */ }
                     )

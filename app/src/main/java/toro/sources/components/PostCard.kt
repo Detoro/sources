@@ -116,7 +116,7 @@ fun PostCard(
 
             // Content
             Text(
-                text = "Discussion Topic",
+                text = post.title ?: "Discussion Topic",
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )

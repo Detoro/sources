@@ -22,6 +22,7 @@ import toro.sources.dataModels.Comment
 fun CommentItem(
     comment: Comment,
     isThreadHeader: Boolean = false,
+    isReply: Boolean = false,
     onReplyClick: (Comment) -> Unit = {},
     onLikeClick: (Comment) -> Unit = {},
     onCommentClick: (Comment) -> Unit = {}
@@ -57,6 +58,7 @@ fun CommentItem(
 
                 CommentActions(
                     comment = comment,
+                    hideReply = isReply,
                     onReplyClick = { onReplyClick(comment) },
                     onLikeClick = { onLikeClick(comment) }
                 )

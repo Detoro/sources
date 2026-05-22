@@ -27,6 +27,7 @@ fun PostPage(
     viewModel: AppViewModel,
     onBackClick: () -> Unit
 ) {
+    var postTitle by remember { mutableStateOf("") }
     var postText by remember { mutableStateOf("") }
     var tagList by remember { mutableStateOf(emptyList<String>()) }
     val currentUser by viewModel.currentUser.collectAsState()
@@ -44,24 +45,30 @@ fun PostPage(
         },
         bottomBar = {
             SmartInput(
-                onSend = { text, tags, _, _, _ ->
-                    viewModel.makePost(text, tags)
-                },
-                placeholder = "create a post...",
+                supportTitle = true,
                 supportTags = true,
                 supportUpload = true,
                 viewModel = viewModel,
-                onValueChange = { _, _ ->
+                onSend = { title, text, tags, mentions, comics, uri ->
+                    viewModel.makePost(title, text, tags)
+                },
+                onTitleChange = { postTitle = it },
+                onValueChange = { title, text, tags ->
+                    postTitle = title ?: ""
+                    postText = text
+                    tagList = tags
                 }
             )
         }
     ) { paddingValues ->
+        val scrollState = rememberScrollState()
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
+                .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -99,7 +106,7 @@ fun PostPage(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = "Discussion Topic",
+                        text = postTitle.ifBlank { "Post Title" },
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = Color.White

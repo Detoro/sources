@@ -638,10 +638,11 @@ class AppViewModel(
             }
         }
     }
-    fun makePost(postContent: String, tags: List<String> = emptyList()) {
+    fun makePost(title:String?, postContent: String, tags: List<String> = emptyList()) {
         viewModelScope.launch {
             try {
                 val request = PostRequest(
+                    title = title,
                     content = postContent,
                     tags = tags
                 )

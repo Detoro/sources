@@ -22,26 +22,32 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import toro.sources.AppViewModel
 
 @Composable
 fun SmartInput(
-    onSend: (text: String, tags: List<String>, mentions: List<String>, sharedComicIds: List<String>, attachment: Uri?) -> Unit,
+    title: String? = null,
+    onTitleChange: ((String) -> Unit)? = null,
+    supportTitle: Boolean = false,
+    onSend: (title: String?, text: String, tags: List<String>, mentions: List<String>, sharedComicIds: List<String>, attachment: Uri?) -> Unit,
     initialText: String = "",
     placeholder: String = "Type a message...",
     supportTags: Boolean = false,
     supportUpload: Boolean = false,
     viewModel: AppViewModel? = null,
-    onValueChange: ((String, List<String>) -> Unit)? = null
+    onValueChange: ((String?, String, List<String>) -> Unit)? = null
 ) {
     var inputText by remember(initialText) { mutableStateOf(initialText) }
     var tagsText by remember { mutableStateOf("") }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
     var showTagInput by remember { mutableStateOf(false) }
+    var titleText by remember(title) { mutableStateOf(title ?: "") }
 
-    LaunchedEffect(inputText, tagsText) {
+    LaunchedEffect(titleText, inputText, tagsText) {
         onValueChange?.invoke(
+            titleText,
             inputText,
             if (tagsText.isBlank()) emptyList() else tagsText.split(",").map { it.trim() }.filter { it.isNotBlank() }
         )
@@ -175,19 +181,44 @@ fun SmartInput(
                     }
                 }
 
-                TextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    placeholder = { Text(placeholder) },
-                    modifier = Modifier.weight(1f),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                        unfocusedIndicatorColor = MaterialTheme.colorScheme.outline
-                    ),
-                    shape = MaterialTheme.shapes.medium
-                )
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+
+                    if (supportTitle) {
+                        TextField(
+                            value = titleText,
+                            onValueChange = {
+                                titleText = it
+                                onTitleChange?.invoke(it)
+                            },
+                            placeholder = { Text("Title...") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                            ),
+                            shape = MaterialTheme.shapes.medium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    TextField(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        placeholder = { Text(placeholder) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            focusedIndicatorColor = MaterialTheme.colorScheme.primary,
+                            unfocusedIndicatorColor = MaterialTheme.colorScheme.outline
+                        ),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                }
+
 
                 Spacer(modifier = Modifier.width(8.dp))
 
@@ -195,7 +226,14 @@ fun SmartInput(
                     onClick = {
                         if (inputText.isNotBlank() || selectedUri != null) {
                             val tags = if (tagsText.isBlank()) emptyList() else tagsText.split(",").map { it.trim() }.filter { it.isNotBlank() }
-                            onSend(inputText, tags, mentionedUserIds.toList(), sharedComicIds.toList(), selectedUri)
+                            onSend(
+                                if (supportTitle) titleText else null,
+                                inputText,
+                                tags,
+                                mentionedUserIds.toList(),
+                                sharedComicIds.toList(),
+                                selectedUri
+                            )
                             inputText = ""
                             tagsText = ""
                             selectedUri = null

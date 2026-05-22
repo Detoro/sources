@@ -10,6 +10,7 @@ import okhttp3.Interceptor
 import toro.sources.dataModels.TokenManager
 
 
+// TODO: URL for emulator needs to be changed. Use correct url for physical device during development
 const val url: String = "http://10.0.2.2:8080"
 
 object RetrofitClient {

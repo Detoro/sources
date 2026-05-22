@@ -7,6 +7,7 @@ data class Post(
     val id: String,
     val authorId: String,
     val authorName: String,
+    val title: String? = null,
     val content: String,
     val timestamp: Long,
     val likesCount: Int = 0,
@@ -44,6 +45,7 @@ data class CommentRequest(
 
 @Serializable
 data class PostRequest(
+    val title: String? = null,
     val content: String,
     val tags: List<String> = emptyList()
 )

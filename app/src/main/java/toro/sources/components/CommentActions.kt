@@ -26,6 +26,7 @@ import toro.sources.dataModels.Comment
 @Composable
 fun CommentActions(
     comment: Comment,
+    hideReply: Boolean = false,
     onReplyClick: () -> Unit,
     onLikeClick: () -> Unit
 ) {
@@ -60,23 +61,25 @@ fun CommentActions(
         Spacer(modifier = Modifier.width(24.dp))
 
         // Replies Button
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable { onReplyClick() }
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.ChatBubbleOutline,
-                contentDescription = "Replies",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(4.dp))
-            Text(
-                text = if (comment.repliesCount > 0) comment.repliesCount.toString() else "Reply",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold
-            )
+        if (!hideReply) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { onReplyClick() }
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.ChatBubbleOutline,
+                    contentDescription = "Replies",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = if (comment.repliesCount > 0) comment.repliesCount.toString() else "Reply",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
