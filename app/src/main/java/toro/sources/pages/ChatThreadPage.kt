@@ -71,7 +71,7 @@ fun ChatThreadPage(
         },
         bottomBar = {
             SmartInput(
-                onSend = { _, text, _, _, sharedComicIds, _ ->
+                onSend = { _, text, _, sharedComicIds, _ ->
                     if (targetUserId.isNotEmpty()) {
                         viewModel.sendMessage(conversationId, targetUserId, text, sharedComicIds.firstOrNull())
                     }

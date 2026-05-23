@@ -53,7 +53,7 @@ fun CommentsSection(
         Spacer(modifier = Modifier.height(16.dp))
 
         SmartInput(
-            onSend = { _, text, _, mentions, _, _ ->
+            onSend = { _, text, _, mentions, _ ->
                 viewModel.addComicComment(comicId, text, mentions)
             },
             placeholder = "Add a comment...",

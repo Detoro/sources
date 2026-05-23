@@ -5,7 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,8 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -35,9 +32,6 @@ import androidx.compose.ui.unit.sp
 import toro.sources.AppViewModel
 import toro.sources.dataModels.Post
 import toro.sources.convertTimestamp
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -53,12 +47,7 @@ fun PostCard(
     onCommentClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val tagList by viewModel.tags.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        viewModel.getTags(post.id)
-    }
 
     Card(
         modifier = modifier,
@@ -127,20 +116,6 @@ fun PostCard(
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
-
-            LazyHorizontalGrid(
-                rows = GridCells.Fixed(2),
-                contentPadding = PaddingValues(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .height(80.dp)
-                    .padding()
-            ) {
-                items(tagList) { tag ->
-                    TagChip(tag.content)
-                }
-            }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),

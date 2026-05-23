@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import toro.sources.AppViewModel
 import toro.sources.components.SmartInput
-import toro.sources.components.TagChip
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -29,7 +28,6 @@ fun PostPage(
 ) {
     var postTitle by remember { mutableStateOf("") }
     var postText by remember { mutableStateOf("") }
-    var tagList by remember { mutableStateOf(emptyList<String>()) }
     val currentUser by viewModel.currentUser.collectAsState()
 
     Scaffold(
@@ -46,17 +44,15 @@ fun PostPage(
         bottomBar = {
             SmartInput(
                 supportTitle = true,
-                supportTags = true,
                 supportUpload = true,
                 viewModel = viewModel,
-                onSend = { title, text, tags, mentions, comics, uri ->
-                    viewModel.makePost(title, text, tags)
+                onSend = { title, text, _, _, _ ->
+                    viewModel.makePost(title, text)
                 },
                 onTitleChange = { postTitle = it },
-                onValueChange = { title, text, tags ->
+                onValueChange = { title, text ->
                     postTitle = title ?: ""
                     postText = text
-                    tagList = tags
                 }
             )
         }
@@ -117,19 +113,6 @@ fun PostPage(
                         fontSize = 14.sp,
                         color = if (postText.isBlank()) Color.Gray else Color.White
                     )
-
-                    if (tagList.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            tagList.forEach { tag ->
-                                TagChip(tag)
-                            }
-                        }
-                    }
                 }
             }
         }

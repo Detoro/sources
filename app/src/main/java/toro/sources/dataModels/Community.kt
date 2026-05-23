@@ -16,13 +16,6 @@ data class Post(
 )
 
 @Serializable
-data class Tag(
-    val id: String,
-    val postId: String,
-    val content: String
-)
-
-@Serializable
 data class Comment(
     val id: String,
     val postId: String,

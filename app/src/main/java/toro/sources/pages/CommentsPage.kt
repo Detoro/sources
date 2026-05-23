@@ -75,7 +75,7 @@ fun CommentsPage(
                     }
                 }
                 SmartInput(
-                    onSend = { _, text, _, mentions, _, _ ->
+                    onSend = { _, text, mentions, _, _ ->
                         viewModel.addPostComment(postId, text, mentions, replyingTo?.id)
                         replyingTo = null
                         initialText = ""

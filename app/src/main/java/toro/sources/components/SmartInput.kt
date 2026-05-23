@@ -3,7 +3,6 @@ package toro.sources.components
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,7 +10,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -22,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import toro.sources.AppViewModel
 
@@ -31,25 +28,21 @@ fun SmartInput(
     title: String? = null,
     onTitleChange: ((String) -> Unit)? = null,
     supportTitle: Boolean = false,
-    onSend: (title: String?, text: String, tags: List<String>, mentions: List<String>, sharedComicIds: List<String>, attachment: Uri?) -> Unit,
+    onSend: (title: String?, text: String, mentions: List<String>, sharedComicIds: List<String>, attachment: Uri?) -> Unit,
     initialText: String = "",
     placeholder: String = "Type a message...",
-    supportTags: Boolean = false,
     supportUpload: Boolean = false,
     viewModel: AppViewModel? = null,
-    onValueChange: ((String?, String, List<String>) -> Unit)? = null
+    onValueChange: ((String?, String) -> Unit)? = null
 ) {
     var inputText by remember(initialText) { mutableStateOf(initialText) }
-    var tagsText by remember { mutableStateOf("") }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
-    var showTagInput by remember { mutableStateOf(false) }
     var titleText by remember(title) { mutableStateOf(title ?: "") }
 
-    LaunchedEffect(titleText, inputText, tagsText) {
+    LaunchedEffect(titleText, inputText) {
         onValueChange?.invoke(
             titleText,
-            inputText,
-            if (tagsText.isBlank()) emptyList() else tagsText.split(",").map { it.trim() }.filter { it.isNotBlank() }
+            inputText
         )
     }
     
@@ -149,35 +142,10 @@ fun SmartInput(
                 }
             }
 
-            AnimatedVisibility(visible = showTagInput) {
-                TextField(
-                    value = tagsText,
-                    onValueChange = { tagsText = it },
-                    placeholder = { Text("Tags (comma separated)...") },
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                    ),
-                    shape = MaterialTheme.shapes.medium,
-                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.Label, contentDescription = null) }
-                )
-            }
-
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (supportUpload) {
                     IconButton(onClick = { launcher.launch("image/*") }) {
                         Icon(Icons.Default.Add, contentDescription = "Upload")
-                    }
-                }
-
-                if (supportTags) {
-                    IconButton(onClick = { showTagInput = !showTagInput }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.Label,
-                            contentDescription = "Tags",
-                            tint = if (showTagInput) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
                     }
                 }
 
@@ -225,19 +193,15 @@ fun SmartInput(
                 IconButton(
                     onClick = {
                         if (inputText.isNotBlank() || selectedUri != null) {
-                            val tags = if (tagsText.isBlank()) emptyList() else tagsText.split(",").map { it.trim() }.filter { it.isNotBlank() }
                             onSend(
                                 if (supportTitle) titleText else null,
                                 inputText,
-                                tags,
                                 mentionedUserIds.toList(),
                                 sharedComicIds.toList(),
                                 selectedUri
                             )
                             inputText = ""
-                            tagsText = ""
                             selectedUri = null
-                            showTagInput = false
                             mentionedUserIds.clear()
                             sharedComicIds.clear()
                         }

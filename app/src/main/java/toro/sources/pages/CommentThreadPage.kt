@@ -72,7 +72,7 @@ fun CommentThreadPage(
                     }
                 }
                 SmartInput(
-                    onSend = { _, text, _, mentions, _, _ ->
+                    onSend = { _, text, mentions, _, _ ->
                         // All replies on this page belong to this thread (parentId = commentId)
                         // UNLESS specifically replying to another reply within the thread.
                         val targetParentId = replyingTo?.id ?: commentId
