@@ -168,6 +168,7 @@ fun SettingsPage(
             confirmButton = {
                 TextButton(onClick = { 
                     if (newUsername.isNotBlank()) {
+                        userProfile?.username = newUsername
                         viewModel.updateUsername(newUsername)
                     }
                     showUsernameDialog = false
