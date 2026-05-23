@@ -1,6 +1,7 @@
 package toro.sources.components
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,13 +19,16 @@ import toro.sources.AppViewModel
 @Composable
 fun ActiveChatsList(
     viewModel: AppViewModel,
-    onChatClick: (String) -> Unit) {
+    onChatClick: (String) -> Unit,
+    onProfileClick: (String) -> Unit
+) {
     val activeChats by viewModel.inbox.collectAsState()
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(activeChats) { chat ->
             val conversationId = chat.conversationId
             val username = chat.otherUserName
+            val otherUserId = chat.otherUserId
             val lastMessage = chat.lastMessage!!
 
             ListItem(
@@ -32,7 +36,11 @@ fun ActiveChatsList(
                 supportingContent = {
                     Text(lastMessage, overflow = TextOverflow.Ellipsis)
                 },
-                leadingContent = { DefaultAvatar() },
+                leadingContent = { 
+                    Box(modifier = Modifier.clickable { onProfileClick(otherUserId) }) {
+                        DefaultAvatar()
+                    }
+                },
                 modifier = Modifier.clickable { onChatClick(conversationId) }
             )
             HorizontalDivider()

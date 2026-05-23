@@ -50,7 +50,6 @@ import androidx.navigation.compose.rememberNavController
 import toro.sources.dataModels.NotificationType
 import toro.sources.dataModels.PreferenceManager
 import toro.sources.network.RetrofitClient
-import toro.sources.pages.AccountPage
 import toro.sources.pages.EngagementPage
 import toro.sources.pages.HomePage
 import toro.sources.pages.LoginPage
@@ -69,6 +68,7 @@ import toro.sources.pages.CommentsPage
 import toro.sources.pages.FriendRequestPage
 import toro.sources.pages.NotificationsPage
 import toro.sources.pages.PostPage
+import toro.sources.pages.ProfilePage
 import toro.sources.pages.ReadingList
 import toro.sources.pages.SettingsPage
 
@@ -76,7 +76,6 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object SignUp : Screen("signup")
     object Welcome : Screen("welcome")
-    object Account : Screen("account")
     object Home : Screen("home/{userId}")
     object Upload : Screen("upload")
     object Inbox : Screen("inbox")
@@ -93,6 +92,9 @@ sealed class Screen(val route: String) {
     object Notifications : Screen("notifications")
     object Chat : Screen("chat_page/{conversationId}") {
         fun createRoute(conversationId: String) = "chat_page/$conversationId"
+    }
+    object Profile : Screen("profile/{userId}") {
+        fun createRoute(userId: String) = "profile/$userId"
     }
     object AuthorSearch : Screen("author_search")
     object Comments : Screen("comments/{postId}") {
@@ -381,7 +383,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                         navController.navigate(Screen.Overview.route)
                     },
                     onAccountClick = {
-                        navController.navigate(Screen.Account.route) {
+                        navController.navigate(Screen.Profile.createRoute(currentUser.userId)) {
                             launchSingleTop = true
                         }
                     },
@@ -534,14 +536,6 @@ fun AppNavigation(viewModel: AppViewModel) {
                     }
                 )
             }
-            composable(Screen.Account.route) {
-                AccountPage(
-                    viewModel = viewModel,
-                    onSettingsClick = {
-                        navController.navigate(Screen.Settings.route)
-                    }
-                )
-            }
             composable(Screen.Settings.route) {
                 SettingsPage(
                     viewModel = viewModel,
@@ -563,6 +557,9 @@ fun AppNavigation(viewModel: AppViewModel) {
                     },
                     onFriendRequest = {
                         navController.navigate(Screen.FriendRequest.route)
+                    },
+                    onProfileClick = { userId ->
+                        navController.navigate(Screen.Profile.createRoute(userId))
                     }
                 )
             }
@@ -583,6 +580,17 @@ fun AppNavigation(viewModel: AppViewModel) {
                 ChatThreadPage(
                     conversationId = conversationId,
                     viewModel = viewModel,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Profile.route) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+                ProfilePage(
+                    viewModel = viewModel,
+                    userId = userId,
+                    onSettingsClick = {
+                        navController.navigate(Screen.Settings.route)
+                    },
                     onBackClick = { navController.popBackStack() }
                 )
             }

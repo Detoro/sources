@@ -17,7 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -33,9 +33,10 @@ import toro.sources.AppViewModel
 fun ChatInboxPage(
     viewModel: AppViewModel,
     onChatClick: (String) -> Unit,
-    onFriendRequest: () -> Unit
+    onFriendRequest: () -> Unit,
+    onProfileClick: (String) -> Unit
 ) {
-    var selectedTabIndex by remember { mutableStateOf(0) }
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
     val pendingRequestsCount by viewModel.pendingRequestsCount.collectAsState()
 
     val requestsTitle = if (pendingRequestsCount > 0) {
@@ -79,7 +80,8 @@ fun ChatInboxPage(
             if (selectedTabIndex == 0) {
                 ActiveChatsList(
                     viewModel,
-                    onChatClick
+                    onChatClick,
+                    onProfileClick
                 )
             } else {
                 ChatRequestsList(viewModel)

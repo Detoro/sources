@@ -144,11 +144,20 @@ class AppViewModel(
     private val _userProfile = MutableStateFlow<UserProfile?>(null)
     val userProfile = _userProfile.asStateFlow()
 
+    private val _targetUserProfile = MutableStateFlow<UserProfile?>(null)
+    val targetUserProfile = _targetUserProfile.asStateFlow()
+
     private val _userPosts = MutableStateFlow<List<Post>>(emptyList())
     val userPosts = _userPosts.asStateFlow()
 
+    private val _targetUserPosts = MutableStateFlow<List<Post>>(emptyList())
+    val targetUserPosts = _targetUserPosts.asStateFlow()
+
     private val _userWorks = MutableStateFlow<List<Comic>>(emptyList())
     val userWorks = _userWorks.asStateFlow()
+
+    private val _targetUserWorks = MutableStateFlow<List<Comic>>(emptyList())
+    val targetUserWorks = _targetUserWorks.asStateFlow()
 
     private val _userSuggestions = MutableStateFlow<List<UserProfile>>(emptyList())
     val userSuggestions = _userSuggestions.asStateFlow()
@@ -739,16 +748,25 @@ class AppViewModel(
         viewModelScope.launch {
             try {
                 val profile = RetrofitClient.comicApiService.getUserProfile(userId)
-                _userProfile.value = profile
-                _userPosts.value = RetrofitClient.comicApiService.getUserPosts(userId)
-                _userWorks.value = RetrofitClient.comicApiService.getUserWorks(userId)
+                val posts = RetrofitClient.comicApiService.getUserPosts(userId)
+                val works = RetrofitClient.comicApiService.getUserWorks(userId)
 
-                RetrofitClient.preferenceManager.saveUserData(
-                    profile.id,
-                    profile.username,
-                    profile.avatarUrl,
-                    profile.bio
-                )
+                if (userId == _currentUser.value.userId) {
+                    _userProfile.value = profile
+                    _userPosts.value = posts
+                    _userWorks.value = works
+
+                    RetrofitClient.preferenceManager.saveUserData(
+                        profile.id,
+                        profile.username,
+                        profile.avatarUrl,
+                        profile.bio
+                    )
+                } else {
+                    _targetUserProfile.value = profile
+                    _targetUserPosts.value = posts
+                    _targetUserWorks.value = works
+                }
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to load profile: ${e.message}"
             }
@@ -798,10 +816,6 @@ class AppViewModel(
         viewModelScope.launch {
             RetrofitClient.preferenceManager.setDarkTheme(enabled)
         }
-    }
-
-    fun clearError() {
-        _errorMessage.value = null
     }
 
     fun clearLocalDatabase() {
