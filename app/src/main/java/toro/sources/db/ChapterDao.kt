@@ -27,4 +27,7 @@ interface ChapterDao {
 
     @Query("DELETE FROM chapters WHERE comicId = :comicId")
     suspend fun deleteChaptersByComicId(comicId: String)
+
+    @Query("DELETE FROM chapters")
+    suspend fun deleteAllChapters()
 }

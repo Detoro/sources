@@ -37,4 +37,7 @@ interface ComicDao {
 
     @Delete
     suspend fun deleteComic(comic: Comic)
+
+    @Query("DELETE FROM comics")
+    suspend fun deleteAllComics()
 }

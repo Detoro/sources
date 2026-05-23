@@ -38,7 +38,7 @@ fun AccountPage(
     onSettingsClick: () -> Unit
 ) {
     val context = LocalContext.current
-    
+
     val currentUser by viewModel.currentUser.collectAsState()
     val userProfile by viewModel.userProfile.collectAsState()
     val userPosts by viewModel.userPosts.collectAsState()
@@ -60,6 +60,7 @@ fun AccountPage(
             uri?.let { viewModel.uploadAvatar(context, it) }
         }
     )
+
     // Dialogs
     if (showBioDialog) {
         AlertDialog(
@@ -75,6 +76,7 @@ fun AccountPage(
             },
             confirmButton = {
                 TextButton(onClick = {
+                    userProfile?.bio = newBio
                     viewModel.updateBio(newBio)
                     showBioDialog = false
                 }) { Text("Save") }

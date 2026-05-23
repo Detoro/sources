@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Password
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -50,15 +51,18 @@ fun SettingsPage(
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val userProfile by viewModel.userProfile.collectAsState()
-    var darkThemeEnabled by remember { mutableStateOf(true) }
+    val isDarkTheme by viewModel.isDarkTheme.collectAsState()
     var showMotiveDialog by remember { mutableStateOf(false) }
     var showResetPasswordDialog by remember { mutableStateOf(false) }
     var showStorageDialog by remember { mutableStateOf(false) }
     var showUsernameDialog by remember { mutableStateOf(false) }
+    var showClearDbDialog by remember { mutableStateOf(false) }
     var newUsername by remember { mutableStateOf("") }
     val repoLink = stringResource(R.string.github_link)
 
-    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+    Column(
+        modifier = Modifier.verticalScroll(rememberScrollState())
+    ) {
         SettingSectionTitle("Profile Privacy")
         ListItem(
             headlineContent = { Text("Private Profile") },
@@ -77,7 +81,7 @@ fun SettingsPage(
             headlineContent = { Text("Dark Theme") },
             leadingContent = { Icon(Icons.Default.ColorLens, contentDescription = null) },
             trailingContent = {
-                Switch(checked = darkThemeEnabled, onCheckedChange = { darkThemeEnabled = it })
+                Switch(checked = isDarkTheme, onCheckedChange = { viewModel.toggleDarkTheme(it) })
             }
         )
 
@@ -100,6 +104,11 @@ fun SettingsPage(
                 imageLoader.memoryCache?.clear()
                 imageLoader.diskCache?.clear()
             }
+        )
+        ListItem(
+            headlineContent = { Text("Clear Local Database") },
+            leadingContent = { Icon(Icons.Default.DeleteOutline, contentDescription = null) },
+            modifier = Modifier.clickable { showClearDbDialog = true }
         )
         ListItem(
             headlineContent = { Text("Motive") },
@@ -176,6 +185,28 @@ fun SettingsPage(
             },
             dismissButton = {
                 TextButton(onClick = { showUsernameDialog = false }) { Text("Cancel") }
+            }
+        )
+    }
+
+    if (showClearDbDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearDbDialog = false },
+            title = { Text("Clear Local Database") },
+            text = { Text("This will permanently delete all local comics and reading progress. This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.clearLocalDatabase()
+                        showClearDbDialog = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Clear Everything")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearDbDialog = false }) { Text("Cancel") }
             }
         )
     }

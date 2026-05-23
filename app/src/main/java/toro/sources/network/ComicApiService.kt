@@ -55,6 +55,9 @@ interface ComicApiService {
     @POST("api/subscribe/comic/{comicId}")
     suspend fun toggleComicSubscription(@Path("comicId") comicId: String): SubscribeResponse
 
+    @GET("api/subscriptions")
+    suspend fun getSubscribedComics(): List<Comic>
+
     @Multipart
     @POST("api/comics/upload")
     suspend fun uploadComic(

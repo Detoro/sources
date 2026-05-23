@@ -45,7 +45,7 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
         val notification = Notification(
             id = UUID.randomUUID().toString(),
             userId = "",
-            type = NotificationType.fromString(data["type"] ?: "") ?: NotificationType.SYSTEM,
+            type = NotificationType.fromString(title) ?: NotificationType.SYSTEM,
             message = message,
             timestamp = System.currentTimeMillis(),
             isRead = false,

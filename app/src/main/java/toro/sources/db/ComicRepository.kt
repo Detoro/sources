@@ -98,6 +98,21 @@ class ComicRepository(
         }
     }
 
+    suspend fun clearAllData() {
+        try {
+            chapterDao.deleteAllChapters()
+            comicDao.deleteAllComics()
+            withContext(Dispatchers.IO) {
+                val directory = File(context.filesDir, "sideloaded_comics")
+                if (directory.exists()) {
+                    directory.deleteRecursively()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("Repository", "Failed to clear all data", e)
+        }
+    }
+
     suspend fun updateProgress(chapterId: String, pageIndex: Int) {
         chapterDao.updateReadingProgress(chapterId, pageIndex)
     }
@@ -136,6 +151,16 @@ class ComicRepository(
             } catch (e: Exception) {
                 Log.e("Network Error", "Failed to fetch chapters: ${e.message}")
             }
+        }
+    }
+
+    suspend fun syncSubscriptions() {
+        try {
+            val remoteSubs = apiService.getSubscribedComics()
+            val syncedComics = remoteSubs.map { it.copy(isSubscribed = true) }
+            insertComics(syncedComics)
+        } catch (e: Exception) {
+            Log.e("Sync", "Failed to sync subscriptions", e)
         }
     }
 

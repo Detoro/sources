@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,17 +29,17 @@ fun ReadingList(
     onComicClick: (Comic) -> Unit,
     onAddComic: () -> Unit
 ) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val subscribed by viewModel.subscribedComics.collectAsState()
     val recentlyRead by viewModel.recentlyReadComics.collectAsState()
 
     val tabs = listOf("Recents", "Subscribed")
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.inbox)) }) },
+        topBar = { TopAppBar(title = { Text(stringResource(R.string.reading_list)) }) },
         floatingActionButton = {
             FloatingActionButton(onClick = { onAddComic() }) {
-                Icon(Icons.Filled.Add, contentDescription = "Send Friend Request")
+                Icon(Icons.Filled.Add, contentDescription = "Find a comic to subscribe to")
             }
         }
     ) { paddingValues ->

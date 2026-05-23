@@ -41,7 +41,6 @@ import toro.sources.dataModels.CommentRequest
 import toro.sources.dataModels.PostRequest
 import toro.sources.dataModels.FcmTokenRequest
 import toro.sources.dataModels.Conversation
-import toro.sources.dataModels.Tag
 import java.io.File
 import java.time.Instant
 import java.time.LocalDateTime
@@ -141,13 +140,6 @@ class AppViewModel(
     val pageCount = _pageCount.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage = _errorMessage.asStateFlow()
-
-    private val _isSubscribed = MutableStateFlow(false)
-    val isSubscribed = _isSubscribed.asStateFlow()
-
-    private val _tags = MutableStateFlow<List<Tag>>(emptyList())
-    val tags = _tags.asStateFlow()
 
     private val _userProfile = MutableStateFlow<UserProfile?>(null)
     val userProfile = _userProfile.asStateFlow()
@@ -164,6 +156,9 @@ class AppViewModel(
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
     val notifications = _notifications.asStateFlow()
 
+    private val _isDarkTheme = MutableStateFlow(true)
+    val isDarkTheme = _isDarkTheme.asStateFlow()
+
     private val _pendingNavigation = MutableStateFlow<String?>(null)
     val pendingNavigation = _pendingNavigation.asStateFlow()
 
@@ -178,9 +173,32 @@ class AppViewModel(
     init {
         getCatalog()
         getChatRequests()
-        seedTestData()
 
-        if (RetrofitClient.tokenManager.getTokenSync() != null) {
+        viewModelScope.launch { repository.syncSubscriptions() }
+
+        val userData = RetrofitClient.preferenceManager.getUserDataSync()
+        if (userData.userId != null && userData.username != null) {
+            _currentUser.value = AuthResponse(
+                userId = userData.userId,
+                username = userData.username,
+                avatarUrl = userData.avatarUrl?.toUri()
+            )
+            _userProfile.value = UserProfile(
+                id = userData.userId,
+                username = userData.username,
+                avatarUrl = userData.avatarUrl,
+                bio = userData.bio
+            )
+            getUserProfile(userData.userId)
+        }
+
+        viewModelScope.launch {
+            RetrofitClient.preferenceManager.isDarkTheme.collect { enabled ->
+                _isDarkTheme.value = enabled
+            }
+        }
+
+        if (RetrofitClient.preferenceManager.getTokenSync() != null) {
             fetchAndRegisterFcmToken()
         }
 
@@ -203,7 +221,10 @@ class AppViewModel(
     }
 
     fun setCurrentComic(comic: Comic) {
-        _currentComic.value = comic
+        viewModelScope.launch {
+            val localComic = myLibrary.value.find { it.id == comic.id }
+            _currentComic.value = localComic ?: comic
+        }
     }
     fun importLocalComic(
         title: String,
@@ -227,15 +248,12 @@ class AppViewModel(
         }
     }
     fun toggleComicSubscription(comicId: String) {
-        _isSubscribed.value = !_isSubscribed.value
-
         viewModelScope.launch {
             try {
                 val response = RetrofitClient.comicApiService.toggleComicSubscription(comicId)
-                _isSubscribed.value = response.isSubscribed
+                _currentComic.value = _currentComic.value?.copy(isSubscribed = response.isSubscribed)
                 repository.toggleLocalSubscription(comicId, response.isSubscribed)
             } catch (e: Exception) {
-                _isSubscribed.value = !_isSubscribed.value
                 Log.e("Subscription", "Failed to toggle: ${e.message}")
             }
         }
@@ -254,29 +272,9 @@ class AppViewModel(
         viewModelScope.launch {
             repository.updateLastRead(comic.id)
             try {
-                // Check if it's our test data
-                if (chapterId.startsWith("chapter_")) {
-                    val mockPages = when (chapterId) {
-                        "chapter_1_1" -> listOf(
-                            Page(id = "p1", chapterId = chapterId, pageNumber = 0, imageUrl = "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=500&auto=format&fit=crop"),
-                            Page(id = "p2", chapterId = chapterId, pageNumber = 1, imageUrl = "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=500&auto=format&fit=crop"),
-                            Page(id = "p3", chapterId = chapterId, pageNumber = 2, imageUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=500&auto=format&fit=crop")
-                        )
-                        "chapter_1_2" -> listOf(
-                            Page(id = "p4", chapterId = chapterId, pageNumber = 0, imageUrl = "https://images.unsplash.com/photo-1444703686981-a3abb9a555e6?q=80&w=500&auto=format&fit=crop"),
-                            Page(id = "p5", chapterId = chapterId, pageNumber = 1, imageUrl = "https://images.unsplash.com/photo-1475274047050-1d0c0975c63e?q=80&w=500&auto=format&fit=crop")
-                        )
-                        else -> listOf(
-                            Page(id = "p6", chapterId = chapterId, pageNumber = 0, imageUrl = "https://images.unsplash.com/photo-1506318137071-a8e063b4bcc0?q=80&w=500&auto=format&fit=crop")
-                        )
-                    }
-                    chapterPages = mockPages
-                    _pageCount.value = mockPages.size
-                } else {
-                    val pages = repository.getPagesForChapter(chapterId, comic.id)
-                    chapterPages = pages
-                    _pageCount.value = pages.size
-                }
+                val pages = repository.getPagesForChapter(chapterId, comic.id)
+                chapterPages = pages
+                _pageCount.value = pages.size
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to load chapter: ${e.message}"
                 Log.e("Reader", _errorMessage.value, e)
@@ -300,7 +298,12 @@ class AppViewModel(
                 val authRequest = AuthRequest(email = credentials.email, password = credentials.password)
                 val response = RetrofitClient.comicApiService.login(authRequest)
                 _currentUser.value = response
-                RetrofitClient.tokenManager.saveToken(response.token)
+                RetrofitClient.preferenceManager.saveToken(response.token)
+                RetrofitClient.preferenceManager.saveUserData(
+                    response.userId,
+                    response.username,
+                    response.avatarUrl?.toString()
+                )
                 fetchAndRegisterFcmToken()
                 _currentComic.value = null
                 onSuccess()
@@ -313,7 +316,7 @@ class AppViewModel(
     fun logoutUser(onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
             _currentUser.value = AuthResponse()
-            RetrofitClient.tokenManager.clearToken()
+            RetrofitClient.preferenceManager.clearToken()
             _currentComic.value = null
             onLogoutComplete()
         }
@@ -323,7 +326,12 @@ class AppViewModel(
             try {
                 val response = RetrofitClient.comicApiService.signUp(newUser)
                 _currentUser.value = response
-                RetrofitClient.tokenManager.saveToken(response.token)
+                RetrofitClient.preferenceManager.saveToken(response.token)
+                RetrofitClient.preferenceManager.saveUserData(
+                    response.userId,
+                    response.username,
+                    response.avatarUrl?.toString()
+                )
                 fetchAndRegisterFcmToken()
                 onSuccess()
                 Log.i("Success", "Sign up successfully as ${response.username}!")
@@ -338,9 +346,15 @@ class AppViewModel(
             try {
                 val userId = _currentUser.value.userId
                 if (userId.isEmpty()) return@launch
-                
                 val response = RetrofitClient.comicApiService.updateBio(userId, UpdateBioRequest(bio))
-                _userProfile.value?.bio = response.message
+                _userProfile.value = _userProfile.value?.copy(bio = response.message)
+
+                RetrofitClient.preferenceManager.saveUserData(
+                    _currentUser.value.userId,
+                    _currentUser.value.username,
+                    _currentUser.value.avatarUrl?.toString(),
+                    response.message
+                )
                 Log.i("Success", "Bio updated successfully")
             } catch (e: Exception) {
                 Log.e("AppViewModel", "Failed to update bio: ${e.message}")
@@ -358,6 +372,11 @@ class AppViewModel(
                 val response = RetrofitClient.comicApiService.updateUsername(userId, UpdateUsernameRequest(newUsername))
                 _userProfile.value?.username = response.message
                 _currentUser.value = _currentUser.value.copy(username = response.message)
+                RetrofitClient.preferenceManager.saveUserData(
+                    _currentUser.value.userId,
+                    _currentUser.value.username,
+                    _currentUser.value.avatarUrl?.toString()
+                )
                 Log.i("Success", "Username updated successfully")
             } catch (e: Exception) {
                 Log.e("AppViewModel", "Failed to update username: ${e.message}")
@@ -376,7 +395,13 @@ class AppViewModel(
 
                 val response = RetrofitClient.comicApiService.uploadAvatar(body)
 
-                _currentUser.value = _currentUser.value.copy(avatarUrl = response.message.toUri())
+                val newAvatarUrl = response.message.toUri()
+                _currentUser.value = _currentUser.value.copy(avatarUrl = newAvatarUrl)
+                RetrofitClient.preferenceManager.saveUserData(
+                    _currentUser.value.userId,
+                    _currentUser.value.username,
+                    newAvatarUrl.toString()
+                )
 
             } catch (e: Exception) {
                 Log.e("AvatarUpload", "Failed to upload avatar: ${e.message}")
@@ -709,22 +734,21 @@ class AppViewModel(
     fun clearUserSuggestions() {
         _userSuggestions.value = emptyList()
     }
-    fun getTags(postId: String) {
-        viewModelScope.launch {
-            try {
-                _tags.value = RetrofitClient.comicApiService.getTagsByPostId(postId)
-            } catch (e: Exception) {
-                _errorMessage.value = "Failed to get Tags: ${e.message}"
-            }
-        }
-    }
 
     fun getUserProfile(userId: String) {
         viewModelScope.launch {
             try {
-                _userProfile.value = RetrofitClient.comicApiService.getUserProfile(userId)
+                val profile = RetrofitClient.comicApiService.getUserProfile(userId)
+                _userProfile.value = profile
                 _userPosts.value = RetrofitClient.comicApiService.getUserPosts(userId)
                 _userWorks.value = RetrofitClient.comicApiService.getUserWorks(userId)
+
+                RetrofitClient.preferenceManager.saveUserData(
+                    profile.id,
+                    profile.username,
+                    profile.avatarUrl,
+                    profile.bio
+                )
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to load profile: ${e.message}"
             }
@@ -770,166 +794,19 @@ class AppViewModel(
         _pendingNavigation.value = null
     }
 
+    fun toggleDarkTheme(enabled: Boolean) {
+        viewModelScope.launch {
+            RetrofitClient.preferenceManager.setDarkTheme(enabled)
+        }
+    }
+
     fun clearError() {
         _errorMessage.value = null
     }
-    fun seedTestData() {
+
+    fun clearLocalDatabase() {
         viewModelScope.launch {
-            val testComics = listOf(
-                Comic(
-                    id = "comic_1",
-                    title = "The Galactic Journey",
-                    author = "Astra Nova",
-                    description = "An epic space adventure across unknown galaxies.",
-                    coverImageUrl = "https://images.unsplash.com/photo-1614728263952-84ea256f9679?q=80&w=500&auto=format&fit=crop",
-                    scrollDirection = "VERTICAL",
-                    hasMusic = true,
-                    isSubscribed = true,
-                    lastReadTimestamp = System.currentTimeMillis()
-                ),
-                Comic(
-                    id = "comic_2",
-                    title = "Midnight Whispers",
-                    author = "Elena Shadow",
-                    description = "A mystery lurking in the shadows of an old Victorian mansion.",
-                    coverImageUrl = "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=500&auto=format&fit=crop",
-                    scrollDirection = "HORIZONTAL",
-                    hasMusic = false,
-                    isSubscribed = false,
-                    lastReadTimestamp = 0L
-                ),
-                Comic(
-                    id = "comic_3",
-                    title = "Neon Samurai",
-                    author = "Kenji Cyber",
-                    description = "A high-octane cyberpunk action story set in neo-Tokyo.",
-                    coverImageUrl = "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?q=80&w=500&auto=format&fit=crop",
-                    scrollDirection = "HORIZONTAL",
-                    hasMusic = true,
-                    isSubscribed = true,
-                    lastReadTimestamp = System.currentTimeMillis() - 100000
-                ),
-                Comic(
-                    id = "comic_4",
-                    title = "Solar Winds",
-                    author = "Astra Nova",
-                    description = "A relaxing journey through the rings of Saturn.",
-                    coverImageUrl = "https://images.unsplash.com/photo-1614728263952-84ea256f9679?q=80&w=500&auto=format&fit=crop",
-                    scrollDirection = "HORIZONTAL",
-                    hasMusic = false,
-                    isSubscribed = true,
-                    lastReadTimestamp = System.currentTimeMillis() - 500000
-                )
-            )
-
-            val testChapters = listOf(
-                Chapter(
-                    id = "chapter_1_1",
-                    comicId = "comic_1",
-                    chapterTitle = "The Departure",
-                    chapterNumber = 1f,
-                    pageCount = 3
-                ),
-                Chapter(
-                    id = "chapter_1_2",
-                    comicId = "comic_1",
-                    chapterTitle = "First Contact",
-                    chapterNumber = 2f,
-                    pageCount = 2
-                ),
-                Chapter(
-                    id = "chapter_2_1",
-                    comicId = "comic_2",
-                    chapterTitle = "The Invitation",
-                    chapterNumber = 1f,
-                    pageCount = 4
-                ),
-                Chapter(
-                    id = "chapter_3_1",
-                    comicId = "comic_3",
-                    chapterTitle = "Binary Soul",
-                    chapterNumber = 1f,
-                    pageCount = 5
-                ),
-                Chapter(
-                    id = "chapter_4_1",
-                    comicId = "comic_4",
-                    chapterTitle = "Golden Dust",
-                    chapterNumber = 1f,
-                    pageCount = 2
-                )
-            )
-
-            repository.insertComics(testComics)
-            repository.insertChapters(testChapters)
-
-            // Seed community data
-            val testPosts = listOf(
-                Post(
-                    id = "post_1",
-                    authorId = "u1",
-                    authorName = "AstraNova",
-                    content = "Just uploaded Chapter 2 of Galactic Journey! What do you guys think?",
-                    timestamp = System.currentTimeMillis() - 3600000,
-                    likesCount = 12,
-                    isLiked = false
-                ),
-                Post(
-                    id = "post_2",
-                    authorId = "u2",
-                    authorName = "ElenaShadow",
-                    content = "Midnight Whispers is reaching its climax. Stay tuned!",
-                    timestamp = System.currentTimeMillis() - 7200000,
-                    likesCount = 45,
-                    isLiked = true
-                )
-            )
-            _communityPosts.value = testPosts
-
-            val testComments = listOf(
-                Comment(
-                    id = "c1",
-                    postId = "post_1",
-                    authorId = "u2",
-                    authorName = "ElenaShadow",
-                    content = "The art in the nebula scene was breathtaking!",
-                    timestamp = System.currentTimeMillis() - 3000000,
-                    likesCount = 5,
-                    repliesCount = 1
-                ),
-                Comment(
-                    id = "c2",
-                    postId = "post_1",
-                    authorId = "u1",
-                    authorName = "AstraNova",
-                    content = "Thank you! I spent a lot of time on that one.",
-                    timestamp = System.currentTimeMillis() - 2500000,
-                    parentId = "c1",
-                    likesCount = 2
-                ),
-                Comment(
-                    id = "c3",
-                    postId = "post_1",
-                    authorId = "u3",
-                    authorName = "SpaceTraveler",
-                    content = "Can't wait for Chapter 3 @AstraNova!",
-                    timestamp = System.currentTimeMillis() - 2000000,
-                    likesCount = 0
-                )
-            )
-            _comments.value = testComments
-
-            val testPages = listOf(
-                Page(id = "p1", chapterId = "chapter_1_1", pageNumber = 0, imageUrl = "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=500&auto=format&fit=crop"),
-                Page(id = "p2", chapterId = "chapter_1_1", pageNumber = 1, imageUrl = "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=500&auto=format&fit=crop"),
-                Page(id = "p3", chapterId = "chapter_1_1", pageNumber = 2, imageUrl = "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=500&auto=format&fit=crop")
-            )
-            if (currentComic.value?.id == "comic_1") {
-                chapterPages = testPages
-                _pageCount.value = testPages.size
-            }
-
-            Log.i("TestData", "Database seeded with test comics, chapters, and sample pages.")
+            repository.clearAllData()
         }
     }
 }

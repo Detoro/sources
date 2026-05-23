@@ -3,7 +3,6 @@ package toro.sources
 import android.app.PictureInPictureParams
 import android.os.Bundle
 import android.util.Rational
-import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -43,11 +42,13 @@ import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import androidx.compose.runtime.remember
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import toro.sources.dataModels.TokenManager
+import toro.sources.dataModels.NotificationType
+import toro.sources.dataModels.PreferenceManager
 import toro.sources.network.RetrofitClient
 import toro.sources.pages.AccountPage
 import toro.sources.pages.EngagementPage
@@ -138,27 +139,27 @@ class MainActivity : ComponentActivity() {
 
     private fun handleIntent(intent: Intent?, viewModel: AppViewModel) {
         intent?.let {
-            val type = it.getStringExtra("type")
+            val routingType = it.getStringExtra("type")
             val conversationId = it.getStringExtra("conversationId")
             val postId = it.getStringExtra("postId")
 
-            when (type) {
-                "CHAT" -> {
+            when (routingType) {
+                NotificationType.CHAT.name -> {
                     if (conversationId != null) {
                         viewModel.handleNavigation(Screen.Chat.createRoute(conversationId))
                     }
                 }
-                "LIKE" -> {
-                    viewModel.handleNavigation(Screen.Post.route)
+                NotificationType.LIKE.name -> {
+                    viewModel.handleNavigation(Screen.Engagement.route)
                 }
-                "COMMENT", "FOLLOW" -> {
+                NotificationType.COMMENT.name, NotificationType.FOLLOW.name -> {
                     if (postId != null) {
                         viewModel.handleNavigation(Screen.Comments.createRoute(postId))
                     } else {
                         viewModel.handleNavigation(Screen.Notifications.route)
                     }
                 }
-                "FRIEND_REQUEST" -> {
+                NotificationType.FRIEND_REQUEST.name -> {
                     viewModel.handleNavigation(Screen.FriendRequest.route)
                 }
             }
@@ -174,8 +175,8 @@ class MainActivity : ComponentActivity() {
 
         requestNotificationPermission()
 
-        val tokenManager = TokenManager(this)
-        RetrofitClient.initialize(tokenManager)
+        val preferenceManager = PreferenceManager(this)
+        RetrofitClient.initialize(preferenceManager)
 
         val appContainer = application as SourcesCanvas
         val appRepository = appContainer.repository
@@ -191,13 +192,14 @@ class MainActivity : ComponentActivity() {
         }
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
-            SourcesTheme {
+            val viewModel: AppViewModel = viewModel(factory = factory)
+            val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+
+            SourcesTheme(darkTheme = isDarkTheme) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val viewModel: AppViewModel = viewModel(factory = factory)
-
                     LaunchedEffect(intent) {
                         handleIntent(intent, viewModel)
                     }
@@ -225,20 +227,20 @@ fun AppNavigation(viewModel: AppViewModel) {
     )
     val context = LocalContext.current
     val currentUser by viewModel.currentUser.collectAsState()
-    val error by viewModel.errorMessage.collectAsState()
     val pendingNav by viewModel.pendingNavigation.collectAsState()
+
+    val startDestination = remember {
+        if (RetrofitClient.preferenceManager.getTokenSync() != null) {
+            Screen.Home.route
+        } else {
+            Screen.Login.route
+        }
+    }
 
     LaunchedEffect(pendingNav) {
         pendingNav?.let { route ->
             navController.navigate(route)
             viewModel.onNavigationHandled()
-        }
-    }
-
-    LaunchedEffect(error) {
-        error?.let { message ->
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-            viewModel.clearError()
         }
     }
 
@@ -320,7 +322,7 @@ fun AppNavigation(viewModel: AppViewModel) {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Login.route,
+            startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.ReadingList.route) {

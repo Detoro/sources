@@ -50,7 +50,6 @@ fun OverviewPage(
 ) {
     val comic by viewModel.currentComic.collectAsState()
     val chapters by viewModel.chapters.collectAsState()
-    val isSubscribed by viewModel.isSubscribed.collectAsState()
 
     LaunchedEffect(comic?.id) {
         comic?.let { comic ->
@@ -123,7 +122,7 @@ fun OverviewPage(
                             )
 
                             SubscribeButton(
-                                isComicSubscribed = isSubscribed,
+                                isComicSubscribed = safeComic.isSubscribed,
                                 isLocalSideload = safeComic.isLocalSideload,
                                 onSubscribeToComic = {
                                     viewModel.toggleComicSubscription(safeComic.id)
