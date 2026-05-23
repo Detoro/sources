@@ -7,26 +7,24 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Interceptor
-import toro.sources.dataModels.TokenManager
+import toro.sources.dataModels.PreferenceManager
 
-
-// TODO: URL for emulator needs to be changed. Use correct url for physical device during development
-const val url: String = "http://10.0.2.2:8080"
+const val url: String = "http://192.168.1.141:8080"
 
 object RetrofitClient {
     private val networkJson = Json { ignoreUnknownKeys = true }
     @SuppressLint("StaticFieldLeak")
-    lateinit var tokenManager: TokenManager
+    lateinit var preferenceManager: PreferenceManager
 
-    fun initialize(manager: TokenManager) {
-        tokenManager = manager
+    fun initialize(manager: PreferenceManager) {
+        preferenceManager = manager
     }
 
     private val authInterceptor = Interceptor { chain ->
         val originalRequest = chain.request()
         val requestBuilder = originalRequest.newBuilder()
 
-        tokenManager.getTokenSync()?.let { token ->
+        preferenceManager.getTokenSync()?.let { token ->
             requestBuilder.addHeader("Authorization", "Bearer $token")
         }
 
