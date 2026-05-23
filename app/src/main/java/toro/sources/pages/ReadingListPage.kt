@@ -26,7 +26,8 @@ import toro.sources.dataModels.Comic
 @Composable
 fun ReadingList(
     viewModel: AppViewModel,
-    onComicClick: (Comic) -> Unit
+    onComicClick: (Comic) -> Unit,
+    onAddComic: () -> Unit
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val subscribed by viewModel.subscribedComics.collectAsState()
@@ -37,7 +38,7 @@ fun ReadingList(
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.inbox)) }) },
         floatingActionButton = {
-            FloatingActionButton(onClick = { }) {
+            FloatingActionButton(onClick = { onAddComic() }) {
                 Icon(Icons.Filled.Add, contentDescription = "Send Friend Request")
             }
         }

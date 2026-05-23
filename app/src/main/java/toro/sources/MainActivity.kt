@@ -148,7 +148,10 @@ class MainActivity : ComponentActivity() {
                         viewModel.handleNavigation(Screen.Chat.createRoute(conversationId))
                     }
                 }
-                "LIKE", "COMMENT", "FOLLOW" -> {
+                "LIKE" -> {
+                    viewModel.handleNavigation(Screen.Post.route)
+                }
+                "COMMENT", "FOLLOW" -> {
                     if (postId != null) {
                         viewModel.handleNavigation(Screen.Comments.createRoute(postId))
                     } else {
@@ -326,7 +329,8 @@ fun AppNavigation(viewModel: AppViewModel) {
                     onComicClick = { comic ->
                         viewModel.setCurrentComic(comic)
                         navController.navigate(Screen.Overview.route)
-                    }
+                    },
+                    onAddComic = { navController.navigate(Screen.Search.route) }
                 )
             }
             composable(Screen.Login.route) {
