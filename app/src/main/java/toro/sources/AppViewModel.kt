@@ -35,13 +35,11 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
-import okhttp3.RequestBody.Companion.asRequestBody
 import toro.sources.dataModels.AuthorRequest
 import toro.sources.dataModels.CommentRequest
 import toro.sources.dataModels.PostRequest
 import toro.sources.dataModels.FcmTokenRequest
 import toro.sources.dataModels.Conversation
-import java.io.File
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -53,6 +51,9 @@ import toro.sources.dataModels.UpdateUsernameRequest
 import toro.sources.dataModels.UserProfile
 import com.google.firebase.messaging.FirebaseMessaging
 import toro.sources.notifications.NotificationEventBus
+import com.cloudinary.android.MediaManager
+import com.cloudinary.android.callback.ErrorInfo
+import com.cloudinary.android.callback.UploadCallback
 
 enum class SearchSource {
     LOCAL, ONLINE
@@ -304,6 +305,7 @@ class AppViewModel(
     fun loginUser(credentials: LoginCredentials, onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
+                clearProfileData()
                 val authRequest = AuthRequest(email = credentials.email, password = credentials.password)
                 val response = RetrofitClient.comicApiService.login(authRequest)
                 _currentUser.value = response
@@ -313,6 +315,7 @@ class AppViewModel(
                     response.username,
                     response.avatarUrl?.toString()
                 )
+                getUserProfile(response.userId)
                 fetchAndRegisterFcmToken()
                 _currentComic.value = null
                 onSuccess()
@@ -326,6 +329,7 @@ class AppViewModel(
         viewModelScope.launch {
             _currentUser.value = AuthResponse()
             RetrofitClient.preferenceManager.clearToken()
+            clearProfileData()
             _currentComic.value = null
             onLogoutComplete()
         }
@@ -333,6 +337,7 @@ class AppViewModel(
     fun registerNewUser(newUser: AuthRequest, onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
+                clearProfileData()
                 val response = RetrofitClient.comicApiService.signUp(newUser)
                 _currentUser.value = response
                 RetrofitClient.preferenceManager.saveToken(response.token)
@@ -341,6 +346,7 @@ class AppViewModel(
                     response.username,
                     response.avatarUrl?.toString()
                 )
+                getUserProfile(response.userId)
                 fetchAndRegisterFcmToken()
                 onSuccess()
                 Log.i("Success", "Sign up successfully as ${response.username}!")
@@ -348,6 +354,15 @@ class AppViewModel(
                 Log.e("Failure", "Signup failed: ${e.message}")
             }
         }
+    }
+    
+    private fun clearProfileData() {
+        _userProfile.value = null
+        _userPosts.value = emptyList()
+        _userWorks.value = emptyList()
+        _targetUserProfile.value = null
+        _targetUserPosts.value = emptyList()
+        _targetUserWorks.value = emptyList()
     }
 
     fun updateBio(bio: String) {
@@ -393,24 +408,45 @@ class AppViewModel(
             }
         }
     }
-    fun uploadAvatar(context: Context, selectedUri: Uri) {
-        _currentUser.value = _currentUser.value.copy(avatarUrl = selectedUri)
+    fun uploadAvatar(selectedUri: Uri) {
         viewModelScope.launch {
             try {
-                val file = getFileFromUri(context, selectedUri)
+                MediaManager.get().upload(selectedUri)
+                    .unsigned("dxrcey4p")
+                    .callback(object : UploadCallback {
+                        override fun onStart(requestId: String) {
+                            Log.i("Cloudinary", "Upload started")
+                        }
+                        override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {
+                        }
+                        override fun onSuccess(requestId: String, resultData: Map<*, *>) {
+                            val publicUrl = resultData["secure_url"] as String
+                            Log.i("Cloudinary", "Upload success: $publicUrl")
+                            
+                            viewModelScope.launch {
+                                _currentUser.value = _currentUser.value.copy(avatarUrl = publicUrl.toUri())
 
-                val requestFile = file.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                val body = MultipartBody.Part.createFormData("avatar", file.name, requestFile)
-
-                val response = RetrofitClient.comicApiService.uploadAvatar(body)
-
-                val newAvatarUrl = response.message.toUri()
-                _currentUser.value = _currentUser.value.copy(avatarUrl = newAvatarUrl)
-                RetrofitClient.preferenceManager.saveUserData(
-                    _currentUser.value.userId,
-                    _currentUser.value.username,
-                    newAvatarUrl.toString()
-                )
+                                try {
+                                    RetrofitClient.comicApiService.updateAvatar(publicUrl)
+                                    RetrofitClient.preferenceManager.saveUserData(
+                                        _currentUser.value.userId,
+                                        _currentUser.value.username,
+                                        publicUrl,
+                                        _userProfile.value?.bio
+                                    )
+                                    
+                                    Log.i("Cloudinary", "Avatar updated to $publicUrl")
+                                } catch (e: Exception) {
+                                    Log.e("Cloudinary", "Failed to sync avatar with server", e)
+                                }
+                            }
+                        }
+                        override fun onError(requestId: String, error: ErrorInfo) {
+                            Log.e("Cloudinary", "Upload error: ${error.description}")
+                        }
+                        override fun onReschedule(requestId: String, error: ErrorInfo) {
+                        }
+                    }).dispatch()
 
             } catch (e: Exception) {
                 Log.e("AvatarUpload", "Failed to upload avatar: ${e.message}")
@@ -439,39 +475,62 @@ class AppViewModel(
     ) {
         viewModelScope.launch {
             try {
-                val titlePart = title.toRequestBody("text/plain".toMediaTypeOrNull())
-                val authorPart = author.toRequestBody("text/plain".toMediaTypeOrNull())
-                val descPart = description.toRequestBody("text/plain".toMediaTypeOrNull())
-
-                val comicInputStream = context.contentResolver.openInputStream(comicUri)
-                val comicBytes = comicInputStream?.readBytes() ?: throw Exception("Could not read comic file")
-                val comicBody = comicBytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
-                val comicFilePart = MultipartBody.Part.createFormData("file", "upload.cbz", comicBody)
-
-                var coverFilePart: MultipartBody.Part? = null
                 if (coverUri != null) {
-                    val coverStream = context.contentResolver.openInputStream(coverUri)
-                    val coverBytes = coverStream?.readBytes()
-                    if (coverBytes != null) {
-                        val coverBody = coverBytes.toRequestBody("image/*".toMediaTypeOrNull())
-                        coverFilePart = MultipartBody.Part.createFormData("cover", "cover.jpg", coverBody)
-                    }
+                    MediaManager.get().upload(coverUri)
+                        .unsigned("dxrcey4p")
+                        .callback(object : UploadCallback {
+                            override fun onStart(requestId: String) {}
+                            override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {}
+                            override fun onSuccess(requestId: String, resultData: Map<*, *>) {
+                                val coverUrl = resultData["secure_url"] as String
+                                viewModelScope.launch {
+                                    performComicUpload(context, title, author, description, comicUri, coverUrl)
+                                }
+                            }
+                            override fun onError(requestId: String, error: ErrorInfo) {
+                                _errorMessage.value = "Cover upload failed: ${error.description}"
+                            }
+                            override fun onReschedule(requestId: String, error: ErrorInfo) {}
+                        }).dispatch()
+                } else {
+                    performComicUpload(context, title, author, description, comicUri, null)
                 }
-
-                val response = RetrofitClient.comicApiService.uploadComic(
-                    file = comicFilePart,
-                    title = titlePart,
-                    author = authorPart,
-                    description = descPart,
-                    cover = coverFilePart
-                )
-
-                Log.i("Successful Upload", "Upload Success: ${response.message}")
-
             } catch (e: Exception) {
                 _errorMessage.value = "Upload failed: ${e.message}"
-                Log.e("Upload Error", "Upload failed", e)
             }
+        }
+    }
+
+    private suspend fun performComicUpload(
+        context: Context,
+        title: String,
+        author: String,
+        description: String,
+        comicUri: Uri,
+        coverUrl: String?
+    ) {
+        try {
+            val titlePart = title.toRequestBody("text/plain".toMediaTypeOrNull())
+            val authorPart = author.toRequestBody("text/plain".toMediaTypeOrNull())
+            val descPart = description.toRequestBody("text/plain".toMediaTypeOrNull())
+            val coverUrlPart = coverUrl?.toRequestBody("text/plain".toMediaTypeOrNull())
+
+            val comicInputStream = context.contentResolver.openInputStream(comicUri)
+            val comicBytes = comicInputStream?.readBytes() ?: throw Exception("Could not read comic file")
+            val comicBody = comicBytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
+            val comicFilePart = MultipartBody.Part.createFormData("file", "upload.cbz", comicBody)
+
+            val response = RetrofitClient.comicApiService.uploadComic(
+                file = comicFilePart,
+                title = titlePart,
+                author = authorPart,
+                description = descPart,
+                coverUrl = coverUrlPart
+            )
+            Log.i("Successful Upload", "Upload Success: ${response.message}")
+        } catch (e: Exception) {
+            _errorMessage.value = "Server upload failed: ${e.message}"
+            Log.e("Upload Error", "Server upload failed", e)
         }
     }
     fun getChatMessages(conversationId: String) {
@@ -751,7 +810,8 @@ class AppViewModel(
                 val posts = RetrofitClient.comicApiService.getUserPosts(userId)
                 val works = RetrofitClient.comicApiService.getUserWorks(userId)
 
-                if (userId == _currentUser.value.userId) {
+                val currentUserId = _currentUser.value.userId.trim()
+                if (userId.trim().equals(currentUserId, ignoreCase = true)) {
                     _userProfile.value = profile
                     _userPosts.value = posts
                     _userWorks.value = works
@@ -829,13 +889,4 @@ fun convertTimestamp(timestamp: Long): String {
     val date = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
     val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
     return date.format(formatter)
-}
-fun getFileFromUri(context: Context, uri: Uri): File {
-    val inputStream = context.contentResolver.openInputStream(uri)
-    val tempFile = File(context.cacheDir, "temp_avatar_upload.jpg")
-
-    tempFile.outputStream().use { outputStream ->
-        inputStream?.copyTo(outputStream)
-    }
-    return tempFile
 }
