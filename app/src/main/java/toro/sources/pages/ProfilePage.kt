@@ -22,7 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,30 +39,28 @@ fun ProfilePage(
     onSettingsClick: () -> Unit,
     onBackClick: (() -> Unit)? = null
 ) {
-    val context = LocalContext.current
-
-    val currentUser by viewModel.userProfile.collectAsState()
-    val isMyProfile = userId == currentUser?.id
+    val me by viewModel.currentUser.collectAsState()
+    val targetUserId = userId ?: me.userId
+    val isMyProfile = targetUserId == me.userId
 
     val userProfile by (if (isMyProfile) viewModel.userProfile else viewModel.targetUserProfile).collectAsState()
     val userPosts by (if (isMyProfile) viewModel.userPosts else viewModel.targetUserPosts).collectAsState()
     val userWorks by (if (isMyProfile) viewModel.userWorks else viewModel.targetUserWorks).collectAsState()
-    val profileId = userProfile?.id
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var showBioDialog by remember { mutableStateOf(false) }
     var newBio by remember { mutableStateOf("") }
 
-    LaunchedEffect(profileId) {
-        if (profileId?.isNotEmpty() ?: false) {
-            viewModel.getUserProfile(profileId)
+    LaunchedEffect(targetUserId) {
+        if (targetUserId.isNotEmpty()) {
+            viewModel.getUserProfile(targetUserId)
         }
     }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            uri?.let { viewModel.uploadAvatar(context, it) }
+            uri?.let { viewModel.uploadAvatar(it) }
         }
     )
 
@@ -156,9 +153,10 @@ fun ProfilePage(
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            if (profile.avatarUrl != null) {
+                            val avatarUrl = if (isMyProfile) me.avatarUrl else profile.avatarUrl
+                            if (avatarUrl != null) {
                                 AsyncImage(
-                                    model = profile.avatarUrl,
+                                    model = avatarUrl,
                                     contentDescription = "Profile Picture",
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier.fillMaxSize()
