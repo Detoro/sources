@@ -65,7 +65,7 @@ interface ComicApiService {
         @Part("title") title: RequestBody,
         @Part("author") author: RequestBody,
         @Part("description") description: RequestBody,
-        @Part cover: MultipartBody.Part? = null
+        @Part("coverUrl") coverUrl: RequestBody? = null
     ): ServerResponse
 
     @POST("api/auth/register")
@@ -74,9 +74,8 @@ interface ComicApiService {
     @POST("api/auth/login")
     suspend fun login(@Body request: AuthRequest): AuthResponse
 
-    @Multipart
     @POST("api/users/avatar")
-    suspend fun uploadAvatar(@Part avatar: MultipartBody.Part): ServerResponse
+    suspend fun updateAvatar(@Body avatar: String): ServerResponse
 
     @GET("api/chat/requests")
     suspend fun getChatRequests(): List<ChatRequest>

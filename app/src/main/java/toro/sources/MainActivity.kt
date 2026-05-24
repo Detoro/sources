@@ -1,76 +1,75 @@
 package toro.sources
 
+import android.Manifest
 import android.app.PictureInPictureParams
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.util.Rational
-import androidx.compose.ui.platform.LocalContext
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.compose.NavHost
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.LibraryBooks
-import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.CloudUpload
-import androidx.compose.material.icons.filled.ChatBubble
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import android.Manifest
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
-import android.util.Log
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
-import androidx.core.view.WindowCompat
-import androidx.compose.runtime.remember
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import toro.sources.dataModels.NotificationType
 import toro.sources.dataModels.PreferenceManager
 import toro.sources.network.RetrofitClient
-import toro.sources.pages.EngagementPage
-import toro.sources.pages.HomePage
-import toro.sources.pages.LoginPage
-import toro.sources.pages.OverviewPage
-import toro.sources.pages.ReaderScreen
-import toro.sources.pages.SearchPage
-import toro.sources.pages.SignUpPage
-import toro.sources.pages.WelcomeScreen
-import toro.sources.pages.UploadPage
-import toro.sources.ui.theme.SourcesTheme
 import toro.sources.pages.AuthorSearchPage
 import toro.sources.pages.ChatInboxPage
 import toro.sources.pages.ChatThreadPage
 import toro.sources.pages.CommentThreadPage
 import toro.sources.pages.CommentsPage
+import toro.sources.pages.EngagementPage
 import toro.sources.pages.FriendRequestPage
+import toro.sources.pages.HomePage
+import toro.sources.pages.LoginPage
 import toro.sources.pages.NotificationsPage
+import toro.sources.pages.OverviewPage
 import toro.sources.pages.PostPage
 import toro.sources.pages.ProfilePage
+import toro.sources.pages.ReaderScreen
 import toro.sources.pages.ReadingList
+import toro.sources.pages.SearchPage
 import toro.sources.pages.SettingsPage
+import toro.sources.pages.SignUpPage
+import toro.sources.pages.UploadPage
+import toro.sources.pages.WelcomeScreen
+import toro.sources.ui.theme.SourcesTheme
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -227,7 +226,6 @@ fun AppNavigation(viewModel: AppViewModel) {
         Screen.Inbox.route,
         Screen.ReadingList.route
     )
-    val context = LocalContext.current
     val currentUser by viewModel.currentUser.collectAsState()
     val pendingNav by viewModel.pendingNavigation.collectAsState()
 
@@ -367,7 +365,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                     username = viewModel.currentUser.collectAsState().value.username,
                     onComplete = { selectedUri ->
                         if (selectedUri != null) {
-                            viewModel.uploadAvatar(context, selectedUri)
+                            viewModel.uploadAvatar(selectedUri)
                         }
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Welcome.route) { inclusive = true }
