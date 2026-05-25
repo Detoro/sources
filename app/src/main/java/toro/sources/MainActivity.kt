@@ -578,7 +578,10 @@ fun AppNavigation(viewModel: AppViewModel) {
                 ChatThreadPage(
                     conversationId = conversationId,
                     viewModel = viewModel,
-                    onBackClick = { navController.popBackStack() }
+                    onBackClick = { navController.popBackStack() },
+                    onProfileClick = { userId ->
+                        navController.navigate(Screen.Profile.createRoute(userId))
+                    }
                 )
             }
             composable(Screen.Profile.route) { backStackEntry ->
