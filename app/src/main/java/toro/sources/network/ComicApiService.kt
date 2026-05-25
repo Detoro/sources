@@ -102,6 +102,9 @@ interface ComicApiService {
     @GET("api/users/search")
     suspend fun searchUsers(@Query("q") query: String): List<UserProfile>
 
+    @GET("api/users/subscribed-authors")
+    suspend fun getSubscribedAuthors(): List<UserProfile>
+
     @GET("api/community/posts")
     suspend fun getCommunityPosts(): List<Post>
 

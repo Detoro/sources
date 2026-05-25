@@ -8,7 +8,7 @@ data class ServerResponse(
 )
 
 @Serializable
-data class AuthorRequest(val authorName: String)
+data class AuthorRequest(val authorId: String)
 
 // The model to catch the toggle status
 @Serializable

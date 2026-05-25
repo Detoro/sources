@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -38,7 +39,12 @@ fun AuthorsRow(
     viewModel: AppViewModel,
     onAddAuthorClick: () -> Unit
 ) {
-    val authors by viewModel.userSuggestions.collectAsState()
+    val authors by viewModel.subscribedAuthors.collectAsState()
+    val selectedAuthorIds by viewModel.selectedAuthorIds.collectAsState()
+
+    LaunchedEffect(authors) {
+        viewModel.getSubscribedAuthors()
+    }
 
     LazyRow(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -61,13 +67,21 @@ fun AuthorsRow(
         }
 
         items(authors) { user ->
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val isSelected = selectedAuthorIds.contains(user.id)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.clickable { viewModel.toggleAuthorFilter(user.id) }
+            ) {
                 Box(
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primaryContainer)
-                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape),
+                        .border(
+                            if (isSelected) 4.dp else 2.dp,
+                            if (isSelected) MaterialTheme.colorScheme.primary else Color.LightGray,
+                            CircleShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     if (user.avatarUrl != null) {
@@ -82,7 +96,12 @@ fun AuthorsRow(
                     }
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(user.username, fontSize = 12.sp, color = Color.DarkGray)
+                Text(
+                    text = user.username,
+                    fontSize = 12.sp,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.DarkGray,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                )
             }
         }
     }

@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
@@ -35,6 +36,15 @@ fun EngagementPage(
     onBackClick: () -> Unit
 ) {
     val posts by viewModel.communityPosts.collectAsState()
+    val selectedAuthorIds by viewModel.selectedAuthorIds.collectAsState()
+
+    val filteredPosts = remember(posts, selectedAuthorIds) {
+        if (selectedAuthorIds.isEmpty()) {
+            posts
+        } else {
+            posts.filter { selectedAuthorIds.contains(it.authorId) }
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.getCommunityPosts()
@@ -80,7 +90,7 @@ fun EngagementPage(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.padding(bottom = 16.dp)
                 ) {
-                    items(posts.take(5)) { post ->
+                    items(filteredPosts.take(5)) { post ->
                         PostCard(
                             viewModel = viewModel,
                             post = post,
@@ -96,7 +106,7 @@ fun EngagementPage(
                 SectionTitle(title = "Community Feed", onExploreClick = {})
             }
 
-            items(posts) { post ->
+            items(filteredPosts) { post ->
                 Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                     PostCard(
                         viewModel = viewModel,

@@ -105,9 +105,8 @@ fun AuthorSearchPage(
                             UserSuggestionItem(
                                 username = user.username,
                                 onSendRequest = {
-                                    viewModel.sendFriendRequest(user.id) {
-                                        onDismiss()
-                                    }
+                                    viewModel.subscribeToAuthor(user.id)
+                                    onDismiss()
                                 }
                             )
                         }

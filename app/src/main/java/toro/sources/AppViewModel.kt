@@ -163,6 +163,12 @@ class AppViewModel(
     private val _userSuggestions = MutableStateFlow<List<UserProfile>>(emptyList())
     val userSuggestions = _userSuggestions.asStateFlow()
 
+    private val _subscribedAuthors = MutableStateFlow<List<UserProfile>>(emptyList())
+    val subscribedAuthors = _subscribedAuthors.asStateFlow()
+
+    private val _selectedAuthorIds = MutableStateFlow<Set<String>>(emptySet())
+    val selectedAuthorIds = _selectedAuthorIds.asStateFlow()
+
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())
     val notifications = _notifications.asStateFlow()
 
@@ -183,6 +189,7 @@ class AppViewModel(
     init {
         getCatalog()
         getChatRequests()
+        getSubscribedAuthors()
 
         viewModelScope.launch { repository.syncSubscriptions() }
 
@@ -268,11 +275,10 @@ class AppViewModel(
             }
         }
     }
-    fun subscribeToAuthor(author: String) {
+    fun subscribeToAuthor(authorId: String) {
         viewModelScope.launch {
             try {
-                RetrofitClient.comicApiService.subscribeToAuthor(AuthorRequest(author))
-                Log.i("Subscription", "Successfully subscribed to $author")
+                RetrofitClient.comicApiService.subscribeToAuthor(AuthorRequest(authorId))
             } catch (e: Exception) {
                 Log.e("Subscription", "Failed to subscribe to author: ${e.message}")
             }
@@ -801,6 +807,26 @@ class AppViewModel(
     }
     fun clearUserSuggestions() {
         _userSuggestions.value = emptyList()
+    }
+
+    fun getSubscribedAuthors() {
+        viewModelScope.launch {
+            try {
+                _subscribedAuthors.value = RetrofitClient.comicApiService.getSubscribedAuthors()
+            } catch (e: Exception) {
+                Log.e("SubscribedAuthors", "Failed: ${e.message}")
+            }
+        }
+    }
+
+    fun toggleAuthorFilter(authorId: String) {
+        val current = _selectedAuthorIds.value
+        _selectedAuthorIds.value = if (current.contains(authorId)) {
+            current - authorId
+        } else {
+            current + authorId
+        }
+        Log.i("AuthorFilter", "Selected authors: ${_selectedAuthorIds.value}")
     }
 
     fun getUserProfile(userId: String) {
