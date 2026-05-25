@@ -13,6 +13,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -31,7 +32,8 @@ import toro.sources.components.SmartInput
 fun ChatThreadPage(
     conversationId: String,
     viewModel: AppViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onProfileClick: (String) -> Unit
 ) {
     val messages by viewModel.chatMessages.collectAsState()
     val me by viewModel.currentUser.collectAsState()
@@ -41,7 +43,6 @@ fun ChatThreadPage(
         inbox.find { it.conversationId == conversationId }
     }
     val targetUserId = activeChat?.otherUserId ?: ""
-    val targetProfile by viewModel.userProfile.collectAsState()
 
     LaunchedEffect(conversationId, targetUserId) {
         viewModel.clearChatMessages()
@@ -61,7 +62,13 @@ fun ChatThreadPage(
         modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
-                title = { Text("Chatting with ${targetProfile?.username ?: activeChat?.otherUserName ?: "..."}") },
+                title = {
+                    TextButton(
+                        onClick = { onProfileClick(targetUserId) }
+                    ) {
+                        Text("Chatting with ${activeChat?.otherUserName}")
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
