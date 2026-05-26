@@ -19,9 +19,6 @@ import toro.sources.dataModels.AuthRequest
 import toro.sources.dataModels.Notification
 import toro.sources.dataModels.Post
 import toro.sources.dataModels.ChatMessage
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import toro.sources.dataModels.AuthResponse
 import toro.sources.dataModels.ChatRequest
 import toro.sources.dataModels.Comment
@@ -48,12 +45,25 @@ import kotlin.String
 import androidx.core.net.toUri
 import toro.sources.dataModels.UpdateBioRequest
 import toro.sources.dataModels.UpdateUsernameRequest
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import com.cloudinary.android.MediaManager
+import com.cloudinary.android.callback.UploadCallback
+import com.cloudinary.android.callback.ErrorInfo
 import toro.sources.dataModels.UserProfile
 import com.google.firebase.messaging.FirebaseMessaging
 import toro.sources.notifications.NotificationEventBus
-import com.cloudinary.android.MediaManager
-import com.cloudinary.android.callback.ErrorInfo
-import com.cloudinary.android.callback.UploadCallback
+import java.util.zip.ZipInputStream
+import java.io.File
+import java.io.FileOutputStream
+import toro.sources.dataModels.RegisterComicRequest
+import toro.sources.dataModels.RegisterChaptersRequest
+import toro.sources.dataModels.ChapterUploadData
+import kotlin.collections.map
 
 enum class SearchSource {
     LOCAL, ONLINE
@@ -141,6 +151,13 @@ class AppViewModel(
     val pageCount = _pageCount.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage = _errorMessage.asStateFlow()
+
+    private val _isUploading = MutableStateFlow(false)
+    val isUploading = _isUploading.asStateFlow()
+
+    private val _uploadSuccess = MutableStateFlow(false)
+    val uploadSuccess = _uploadSuccess.asStateFlow()
 
     private val _userProfile = MutableStateFlow<UserProfile?>(null)
     val userProfile = _userProfile.asStateFlow()
@@ -185,6 +202,7 @@ class AppViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var chapterPages: List<Page> = emptyList()
+    private var chaptersJob: kotlinx.coroutines.Job? = null
 
     init {
         getCatalog()
@@ -286,6 +304,7 @@ class AppViewModel(
     }
     fun openChapter(comic: Comic, chapterId: String = "") {
         viewModelScope.launch {
+            _pageCount.value = 0
             repository.updateLastRead(comic.id)
             try {
                 val pages = repository.getPagesForChapter(chapterId, comic.id)
@@ -471,73 +490,134 @@ class AppViewModel(
             }
         }
     }
-    fun uploadComic(
+
+    fun uploadNewChapters(
         context: Context,
-        title: String,
-        author: String,
-        description: String,
-        comicUri: Uri,
-        coverUri: Uri?
+        title: String = "",
+        author: String = "",
+        description: String = "",
+        comicId: String? = null,
+        chapterUris: List<Uri>,
+        selectedCover: Uri? = null
     ) {
         viewModelScope.launch {
+            _isUploading.value = true
+            _uploadSuccess.value = false
+            _errorMessage.value = null
             try {
-                if (coverUri != null) {
-                    MediaManager.get().upload(coverUri)
-                        .unsigned("dxrcey4p")
-                        .callback(object : UploadCallback {
-                            override fun onStart(requestId: String) {}
-                            override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {}
-                            override fun onSuccess(requestId: String, resultData: Map<*, *>) {
-                                val coverUrl = resultData["secure_url"] as String
-                                viewModelScope.launch {
-                                    performComicUpload(context, title, author, description, comicUri, coverUrl)
-                                }
-                            }
-                            override fun onError(requestId: String, error: ErrorInfo) {
-                                _errorMessage.value = "Cover upload failed: ${error.description}"
-                            }
-                            override fun onReschedule(requestId: String, error: ErrorInfo) {}
-                        }).dispatch()
-                } else {
-                    performComicUpload(context, title, author, description, comicUri, null)
+                val chaptersData = chapterUris.mapIndexed { index, uri ->
+                    processAndUploadChapter(context, uri, index + 1f)
                 }
+
+                if (comicId == null) {
+                    val coverUrl = selectedCover?.let { uploadFileToCloudinary(it) }
+                    val response = RetrofitClient.comicApiService.registerNewComic(
+                        RegisterComicRequest(
+                            title = title,
+                            author = author,
+                            description = description,
+                            coverUrl = coverUrl,
+                            chapters = chaptersData
+                        )
+                    )
+                    Log.i("Successful Upload", "New Comic Success: ${response.message}")
+                } else {
+                    val response = RetrofitClient.comicApiService.registerChapters(
+                        comicId = comicId,
+                        request = RegisterChaptersRequest(chaptersData)
+                    )
+                    Log.i("Successful Upload", "Chapter Upload Success: ${response.message}")
+                }
+                _uploadSuccess.value = true
             } catch (e: Exception) {
                 _errorMessage.value = "Upload failed: ${e.message}"
+                Log.e("Upload Error", "Upload failed", e)
+            } finally {
+                _isUploading.value = false
             }
         }
     }
 
-    private suspend fun performComicUpload(
-        context: Context,
-        title: String,
-        author: String,
-        description: String,
-        comicUri: Uri,
-        coverUrl: String?
-    ) {
-        try {
-            val titlePart = title.toRequestBody("text/plain".toMediaTypeOrNull())
-            val authorPart = author.toRequestBody("text/plain".toMediaTypeOrNull())
-            val descPart = description.toRequestBody("text/plain".toMediaTypeOrNull())
-            val coverUrlPart = coverUrl?.toRequestBody("text/plain".toMediaTypeOrNull())
-
-            val comicInputStream = context.contentResolver.openInputStream(comicUri)
-            val comicBytes = comicInputStream?.readBytes() ?: throw Exception("Could not read comic file")
-            val comicBody = comicBytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
-            val comicFilePart = MultipartBody.Part.createFormData("file", "upload.cbz", comicBody)
-
-            val response = RetrofitClient.comicApiService.uploadComic(
-                file = comicFilePart,
-                title = titlePart,
-                author = authorPart,
-                description = descPart,
-                coverUrl = coverUrlPart
-            )
-            Log.i("Successful Upload", "Upload Success: ${response.message}")
-        } catch (e: Exception) {
-            _errorMessage.value = "Server upload failed: ${e.message}"
-            Log.e("Upload Error", "Server upload failed", e)
+    private suspend fun processAndUploadChapter(context: Context, uri: Uri, chapterNumber: Float): ChapterUploadData = coroutineScope {
+        val tempDir = File(context.cacheDir, "upload_extract_${System.currentTimeMillis()}")
+        tempDir.mkdirs()
+        
+        val pageFiles = mutableListOf<File>()
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            ZipInputStream(input).use { zipInput ->
+                var entry = zipInput.nextEntry
+                while (entry != null) {
+                    if (!entry.isDirectory && isImageFile(entry.name)) {
+                        val file = File(tempDir, entry.name.split("/").last())
+                        FileOutputStream(file).use { output -> zipInput.copyTo(output) }
+                        pageFiles.add(file)
+                    }
+                    entry = zipInput.nextEntry
+                }
+            }
         }
+        pageFiles.sortBy { it.name }
+
+        val pageUrls = pageFiles.map { file ->
+            async {
+                uploadFileToCloudinary(Uri.fromFile(file))
+            }
+        }.awaitAll()
+
+        tempDir.deleteRecursively()
+        
+        ChapterUploadData(
+            title = "Chapter $chapterNumber",
+            chapterNumber = chapterNumber,
+            pageCount = pageUrls.size,
+            pageUrls = pageUrls
+        )
+    }
+
+    private suspend fun uploadFileToCloudinary(uri: Uri): String = suspendCancellableCoroutine { continuation ->
+        MediaManager.get().upload(uri)
+            .unsigned("dxrcey4p")
+            .callback(object : UploadCallback {
+                override fun onStart(requestId: String) {}
+                override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {}
+                override fun onSuccess(requestId: String, resultData: Map<*, *>) {
+                    continuation.resume(resultData["secure_url"] as String)
+                }
+                override fun onError(requestId: String, error: ErrorInfo) {
+                    continuation.resumeWithException(Exception(error.description))
+                }
+                override fun onReschedule(requestId: String, error: ErrorInfo) {}
+            }).dispatch()
+    }
+
+    private fun isImageFile(name: String): Boolean {
+        val lower = name.lowercase()
+        return lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") || lower.endsWith(".webp")
+    }
+
+    fun likeChapter(comicId: String, chapterId: String) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.comicApiService.likeChapter(comicId, chapterId)
+                val currentChapters = _chapters.value
+                _chapters.value = currentChapters.map { chapter ->
+                    if (chapter.id == chapterId) {
+                        chapter.copy(
+                            isLiked = !chapter.isLiked,
+                        )
+                    } else chapter
+                }
+                Log.d("Chapter like", "Success ${response.message}")
+            } catch (e: Exception) {
+                Log.e("Chapter like", "Failed to like Chapter ${e.message}")
+            }
+        }
+    }
+
+    fun resetUploadState() {
+        _uploadSuccess.value = false
+        _errorMessage.value = null
+        _isUploading.value = false
     }
     fun getChatMessages(conversationId: String) {
         viewModelScope.launch {
@@ -629,13 +709,15 @@ class AppViewModel(
         viewModelScope.launch {
             try {
                 _catalog.value = RetrofitClient.comicApiService.searchComics(query)
+                Log.i("catalog", "${_catalog.value}")
             } catch (e: Exception) {
                 _errorMessage.value = "Search failed: ${e.message}"
             }
         }
     }
     fun getChaptersForComic(comic: Comic) {
-        viewModelScope.launch {
+        chaptersJob?.cancel()
+        chaptersJob = viewModelScope.launch {
             try {
                 repository.getChaptersForComic(comic.id).collect { localChapters ->
                     _chapters.value = localChapters
@@ -647,11 +729,7 @@ class AppViewModel(
 
         if (!comic.isLocalSideload) {
             viewModelScope.launch {
-                try {
-                    repository.syncRemoteChaptersForComic(comic)
-                } catch (e: Exception) {
-                    Log.e("Network", "Could not sync remote chapters: ${e.message}")
-                }
+                repository.syncRemoteChaptersForComic(comic)
             }
         }
     }

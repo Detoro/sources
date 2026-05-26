@@ -4,12 +4,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Post(
-    val id: String,
-    val authorId: String,
-    val authorName: String,
+    val id: String = "",
+    val authorId: String = "",
+    val authorName: String = "",
     val title: String? = null,
-    val content: String,
-    val timestamp: Long,
+    val content: String = "",
+    val timestamp: Long = 0L,
     val likesCount: Int = 0,
     var isLiked: Boolean = false,
     var isBookmarked: Boolean = false
@@ -17,12 +17,12 @@ data class Post(
 
 @Serializable
 data class Comment(
-    val id: String,
-    val postId: String,
-    val authorId: String,
-    val authorName: String,
-    val content: String,
-    val timestamp: Long,
+    val id: String = "",
+    val postId: String = "",
+    val authorId: String = "",
+    val authorName: String = "",
+    val content: String = "",
+    val timestamp: Long = 0L,
     val parentId: String? = null,
     val likesCount: Int = 0,
     val isLiked: Boolean = false,

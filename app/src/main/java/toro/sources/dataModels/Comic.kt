@@ -2,6 +2,7 @@ package toro.sources.dataModels
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Entity(tableName = "comics")
@@ -11,11 +12,11 @@ data class Comic(
     val title: String,
     val author: String,
     val description: String,
-    val coverImageUrl: String,
-    val isLocalSideload: Boolean = false,
-    val localFilePath: String? = null,
-    val scrollDirection: String = "VERTICAL",
-    val hasMusic: Boolean = false,
-    val isSubscribed: Boolean = false,
-    val lastReadTimestamp: Long = 0L
+    @SerialName("cover_image_url") val coverImageUrl: String,
+    @SerialName("is_local_sideload") val isLocalSideload: Boolean = false,
+    @SerialName("local_file_path") val localFilePath: String? = null,
+    @SerialName("scroll_direction") val scrollDirection: String = "VERTICAL",
+    @SerialName("has_music") val hasMusic: Boolean = false,
+    @SerialName("is_subscribed") val isSubscribed: Boolean = false,
+    @SerialName("last_read_timestamp") val lastReadTimestamp: Long = 0L
 )

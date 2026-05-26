@@ -1,12 +1,8 @@
 package toro.sources.network
 
-import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import retrofit2.http.Body
 import retrofit2.http.GET
-import retrofit2.http.Multipart
 import retrofit2.http.POST
-import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 import toro.sources.dataModels.AuthRequest
@@ -28,6 +24,8 @@ import toro.sources.dataModels.UserProfile
 import toro.sources.dataModels.UpdateBioRequest
 import toro.sources.dataModels.UpdateUsernameRequest
 import toro.sources.dataModels.FcmTokenRequest
+import toro.sources.dataModels.RegisterChaptersRequest
+import toro.sources.dataModels.RegisterComicRequest
 
 interface ComicApiService {
     @GET("api/comics/catalog")
@@ -58,14 +56,21 @@ interface ComicApiService {
     @GET("api/subscriptions")
     suspend fun getSubscribedComics(): List<Comic>
 
-    @Multipart
-    @POST("api/comics/upload")
-    suspend fun uploadComic(
-        @Part file: MultipartBody.Part,
-        @Part("title") title: RequestBody,
-        @Part("author") author: RequestBody,
-        @Part("description") description: RequestBody,
-        @Part("coverUrl") coverUrl: RequestBody? = null
+    @POST("api/comics/register")
+    suspend fun registerNewComic(
+        @Body request: RegisterComicRequest
+    ): ServerResponse
+
+    @POST("api/comics/{comicId}/register-chapters")
+    suspend fun registerChapters(
+        @Path("comicId") comicId: String,
+        @Body request: RegisterChaptersRequest
+    ): ServerResponse
+
+    @POST("api/comics/{comicId}/chapters/{chapterId}/like")
+    suspend fun likeChapter(
+        @Path("comicId") comicId: String,
+        @Path("chapterId") chapterId: String,
     ): ServerResponse
 
     @POST("api/auth/register")

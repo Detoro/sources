@@ -45,7 +45,7 @@ fun HomePage(
         uri?.let {
             viewModel.importLocalComic(
                 title = "Imported Comic",
-                author = "Someone you appreciate",
+                author = "Someone",
                 description = "Imported from device",
                 comicUri = it
             )

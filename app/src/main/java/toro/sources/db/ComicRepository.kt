@@ -51,11 +51,21 @@ class ComicRepository(
         val chapter = chapterDao.getChapterById(chapterId)
         val comic = comicDao.getComicByIdSync(comicId)
 
-        return if (comic?.isLocalSideload == true || chapter.isDownloaded) {
+        if (chapter == null) {
+            Log.e("Repository", "Chapter not found in local DB: $chapterId")
+            return emptyList()
+        }
+
+        Log.i("Repository", "Fetching pages for Chapter: ${chapter.chapterTitle}, ID: $chapterId")
+
+        val pages = if (comic?.isLocalSideload == true || chapter.isDownloaded) {
             getLocalPages(comicId, chapterId)
         } else {
             apiService.getPagesForChapter(chapterId)
         }
+        
+        Log.i("Repository", "Found ${pages.size} pages")
+        return pages
     }
 
     // for local files
@@ -143,14 +153,19 @@ class ComicRepository(
     }
 
     suspend fun syncRemoteChaptersForComic(comic: Comic) {
-        val comic = comicDao.getComicByIdSync(comic.id)
-        if (comic?.isLocalSideload == false) {
-            try {
-                val remoteChapters = apiService.getChaptersForComic(comic.id)
-                chapterDao.insertChapters(remoteChapters)
-            } catch (e: Exception) {
-                Log.e("Network Error", "Failed to fetch chapters: ${e.message}")
+        try {
+            if (comic.id.isBlank()) {
+                Log.e("Sync", "Cannot sync chapters for comic with blank ID")
+                return
             }
+            comicDao.insertComic(comic)
+
+            val remoteChapters = apiService.getChaptersForComic(comic.id)
+            val sanitizedChapters = remoteChapters.map { it.copy(comicId = comic.id) }
+            
+            chapterDao.insertChapters(sanitizedChapters)
+        } catch (e: Exception) {
+            Log.e("Network Error", "Failed to fetch chapters for ${comic.title}: ${e.message}")
         }
     }
 

@@ -14,7 +14,7 @@ interface ChapterDao {
     fun getChaptersForComic(comicId: String): Flow<List<Chapter>>
 
     @Query("SELECT * FROM chapters WHERE id = :chapterId LIMIT 1")
-    suspend fun getChapterById(chapterId: String): Chapter
+    suspend fun getChapterById(chapterId: String): Chapter?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChapters(chapters: List<Chapter>)

@@ -20,11 +20,11 @@ enum class NotificationType {
 
 @Serializable
 data class Notification(
-    val id: String,
-    val userId: String,
-    val type: NotificationType,
-    val message: String,
-    val timestamp: Long,
+    val id: String = "",
+    val userId: String = "",
+    val type: NotificationType = NotificationType.SYSTEM,
+    val message: String = "",
+    val timestamp: Long = 0L,
     val isRead: Boolean = false,
     val relatedId: String? = null
 )

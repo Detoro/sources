@@ -13,8 +13,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -407,51 +411,58 @@ fun AppNavigation(viewModel: AppViewModel) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(text = "Error: Comic data missing. Please go back.")
                     }
-                } else if (pageCount == 0) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
                 } else {
-                    val currentChapterIndex = chapters.indexOfFirst { it.id == chapterId }
-                    
-                    ReaderScreen(
-                        pageCount = pageCount,
-                        comic = comic!!,
-                        viewModel = viewModel,
-                        startingIndex = 0,
-                        onPageChanged = { newPageIndex ->
-                            if (chapterId != null) {
-                                 viewModel.onPageTurned(chapterId, newPageIndex)
-                            }
-                        },
-                        onNextChapter = {
-                            if (currentChapterIndex != -1 && currentChapterIndex < chapters.size - 1) {
-                                val nextId = chapters[currentChapterIndex + 1].id
-                                navController.navigate(Screen.Reader.createRoute(nextId)) {
-                                    popUpTo(Screen.Reader.route) { inclusive = true }
+                    if (pageCount > 0) {
+                        val currentChapterIndex = chapters.indexOfFirst { it.id == chapterId }
+                        
+                        ReaderScreen(
+                            pageCount = pageCount,
+                            comic = comic!!,
+                            viewModel = viewModel,
+                            chapterId = chapterId ?: "",
+                            startingIndex = 0,
+                            onPageChanged = { newPageIndex ->
+                                if (chapterId != null) {
+                                     viewModel.onPageTurned(chapterId, newPageIndex)
                                 }
-                            }
-                        },
-                        onPreviousChapter = {
-                            if (currentChapterIndex > 0) {
-                                val prevId = chapters[currentChapterIndex - 1].id
-                                navController.navigate(Screen.Reader.createRoute(prevId)) {
-                                    popUpTo(Screen.Reader.route) { inclusive = true }
+                            },
+                            onNextChapter = {
+                                if (currentChapterIndex != -1 && currentChapterIndex < chapters.size - 1) {
+                                    val nextId = chapters[currentChapterIndex + 1].id
+                                    navController.navigate(Screen.Reader.createRoute(nextId)) {
+                                        popUpTo(Screen.Reader.route) { inclusive = true }
+                                    }
                                 }
+                            },
+                            onPreviousChapter = {
+                                if (currentChapterIndex > 0) {
+                                    val prevId = chapters[currentChapterIndex - 1].id
+                                    navController.navigate(Screen.Reader.createRoute(prevId)) {
+                                        popUpTo(Screen.Reader.route) { inclusive = true }
+                                    }
+                                }
+                            },
+                            onLikeChapter = {
+                                if (chapterId != null) {
+                                    viewModel.likeChapter(comic!!.id, chapterId)
+                                }
+                            },
+                            onViewAllComments = { id ->
+                                navController.navigate(Screen.Comments.createRoute(id))
+                            },
+                            onCommentThreadClick = { chapterId, commentId ->
+                                navController.navigate(Screen.CommentThread.createRoute(chapterId, commentId))
                             }
-                        },
-                        onLikeChapter = {
-                            if (chapterId != null) {
-                                viewModel.likePost(chapterId)
+                        )
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                CircularProgressIndicator()
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(text = "Loading pages...")
                             }
-                        },
-                        onViewAllComments = { id ->
-                            navController.navigate(Screen.Comments.createRoute(id))
-                        },
-                        onCommentThreadClick = { postId, commentId ->
-                            navController.navigate(Screen.CommentThread.createRoute(postId, commentId))
                         }
-                    )
+                    }
                 }
             }
             composable(Screen.Engagement.route) {

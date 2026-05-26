@@ -9,6 +9,9 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -25,6 +28,7 @@ fun ReaderScreen(
     pageCount: Int,
     comic: Comic,
     viewModel: AppViewModel,
+    chapterId: String,
     startingIndex: Int = 0,
     onPageChanged: (Int) -> Unit,
     onNextChapter: () -> Unit = {},
@@ -34,6 +38,11 @@ fun ReaderScreen(
     onCommentThreadClick: (String, String) -> Unit = { _, _ -> }
 ) {
     if (pageCount == 0) return
+
+    val chapters by viewModel.chapters.collectAsState()
+    val isLiked = remember(chapters, chapterId) {
+        chapters.find { it.id == chapterId }?.isLiked ?: false
+    }
 
     LaunchedEffect(comic.id) {
         viewModel.getComicComments(comic.id)
@@ -95,6 +104,7 @@ fun ReaderScreen(
 
         ReaderNavigationBar(
             modifier = Modifier.align(Alignment.BottomCenter),
+            isLiked = isLiked,
             onPrev = onPreviousChapter,
             onNext = onNextChapter,
             onLike = onLikeChapter
