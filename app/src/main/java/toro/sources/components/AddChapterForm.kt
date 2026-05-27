@@ -24,6 +24,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,16 +41,19 @@ import toro.sources.AppViewModel
 @Composable
 fun AddChapterForm(
     viewModel: AppViewModel,
-    userWorks: List<toro.sources.dataModels.Comic>,
-    selectedComicId: String?,
-    selectedComicTitle: String,
-    onComicSelected: (String, String) -> Unit,
     onCancel: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selectedChapterUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     val context = LocalContext.current
+    val userWorks by viewModel.userWorks.collectAsState()
+    var selectedComicId by remember { mutableStateOf<String?>(null) }
+    var selectedComicTitle by remember { mutableStateOf("") }
     val isUploading by viewModel.isUploading.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.getUserWorks(viewModel.currentUser.value.userId)
+    }
 
     val chapterPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
@@ -83,7 +87,8 @@ fun AddChapterForm(
                     DropdownMenuItem(
                         text = { Text(comic.title) },
                         onClick = {
-                            onComicSelected(comic.id, comic.title)
+                            selectedComicId = comic.id
+                            selectedComicTitle = comic.title
                             expanded = false
                         }
                     )
@@ -96,7 +101,7 @@ fun AddChapterForm(
             modifier = Modifier.fillMaxWidth(),
             enabled = selectedComicId != null
         ) {
-            Icon(Icons.Default.CloudUpload, null)
+            Icon(Icons.Default.CloudUpload, "Upload Chapter")
             Spacer(Modifier.width(8.dp))
             Text(if (selectedChapterUris.isNotEmpty()) "${selectedChapterUris.size} Chapters Selected" else "Select .cbz Files")
         }

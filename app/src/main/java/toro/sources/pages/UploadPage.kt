@@ -44,9 +44,6 @@ fun UploadPage(
     onUploadComplete: () -> Unit
 ) {
     var uploadMode by remember { mutableStateOf<UploadMode?>(null) }
-    val userWorks by viewModel.userWorks.collectAsState()
-    var selectedComicId by remember { mutableStateOf<String?>(null) }
-    var selectedComicTitle by remember { mutableStateOf("") }
 
     val isUploading by viewModel.isUploading.collectAsState()
     val uploadSuccess by viewModel.uploadSuccess.collectAsState()
@@ -100,13 +97,6 @@ fun UploadPage(
                         UploadMode.ADD_CHAPTER -> {
                             AddChapterForm(
                                 viewModel = viewModel,
-                                userWorks = userWorks,
-                                selectedComicId = selectedComicId,
-                                selectedComicTitle = selectedComicTitle,
-                                onComicSelected = { id, title ->
-                                    selectedComicId = id
-                                    selectedComicTitle = title
-                                },
                                 onCancel = { uploadMode = null }
                             )
                         }
