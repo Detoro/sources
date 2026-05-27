@@ -24,7 +24,7 @@ fun CommentsPage(
     onBackClick: () -> Unit,
     onCommentClick: (Comment) -> Unit = {}
 ) {
-    val comments by viewModel.comments.collectAsState()
+    val comments by viewModel.postComments.collectAsState()
     var replyingTo by remember { mutableStateOf<Comment?>(null) }
 
     LaunchedEffect(postId) {

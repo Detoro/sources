@@ -25,6 +25,8 @@ import toro.sources.dataModels.Comment
 import toro.sources.db.ComicRepository
 import toro.sources.network.RetrofitClient
 import android.content.Context
+import android.provider.OpenableColumns
+import kotlinx.coroutines.flow.first
 import toro.sources.dataModels.Page
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -145,8 +147,11 @@ class AppViewModel(
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val chatMessages = _chatMessages.asStateFlow()
 
-    private val _comments = MutableStateFlow<List<Comment>>(emptyList())
-    val comments = _comments.asStateFlow()
+    private val _postComments = MutableStateFlow<List<Comment>>(emptyList())
+    val postComments = _postComments.asStateFlow()
+
+    private val _chapterComments = MutableStateFlow<List<Comment>>(emptyList())
+    val chapterComments = _chapterComments.asStateFlow()
     private val _pageCount = MutableStateFlow(0)
     val pageCount = _pageCount.asStateFlow()
 
@@ -390,6 +395,10 @@ class AppViewModel(
         _targetUserWorks.value = emptyList()
     }
 
+    fun clearError() {
+        _errorMessage.value = null
+    }
+
     fun updateBio(bio: String) {
         viewModelScope.launch {
             try {
@@ -505,8 +514,14 @@ class AppViewModel(
             _uploadSuccess.value = false
             _errorMessage.value = null
             try {
+                val startingChapterNumber = if (comicId != null) {
+                    val existingChapters = repository.getChaptersForComic(comicId).first()
+                    existingChapters.maxOfOrNull { it.chapterNumber ?: 0f } ?: 0f
+                } else {
+                    0f
+                }
                 val chaptersData = chapterUris.mapIndexed { index, uri ->
-                    processAndUploadChapter(context, uri, index + 1f)
+                    processAndUploadChapter(context, uri, startingChapterNumber + index + 1f)
                 }
 
                 if (comicId == null) {
@@ -541,6 +556,14 @@ class AppViewModel(
     private suspend fun processAndUploadChapter(context: Context, uri: Uri, chapterNumber: Float): ChapterUploadData = coroutineScope {
         val tempDir = File(context.cacheDir, "upload_extract_${System.currentTimeMillis()}")
         tempDir.mkdirs()
+
+        var chapterTitle = "Chapter ${chapterNumber.toInt()}"
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (cursor.moveToFirst() && nameIndex >= 0) {
+                chapterTitle = cursor.getString(nameIndex).substringBeforeLast(".")
+            }
+        }
         
         val pageFiles = mutableListOf<File>()
         context.contentResolver.openInputStream(uri)?.use { input ->
@@ -567,7 +590,7 @@ class AppViewModel(
         tempDir.deleteRecursively()
         
         ChapterUploadData(
-            title = "Chapter $chapterNumber",
+            title = chapterTitle,
             chapterNumber = chapterNumber,
             pageCount = pageUrls.size,
             pageUrls = pageUrls
@@ -745,16 +768,16 @@ class AppViewModel(
     fun getPostComments(postId: String) {
         viewModelScope.launch {
             try {
-                _comments.value = RetrofitClient.comicApiService.getPostComments(postId)
+                _postComments.value = RetrofitClient.comicApiService.getPostComments(postId)
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to load comments: ${e.message}"
             }
         }
     }
-    fun getComicComments(comicId: String) {
+    fun getChapterComments(chapterId: String) {
         viewModelScope.launch {
             try {
-                _comments.value = RetrofitClient.comicApiService.getComicComments(comicId)
+                _chapterComments.value = RetrofitClient.comicApiService.getChapterComments(chapterId)
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to load comic comments: ${e.message}"
             }
@@ -780,8 +803,8 @@ class AppViewModel(
         }
     }
     fun likeComment(commentId: String) {
-        val currentComments = _comments.value
-        _comments.value = currentComments.map { comment ->
+        val currentComments = _postComments.value
+        _postComments.value = currentComments.map { comment ->
             if (comment.id == commentId) {
                 comment.copy(
                     isLiked = !comment.isLiked,
@@ -793,7 +816,7 @@ class AppViewModel(
             try {
                 RetrofitClient.comicApiService.likeComment(commentId)
             } catch (e: Exception) {
-                _comments.value = currentComments
+                _postComments.value = currentComments
                 _errorMessage.value = "Failed to like comment: ${e.message}"
             }
         }
@@ -847,7 +870,8 @@ class AppViewModel(
             }
         }
     }
-    fun addComicComment(comicId: String, content: String, mentionedUserIds: List<String> = emptyList(), parentId: String? = null) {
+
+    fun addChapterComment(chapterId: String, content: String, mentionedUserIds: List<String> = emptyList(), parentId: String? = null) {
         viewModelScope.launch {
             try {
                 val newComment = CommentRequest(
@@ -855,8 +879,8 @@ class AppViewModel(
                     mentionedUserIds = mentionedUserIds,
                     parentId = parentId
                 )
-                RetrofitClient.comicApiService.addComicComment(comicId, newComment)
-                getComicComments(comicId)
+                RetrofitClient.comicApiService.addChapterComment(chapterId, newComment)
+                getChapterComments(chapterId)
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to post comic comment: ${e.message}"
             }
@@ -907,18 +931,34 @@ class AppViewModel(
         Log.i("AuthorFilter", "Selected authors: ${_selectedAuthorIds.value}")
     }
 
+    fun getUserWorks(userId: String) {
+        viewModelScope.launch {
+            try {
+                val works = RetrofitClient.comicApiService.getUserWorks(userId)
+                val currentUserId = _currentUser.value.userId
+                if (userId == currentUserId) {
+                    _userWorks.value = works
+                } else {
+                    _targetUserWorks.value = works
+                }
+            } catch (e: Exception) {
+                Log.e("AppViewModel", "Failed to get user works: ${e.message}")
+                _errorMessage.value = "Failed to load works"
+            }
+        }
+    }
+
     fun getUserProfile(userId: String) {
         viewModelScope.launch {
             try {
                 val profile = RetrofitClient.comicApiService.getUserProfile(userId)
                 val posts = RetrofitClient.comicApiService.getUserPosts(userId)
-                val works = RetrofitClient.comicApiService.getUserWorks(userId)
+                getUserWorks(userId)
 
                 val currentUserId = _currentUser.value.userId.trim()
                 if (userId.trim().equals(currentUserId, ignoreCase = true)) {
                     _userProfile.value = profile
                     _userPosts.value = posts
-                    _userWorks.value = works
 
                     RetrofitClient.preferenceManager.saveUserData(
                         profile.id,
@@ -929,7 +969,6 @@ class AppViewModel(
                 } else {
                     _targetUserProfile.value = profile
                     _targetUserPosts.value = posts
-                    _targetUserWorks.value = works
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to load profile: ${e.message}"

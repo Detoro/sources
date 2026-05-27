@@ -137,12 +137,14 @@ interface ComicApiService {
     @POST("api/community/comments/{commentId}/like")
     suspend fun likeComment(@Path("commentId") commentId: String): ServerResponse
 
-    @GET("api/comics/{comicId}/comments")
-    suspend fun getComicComments(@Path("comicId") comicId: String): List<Comment>
+    @GET("api/comics/{chapterId}/comments")
+    suspend fun getChapterComments(
+        @Path("chapterId") chapterId: String
+    ): List<Comment>
 
-    @POST("api/comics/{comicId}/comments")
-    suspend fun addComicComment(
-        @Path("comicId") comicId: String,
+    @POST("api/comics/{chapterId}/comments")
+    suspend fun addChapterComment(
+        @Path("chapterId") chapterId: String,
         @Body comment: CommentRequest
     ): ServerResponse
 

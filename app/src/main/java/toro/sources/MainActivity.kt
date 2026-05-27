@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.Rational
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -40,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModel
@@ -230,8 +232,16 @@ fun AppNavigation(viewModel: AppViewModel) {
         Screen.Inbox.route,
         Screen.ReadingList.route
     )
+    val context = LocalContext.current
     val currentUser by viewModel.currentUser.collectAsState()
     val pendingNav by viewModel.pendingNavigation.collectAsState()
+    val error by viewModel.errorMessage.collectAsState()
+    LaunchedEffect(error) {
+        error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearError()
+        }
+    }
 
     val startDestination = remember {
         if (RetrofitClient.preferenceManager.getTokenSync() != null) {

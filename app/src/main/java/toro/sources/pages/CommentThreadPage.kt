@@ -24,7 +24,7 @@ fun CommentThreadPage(
     commentId: String,
     onBackClick: () -> Unit
 ) {
-    val comments by viewModel.comments.collectAsState()
+    val comments by viewModel.postComments.collectAsState()
     val mainComment = remember(comments, commentId) { comments.find { it.id == commentId } }
     val replies = remember(comments, commentId) { comments.filter { it.parentId == commentId } }
     

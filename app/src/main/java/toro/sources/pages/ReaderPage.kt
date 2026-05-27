@@ -45,7 +45,7 @@ fun ReaderScreen(
     }
 
     LaunchedEffect(comic.id) {
-        viewModel.getComicComments(comic.id)
+        viewModel.getChapterComments(chapterId)
     }
 
     val pagerState = rememberPagerState(
@@ -70,7 +70,7 @@ fun ReaderScreen(
                 } else {
                     CommentsSection(
                         viewModel = viewModel,
-                        comicId = comic.id,
+                        chapterId = chapterId,
                         onViewAllClick = { onViewAllComments(comic.id) },
                         onCommentClick = { comment -> onCommentThreadClick(comic.id, comment.id) }
                     )
@@ -86,7 +86,7 @@ fun ReaderScreen(
                 item {
                     CommentsSection(
                         viewModel = viewModel,
-                        comicId = comic.id,
+                        chapterId = chapterId,
                         onViewAllClick = { onViewAllComments(comic.id) },
                         onCommentClick = { comment -> onCommentThreadClick(comic.id, comment.id) }
                     )

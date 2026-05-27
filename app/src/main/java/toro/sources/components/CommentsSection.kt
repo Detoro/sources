@@ -21,12 +21,12 @@ import toro.sources.dataModels.Comment
 @Composable
 fun CommentsSection(
     viewModel: AppViewModel,
-    comicId: String,
+    chapterId: String,
     onViewAllClick: () -> Unit = {},
     onCommentClick: (Comment) -> Unit = {}
 ) {
-    val comments by viewModel.comments.collectAsState()
-    val topThree = comments.filter { it.parentId == null }.take(3)
+    val comments by viewModel.chapterComments.collectAsState()
+    val topThree = comments.sortedByDescending { it.likesCount }.take(3)
 
     Column(
         modifier = Modifier
@@ -51,16 +51,6 @@ fun CommentsSection(
         }
         
         Spacer(modifier = Modifier.height(16.dp))
-
-        SmartInput(
-            onSend = { _, text, _, mentions, _ ->
-                viewModel.addComicComment(comicId, text, mentions)
-            },
-            placeholder = "Add a comment...",
-            viewModel = viewModel
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
         
         if (topThree.isEmpty()) {
             Text(
@@ -79,6 +69,17 @@ fun CommentsSection(
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
+        SmartInput(
+            onSend = { _, text, mentions, _, _ ->
+                viewModel.addChapterComment(
+                    chapterId = chapterId,
+                    text,
+                    mentions,
+                )
+            },
+            placeholder = "Add a comment...",
+            viewModel = viewModel
+        )
         Spacer(modifier = Modifier.height(48.dp))
     }
 }
