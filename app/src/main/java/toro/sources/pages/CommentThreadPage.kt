@@ -15,24 +15,32 @@ import toro.sources.AppViewModel
 import toro.sources.components.CommentItem
 import toro.sources.components.SmartInput
 import toro.sources.dataModels.Comment
+import toro.sources.dataModels.CommentLocation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentThreadPage(
     viewModel: AppViewModel,
-    postId: String,
+    commentLocation: CommentLocation,
+    targetId: String,
     commentId: String,
     onBackClick: () -> Unit
 ) {
-    val comments by viewModel.postComments.collectAsState()
+    val comments by when (commentLocation) {
+        CommentLocation.ON_CHAPTER -> viewModel.chapterComments
+        CommentLocation.ON_POST -> viewModel.postComments
+    }.collectAsState()
     val mainComment = remember(comments, commentId) { comments.find { it.id == commentId } }
     val replies = remember(comments, commentId) { comments.filter { it.parentId == commentId } }
     
     var replyingTo by remember { mutableStateOf<Comment?>(null) }
     var initialText by remember { mutableStateOf("") }
 
-    LaunchedEffect(postId) {
-        viewModel.getPostComments(postId)
+    LaunchedEffect(targetId, commentLocation) {
+        when (commentLocation) {
+            CommentLocation.ON_CHAPTER -> viewModel.getChapterComments(targetId)
+            CommentLocation.ON_POST -> viewModel.getPostComments(targetId)
+        }
     }
 
     Scaffold(
@@ -76,7 +84,10 @@ fun CommentThreadPage(
                         // All replies on this page belong to this thread (parentId = commentId)
                         // UNLESS specifically replying to another reply within the thread.
                         val targetParentId = replyingTo?.id ?: commentId
-                        viewModel.addPostComment(postId, text, mentions, targetParentId)
+                        when (commentLocation) {
+                            CommentLocation.ON_CHAPTER -> viewModel.addChapterComment(targetId, text, mentions, targetParentId)
+                            CommentLocation.ON_POST -> viewModel.addPostComment(targetId, text, mentions, targetParentId)
+                        }
 
                         replyingTo = null
                         initialText = ""
@@ -101,7 +112,7 @@ fun CommentThreadPage(
                         isReply = true,
                         isThreadHeader = true,
                         onReplyClick = {},
-                        onLikeClick = { viewModel.likeComment(it.id) }
+                        onLikeClick = { viewModel.likeComment(it.id, commentLocation) }
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     Text(
@@ -131,7 +142,7 @@ fun CommentThreadPage(
                             "@${it.authorName} "
                         },
                         isReply = true,
-                        onLikeClick = { viewModel.likeComment(it.id) },
+                        onLikeClick = { viewModel.likeComment(it.id, commentLocation) },
                         onCommentClick = { /* Already in thread. Don't want to do anything */ }
                     )
                 }

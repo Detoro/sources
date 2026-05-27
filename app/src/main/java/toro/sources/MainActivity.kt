@@ -1,13 +1,11 @@
 package toro.sources
 
 import android.Manifest
-import android.app.PictureInPictureParams
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.util.Rational
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -52,6 +50,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import toro.sources.dataModels.CommentLocation
 import toro.sources.dataModels.NotificationType
 import toro.sources.dataModels.PreferenceManager
 import toro.sources.network.RetrofitClient
@@ -102,22 +101,21 @@ sealed class Screen(val route: String) {
         fun createRoute(userId: String) = "profile/$userId"
     }
     object AuthorSearch : Screen("author_search")
-    object Comments : Screen("comments/{postId}") {
-        fun createRoute(postId: String) = "comments/$postId"
+    object PostComments : Screen("post_comments/{targetId}") {
+        fun createRoute(targetId: String) = "post_comments/$targetId"
     }
-    object CommentThread : Screen("comment_thread/{postId}/{commentId}") {
-        fun createRoute(postId: String, commentId: String) = "comment_thread/$postId/$commentId"
+    object PostCommentThread : Screen("post_comment_thread/{targetId}/{commentId}") {
+        fun createRoute(targetId: String, commentId: String) = "post_comment_thread/$targetId/$commentId"
+    }
+    object ChapterComments : Screen("chapter_comments/{targetId}") {
+        fun createRoute(targetId: String) = "chapter_comments/$targetId"
+    }
+    object ChapterCommentThread : Screen("chapter_comment_thread/{targetId}/{commentId}") {
+        fun createRoute(targetId: String, commentId: String) = "chapter_comment_thread/$targetId/$commentId"
     }
 }
 
 class MainActivity : ComponentActivity() {
-    override fun onUserLeaveHint() {
-        val params = PictureInPictureParams.Builder()
-            .setAspectRatio(Rational(16, 9))
-            .build()
-        enterPictureInPictureMode(params)
-    }
-
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
@@ -161,7 +159,7 @@ class MainActivity : ComponentActivity() {
                 }
                 NotificationType.COMMENT.name, NotificationType.FOLLOW.name -> {
                     if (postId != null) {
-                        viewModel.handleNavigation(Screen.Comments.createRoute(postId))
+                        viewModel.handleNavigation(Screen.PostComments.createRoute(postId))
                     } else {
                         viewModel.handleNavigation(Screen.Notifications.route)
                     }
@@ -457,11 +455,11 @@ fun AppNavigation(viewModel: AppViewModel) {
                                     viewModel.likeChapter(comic!!.id, chapterId)
                                 }
                             },
-                            onViewAllComments = { id ->
-                                navController.navigate(Screen.Comments.createRoute(id))
+                            onViewAllComments = { _ ->
+                                navController.navigate(Screen.ChapterComments.createRoute(chapterId ?: ""))
                             },
                             onCommentThreadClick = { chapterId, commentId ->
-                                navController.navigate(Screen.CommentThread.createRoute(chapterId, commentId))
+                                navController.navigate(Screen.ChapterCommentThread.createRoute(chapterId, commentId))
                             }
                         )
                     } else {
@@ -479,7 +477,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                 EngagementPage(
                     viewModel = viewModel,
                     onCommentClick = { postId ->
-                        navController.navigate(Screen.Comments.createRoute(postId))
+                        navController.navigate(Screen.PostComments.createRoute(postId))
                     },
                     onMakePost = {
                         navController.navigate(Screen.Post.route)
@@ -496,24 +494,49 @@ fun AppNavigation(viewModel: AppViewModel) {
                     onBackClick = { navController.popBackStack() }
                 )
             }
-            composable(Screen.Comments.route) { backStackEntry ->
-                val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
+            composable(Screen.PostComments.route) { backStackEntry ->
+                val targetId = backStackEntry.arguments?.getString("targetId") ?: return@composable
                 CommentsPage(
                     viewModel = viewModel,
-                    postId = postId,
+                    commentLocation = CommentLocation.ON_POST,
+                    targetId = targetId,
                     onBackClick = { navController.popBackStack() },
                     onCommentClick = { comment ->
-                        navController.navigate(Screen.CommentThread.createRoute(postId, comment.id))
+                        navController.navigate(Screen.PostCommentThread.createRoute(targetId, comment.id))
                     }
                 )
             }
-            composable(Screen.CommentThread.route) { backStackEntry ->
-                val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
+            composable(Screen.PostCommentThread.route) { backStackEntry ->
+                val targetId = backStackEntry.arguments?.getString("targetId") ?: return@composable
                 val commentId = backStackEntry.arguments?.getString("commentId") ?: return@composable
                 CommentThreadPage(
                     viewModel = viewModel,
+                    commentLocation = CommentLocation.ON_POST,
+                    targetId = targetId,
                     commentId = commentId,
-                    postId = postId,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.ChapterComments.route) { backStackEntry ->
+                val targetId = backStackEntry.arguments?.getString("targetId") ?: return@composable
+                CommentsPage(
+                    viewModel = viewModel,
+                    commentLocation = CommentLocation.ON_CHAPTER,
+                    targetId = targetId,
+                    onBackClick = { navController.popBackStack() },
+                    onCommentClick = { comment ->
+                        navController.navigate(Screen.ChapterCommentThread.createRoute(targetId, comment.id))
+                    }
+                )
+            }
+            composable(Screen.ChapterCommentThread.route) { backStackEntry ->
+                val targetId = backStackEntry.arguments?.getString("targetId") ?: return@composable
+                val commentId = backStackEntry.arguments?.getString("commentId") ?: return@composable
+                CommentThreadPage(
+                    viewModel = viewModel,
+                    commentLocation = CommentLocation.ON_CHAPTER,
+                    targetId = targetId,
+                    commentId = commentId,
                     onBackClick = { navController.popBackStack() }
                 )
             }

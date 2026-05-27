@@ -15,20 +15,28 @@ import toro.sources.AppViewModel
 import toro.sources.components.CommentItem
 import toro.sources.components.SmartInput
 import toro.sources.dataModels.Comment
+import toro.sources.dataModels.CommentLocation
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentsPage(
     viewModel: AppViewModel,
-    postId: String,
+    commentLocation: CommentLocation,
+    targetId: String,
     onBackClick: () -> Unit,
     onCommentClick: (Comment) -> Unit = {}
 ) {
-    val comments by viewModel.postComments.collectAsState()
+    val comments by when (commentLocation) {
+        CommentLocation.ON_CHAPTER -> viewModel.chapterComments
+        CommentLocation.ON_POST -> viewModel.postComments
+    }.collectAsState()
     var replyingTo by remember { mutableStateOf<Comment?>(null) }
 
-    LaunchedEffect(postId) {
-        viewModel.getPostComments(postId)
+    LaunchedEffect(targetId, commentLocation) {
+        when (commentLocation) {
+            CommentLocation.ON_CHAPTER -> viewModel.getChapterComments(targetId)
+            CommentLocation.ON_POST -> viewModel.getPostComments(targetId)
+        }
     }
 
     // Process comments into top-level only (we show replies in thread page now)
@@ -76,7 +84,10 @@ fun CommentsPage(
                 }
                 SmartInput(
                     onSend = { _, text, mentions, _, _ ->
-                        viewModel.addPostComment(postId, text, mentions, replyingTo?.id)
+                        when (commentLocation) {
+                            CommentLocation.ON_CHAPTER -> viewModel.addChapterComment(targetId, text, mentions, replyingTo?.id)
+                            CommentLocation.ON_POST -> viewModel.addPostComment(targetId, text, mentions, replyingTo?.id)
+                        }
                         replyingTo = null
                         initialText = ""
                     },
@@ -108,7 +119,7 @@ fun CommentsPage(
                     CommentItem(
                         comment = comment,
                         onReplyClick = {onCommentClick(it)},
-                        onLikeClick = { viewModel.likeComment(it.id) },
+                        onLikeClick = { viewModel.likeComment(it.id, commentLocation) },
                         onCommentClick = { onCommentClick(it) }
                     )
                 }

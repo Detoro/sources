@@ -135,7 +135,12 @@ interface ComicApiService {
     ): ServerResponse
 
     @POST("api/community/comments/{commentId}/like")
-    suspend fun likeComment(@Path("commentId") commentId: String): ServerResponse
+    suspend fun likePostComment(@Path("commentId") commentId: String): ServerResponse
+
+    @POST("api/comics/chapter/comments/{commentId}/like")
+    suspend fun likeChapterComment(
+        @Path("commentId") commentId: String
+    ): ServerResponse
 
     @GET("api/comics/{chapterId}/comments")
     suspend fun getChapterComments(

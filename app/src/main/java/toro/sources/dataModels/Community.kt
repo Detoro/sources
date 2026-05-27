@@ -2,6 +2,8 @@ package toro.sources.dataModels
 
 import kotlinx.serialization.Serializable
 
+enum class CommentLocation { ON_POST, ON_CHAPTER }
+
 @Serializable
 data class Post(
     val id: String = "",
@@ -18,7 +20,7 @@ data class Post(
 @Serializable
 data class Comment(
     val id: String = "",
-    val postId: String = "",
+    val commentLocationId: String = "",
     val authorId: String = "",
     val authorName: String = "",
     val content: String = "",

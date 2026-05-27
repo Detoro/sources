@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.dataModels.Comment
+import toro.sources.dataModels.CommentLocation
 
 @Composable
 fun CommentsSection(
@@ -64,7 +65,7 @@ fun CommentsSection(
                     comment = comment,
                     onCommentClick = { onCommentClick(it) },
                     onReplyClick = { onCommentClick(it) },
-                    onLikeClick = { viewModel.likeComment(it.id) }
+                    onLikeClick = { viewModel.likeComment(it.id, CommentLocation.ON_CHAPTER) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }

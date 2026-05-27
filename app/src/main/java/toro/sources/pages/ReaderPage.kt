@@ -71,8 +71,8 @@ fun ReaderScreen(
                     CommentsSection(
                         viewModel = viewModel,
                         chapterId = chapterId,
-                        onViewAllClick = { onViewAllComments(comic.id) },
-                        onCommentClick = { comment -> onCommentThreadClick(comic.id, comment.id) }
+                        onViewAllClick = { onViewAllComments(chapterId) },
+                        onCommentClick = { comment -> onCommentThreadClick(chapterId, comment.id) }
                     )
                 }
             }
@@ -87,8 +87,8 @@ fun ReaderScreen(
                     CommentsSection(
                         viewModel = viewModel,
                         chapterId = chapterId,
-                        onViewAllClick = { onViewAllComments(comic.id) },
-                        onCommentClick = { comment -> onCommentThreadClick(comic.id, comment.id) }
+                        onViewAllClick = { onViewAllComments(chapterId) },
+                        onCommentClick = { comment -> onCommentThreadClick(chapterId, comment.id) }
                     )
                 }
             }

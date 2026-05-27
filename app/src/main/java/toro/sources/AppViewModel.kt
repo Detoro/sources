@@ -65,6 +65,7 @@ import java.io.FileOutputStream
 import toro.sources.dataModels.RegisterComicRequest
 import toro.sources.dataModels.RegisterChaptersRequest
 import toro.sources.dataModels.ChapterUploadData
+import toro.sources.dataModels.CommentLocation
 import kotlin.collections.map
 
 enum class SearchSource {
@@ -802,22 +803,45 @@ class AppViewModel(
             }
         }
     }
-    fun likeComment(commentId: String) {
-        val currentComments = _postComments.value
-        _postComments.value = currentComments.map { comment ->
-            if (comment.id == commentId) {
-                comment.copy(
-                    isLiked = !comment.isLiked,
-                    likesCount = if (comment.isLiked) comment.likesCount - 1 else comment.likesCount + 1
-                )
-            } else comment
-        }
-        viewModelScope.launch {
-            try {
-                RetrofitClient.comicApiService.likeComment(commentId)
-            } catch (e: Exception) {
-                _postComments.value = currentComments
-                _errorMessage.value = "Failed to like comment: ${e.message}"
+    fun likeComment(commentId: String, commentLocation: CommentLocation) {
+        when (commentLocation) {
+            CommentLocation.ON_CHAPTER -> {
+                val currentComments = _chapterComments.value
+                _chapterComments.value = currentComments.map { comment ->
+                    if (comment.id == commentId) {
+                        comment.copy(
+                            isLiked = !comment.isLiked,
+                            likesCount = if (comment.isLiked) comment.likesCount - 1 else comment.likesCount + 1
+                        )
+                    } else comment
+                }
+                viewModelScope.launch {
+                    try {
+                        RetrofitClient.comicApiService.likeChapterComment(commentId)
+                    } catch (e: Exception) {
+                        _chapterComments.value = currentComments
+                        _errorMessage.value = "Failed to like comment on chapter: ${e.message}"
+                    }
+                }
+            }
+            CommentLocation.ON_POST -> {
+                val currentComments = _postComments.value
+                _postComments.value = currentComments.map { comment ->
+                    if (comment.id == commentId) {
+                        comment.copy(
+                            isLiked = !comment.isLiked,
+                            likesCount = if (comment.isLiked) comment.likesCount - 1 else comment.likesCount + 1
+                        )
+                    } else comment
+                }
+                viewModelScope.launch {
+                    try {
+                        RetrofitClient.comicApiService.likePostComment(commentId)
+                    } catch (e: Exception) {
+                        _postComments.value = currentComments
+                        _errorMessage.value = "Failed to like comment on post: ${e.message}"
+                    }
+                }
             }
         }
     }
