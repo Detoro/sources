@@ -77,10 +77,17 @@ fun ChatThreadPage(
             )
         },
         bottomBar = {
+            val sharedContent by viewModel.sharedContent.collectAsState()
             SmartInput(
-                onSend = { _, text, _, sharedComicIds, _ ->
+                onSend = { _, text, _, _, _ ->
                     if (targetUserId.isNotEmpty()) {
-                        viewModel.sendMessage(conversationId, targetUserId, text, sharedComicIds.firstOrNull())
+                        viewModel.sendMessage(
+                            conversationId, 
+                            targetUserId, 
+                            text, 
+                            sharedId = sharedContent?.id,
+                            sharedType = sharedContent?.type
+                        )
                     }
                 },
                 placeholder = "Type a message...",
@@ -114,6 +121,8 @@ fun ChatThreadPage(
                     isDelivered = msg.isDelivered,
                     showStatus = isFromMe && index == lastUserMessageIndex,
                     sharedComicId = msg.sharedComicId,
+                    sharedId = msg.sharedId,
+                    sharedType = msg.sharedType,
                     viewModel = viewModel
                 )
             }

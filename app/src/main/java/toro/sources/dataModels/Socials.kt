@@ -22,7 +22,9 @@ data class ChatMessage(
     val isDelivered: Boolean = false,
     val isRead: Boolean = false,
     val isEncrypted: Boolean = false,
-    val sharedComicId: String? = null
+    val sharedComicId: String? = null,
+    val sharedId: String? = null,
+    val sharedType: ShareType? = null
 )
 
 @Serializable
@@ -32,4 +34,12 @@ data class Conversation(
     val otherUserName: String = "",
     val lastMessage: String? = null,
     val timestamp: Long = 0L
+)
+
+@Serializable
+data class SharedContent(
+    val id: String,
+    val type: ShareType,
+    val title: String,
+    val previewText: String
 )

@@ -42,12 +42,18 @@ fun PostPage(
             )
         },
         bottomBar = {
+            val sharedContent by viewModel.sharedContent.collectAsState()
             SmartInput(
                 supportTitle = true,
                 supportUpload = true,
                 viewModel = viewModel,
                 onSend = { title, text, _, _, _ ->
-                    viewModel.makePost(title, text)
+                    viewModel.makePost(
+                        title, 
+                        text, 
+                        sharedId = sharedContent?.id, 
+                        sharedType = sharedContent?.type
+                    )
                 },
                 onTitleChange = { postTitle = it },
                 onValueChange = { title, text ->

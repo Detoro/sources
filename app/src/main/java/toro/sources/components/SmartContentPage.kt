@@ -35,7 +35,7 @@ fun SmartContentPage(pageIndex: Int, viewModel: AppViewModel) {
         AsyncImage(
             model = pageData,
             contentDescription = "Page $pageIndex",
-            contentScale = ContentScale.Fit,
+            contentScale = ContentScale.FillWidth,
             modifier = Modifier.fillMaxSize()
                 .clipToBounds()
                 .graphicsLayer(

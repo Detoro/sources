@@ -12,7 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
+import toro.sources.Screen
 import toro.sources.components.CommentItem
+import toro.sources.components.ShareDialog
+import toro.sources.dataModels.ShareType
 import toro.sources.components.SmartInput
 import toro.sources.dataModels.Comment
 import toro.sources.dataModels.CommentLocation
@@ -31,6 +34,7 @@ fun CommentsPage(
         CommentLocation.ON_POST -> viewModel.postComments
     }.collectAsState()
     var replyingTo by remember { mutableStateOf<Comment?>(null) }
+    var sharingComment by remember { mutableStateOf<Comment?>(null) }
 
     LaunchedEffect(targetId, commentLocation) {
         when (commentLocation) {
@@ -47,6 +51,7 @@ fun CommentsPage(
     var initialText by remember { mutableStateOf("") }
 
     Scaffold(
+        modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
                 title = { Text("Comments", style = MaterialTheme.typography.titleLarge) },
@@ -82,11 +87,26 @@ fun CommentsPage(
                         }
                     }
                 }
+                val sharedContent by viewModel.sharedContent.collectAsState()
                 SmartInput(
                     onSend = { _, text, mentions, _, _ ->
                         when (commentLocation) {
-                            CommentLocation.ON_CHAPTER -> viewModel.addChapterComment(targetId, text, mentions, replyingTo?.id)
-                            CommentLocation.ON_POST -> viewModel.addPostComment(targetId, text, mentions, replyingTo?.id)
+                            CommentLocation.ON_CHAPTER -> viewModel.addChapterComment(
+                                targetId, 
+                                text, 
+                                mentions, 
+                                replyingTo?.id,
+                                sharedId = sharedContent?.id,
+                                sharedType = sharedContent?.type
+                            )
+                            CommentLocation.ON_POST -> viewModel.addPostComment(
+                                targetId, 
+                                text, 
+                                mentions, 
+                                replyingTo?.id,
+                                sharedId = sharedContent?.id,
+                                sharedType = sharedContent?.type
+                            )
                         }
                         replyingTo = null
                         initialText = ""
@@ -98,6 +118,17 @@ fun CommentsPage(
             }
         }
     ) { paddingValues ->
+        if (sharingComment != null) {
+            ShareDialog(
+                viewModel = viewModel,
+                sharedId = sharingComment!!.id,
+                sharedType = ShareType.COMMENT,
+                sharedTitle = "Comment by ${sharingComment!!.authorName}",
+                sharedPreview = sharingComment!!.content.take(50),
+                onDismiss = { sharingComment = null }
+            )
+        }
+
         if (comments.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -120,7 +151,13 @@ fun CommentsPage(
                         comment = comment,
                         onReplyClick = {onCommentClick(it)},
                         onLikeClick = { viewModel.likeComment(it.id, commentLocation) },
-                        onCommentClick = { onCommentClick(it) }
+                        onCommentClick = { onCommentClick(it) },
+                        onAuthorClick = { userId ->
+                            viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                        },
+                        onShareClick = { c ->
+                            sharingComment = c
+                        }
                     )
                 }
             }

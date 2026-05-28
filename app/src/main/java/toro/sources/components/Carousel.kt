@@ -19,7 +19,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -28,10 +28,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
+import kotlin.math.absoluteValue
 
 @Composable
 fun BillboardCarousel(
@@ -51,7 +53,7 @@ fun BillboardCarousel(
         }
     }
 
-    HorizontalPager(
+    VerticalPager(
         state = pagerState,
         modifier = modifier
             .fillMaxWidth()
@@ -63,6 +65,16 @@ fun BillboardCarousel(
         Card(
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer {
+                val pageOffset = (
+                        (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                        ).absoluteValue
+
+                val scale = 1f - (pageOffset * 0.15f).coerceIn(0f, 1f)
+                scaleX = scale
+                scaleY = scale
+                alpha = 1f - (pageOffset * 0.5f).coerceIn(0f, 1f)
+                }
                 .clickable { onComicClick(comic) },
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)

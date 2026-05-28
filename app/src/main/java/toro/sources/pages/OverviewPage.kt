@@ -35,7 +35,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Share
 import toro.sources.AppViewModel
+import toro.sources.components.ShareDialog
+import toro.sources.dataModels.ShareType
 import toro.sources.dataModels.Chapter
 import toro.sources.components.ChapterRow
 import toro.sources.components.ReadingProgressBar
@@ -51,6 +55,7 @@ fun OverviewPage(
 ) {
     val comic by viewModel.currentComic.collectAsState()
     val chapters by viewModel.chapters.collectAsState()
+    var showShareDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(comic?.id) {
         comic?.let { comic ->
@@ -70,6 +75,11 @@ fun OverviewPage(
                 actions = {
                     comic?.let { safeComic ->
                         IconButton(onClick = {
+                            showShareDialog = true
+                        }) {
+                            Icon(Icons.Default.Share, contentDescription = "Share")
+                        }
+                        IconButton(onClick = {
                             viewModel.removeComicFromLibrary(safeComic.id, onRemoved = onBackClick)
                         }) {
                             Icon(Icons.Default.Delete, contentDescription = "Remove from Library")
@@ -79,6 +89,16 @@ fun OverviewPage(
             )
         }
     ) { paddingValues ->
+        if (showShareDialog && comic != null) {
+            ShareDialog(
+                viewModel = viewModel,
+                sharedId = comic!!.id,
+                sharedType = ShareType.COMIC,
+                sharedTitle = comic!!.title,
+                sharedPreview = comic!!.description.take(50),
+                onDismiss = { showShareDialog = false }
+            )
+        }
         if (comic == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()

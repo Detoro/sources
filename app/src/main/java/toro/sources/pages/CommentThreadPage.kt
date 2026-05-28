@@ -12,7 +12,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
+import toro.sources.Screen
 import toro.sources.components.CommentItem
+import toro.sources.components.ShareDialog
+import toro.sources.dataModels.ShareType
 import toro.sources.components.SmartInput
 import toro.sources.dataModels.Comment
 import toro.sources.dataModels.CommentLocation
@@ -35,6 +38,7 @@ fun CommentThreadPage(
     
     var replyingTo by remember { mutableStateOf<Comment?>(null) }
     var initialText by remember { mutableStateOf("") }
+    var sharingComment by remember { mutableStateOf<Comment?>(null) }
 
     LaunchedEffect(targetId, commentLocation) {
         when (commentLocation) {
@@ -44,6 +48,7 @@ fun CommentThreadPage(
     }
 
     Scaffold(
+        modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
                 title = { Text("Thread", style = MaterialTheme.typography.titleLarge) },
@@ -79,14 +84,27 @@ fun CommentThreadPage(
                         }
                     }
                 }
+                val sharedContent by viewModel.sharedContent.collectAsState()
                 SmartInput(
                     onSend = { _, text, mentions, _, _ ->
-                        // All replies on this page belong to this thread (parentId = commentId)
-                        // UNLESS specifically replying to another reply within the thread.
                         val targetParentId = replyingTo?.id ?: commentId
                         when (commentLocation) {
-                            CommentLocation.ON_CHAPTER -> viewModel.addChapterComment(targetId, text, mentions, targetParentId)
-                            CommentLocation.ON_POST -> viewModel.addPostComment(targetId, text, mentions, targetParentId)
+                            CommentLocation.ON_CHAPTER -> viewModel.addChapterComment(
+                                targetId, 
+                                text, 
+                                mentions, 
+                                targetParentId,
+                                sharedId = sharedContent?.id,
+                                sharedType = sharedContent?.type
+                            )
+                            CommentLocation.ON_POST -> viewModel.addPostComment(
+                                targetId, 
+                                text, 
+                                mentions, 
+                                targetParentId,
+                                sharedId = sharedContent?.id,
+                                sharedType = sharedContent?.type
+                            )
                         }
 
                         replyingTo = null
@@ -99,6 +117,17 @@ fun CommentThreadPage(
             }
         }
     ) { paddingValues ->
+        if (sharingComment != null) {
+            ShareDialog(
+                viewModel = viewModel,
+                sharedId = sharingComment!!.id,
+                sharedType = ShareType.COMMENT,
+                sharedTitle = "Comment by ${sharingComment!!.authorName}",
+                sharedPreview = sharingComment!!.content.take(50),
+                onDismiss = { sharingComment = null }
+            )
+        }
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -112,7 +141,13 @@ fun CommentThreadPage(
                         isReply = true,
                         isThreadHeader = true,
                         onReplyClick = {},
-                        onLikeClick = { viewModel.likeComment(it.id, commentLocation) }
+                        onLikeClick = { viewModel.likeComment(it.id, commentLocation) },
+                        onAuthorClick = { userId ->
+                            viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                        },
+                        onShareClick = { c ->
+                            sharingComment = c
+                        }
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     Text(
@@ -143,7 +178,13 @@ fun CommentThreadPage(
                         },
                         isReply = true,
                         onLikeClick = { viewModel.likeComment(it.id, commentLocation) },
-                        onCommentClick = { /* Already in thread. Don't want to do anything */ }
+                        onCommentClick = { /* Already in thread. Don't want to do anything */ },
+                        onAuthorClick = { userId ->
+                            viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                        },
+                        onShareClick = { c ->
+                            sharingComment = c
+                        }
                     )
                 }
             }

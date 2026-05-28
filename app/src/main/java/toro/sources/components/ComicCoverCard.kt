@@ -1,14 +1,13 @@
 package toro.sources.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
@@ -37,46 +36,37 @@ fun ComicCoverCard(
     var showOptionsMenu by remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
-        Card(
-            modifier = Modifier
+        Column (
+            modifier = modifier
                 .fillMaxWidth()
                 .combinedClickable(
                     onClick = { onClick() },
                     onLongClick = { showOptionsMenu = true }
-                ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-        ) {
-            Column {
-                AsyncImage(
-                    model = comic.coverImageUrl,
-                    contentDescription = "${comic.title} cover",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(0.66f)
                 )
+                .background(MaterialTheme.colorScheme.surface)
+        ){
+            AsyncImage(
+                model = comic.coverImageUrl,
+                contentDescription = "${comic.title} cover",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(0.66f)
+            )
 
-                Text(
-                    text = comic.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(8.dp)
-                )
-            }
+            Text(
+                text = comic.title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(8.dp)
+            )
         }
 
         DropdownMenu(
             expanded = showOptionsMenu,
             onDismissRequest = { showOptionsMenu = false }
         ) {
-            DropdownMenuItem(
-                text = { Text("Open") },
-                onClick = {
-                    showOptionsMenu = false
-                    onClick()
-                }
-            )
 
             DropdownMenuItem(
                 text = { Text("Share") },

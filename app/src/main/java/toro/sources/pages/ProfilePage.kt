@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.AsyncImage
+import toro.sources.Screen
 import toro.sources.AppViewModel
 import toro.sources.components.PostCard
 import toro.sources.components.ComicCoverCard
@@ -251,7 +252,21 @@ fun ProfilePage(
                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                     ) {
                                         items(userPosts) { post ->
-                                            PostCard(viewModel, post, onCommentClick = {})
+                                            PostCard(
+                                                viewModel = viewModel,
+                                                post = post,
+                                                onCommentClick = {
+                                                    viewModel.handleNavigation(Screen.PostComments.createRoute(post.id))
+                                                },
+                                                onAuthorClick = { userId ->
+                                                    if (userId != targetUserId) {
+                                                        viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                                    }
+                                                },
+                                                onShareClick = { p ->
+                                                    viewModel.handleNavigation(Screen.PostComments.createRoute(p.id))
+                                                }
+                                            )
                                         }
                                     }
                                 }

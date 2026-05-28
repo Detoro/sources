@@ -14,7 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
-import toro.sources.dataModels.Comic
+import toro.sources.Screen
+import toro.sources.dataModels.ShareType
 
 @Composable
 fun ChatBubble(
@@ -23,22 +24,24 @@ fun ChatBubble(
     isDelivered: Boolean = false,
     showStatus: Boolean = false,
     sharedComicId: String? = null,
+    sharedId: String? = null,
+    sharedType: ShareType? = null,
     viewModel: AppViewModel? = null
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
-    val catalog by viewModel?.catalog?.collectAsState() ?: remember { mutableStateOf(emptyList<Comic>()) }
-    val sharedComic = remember(sharedComicId, catalog) {
-        catalog.find { it.id == sharedComicId }
+    val catalog by viewModel?.catalog?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
+    
+    val actualSharedId = sharedId ?: sharedComicId
+    val actualSharedType = if (sharedId != null) sharedType else if (sharedComicId != null) ShareType.COMIC else null
+
+    val sharedComic = remember(actualSharedId, actualSharedType, catalog) {
+        if (actualSharedType == ShareType.COMIC) catalog.find { it.id == actualSharedId } else null
     }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp)
-            .combinedClickable(
-                onClick = {},
-                onLongClick = { showOptionsMenu = true }
-            ),
+            .padding(vertical = 2.dp),
         horizontalArrangement = if (isFromMe) Arrangement.End else Arrangement.Start
     ) {
         Column(horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start) {
@@ -61,12 +64,38 @@ fun ChatBubble(
                     if (sharedComic != null) {
                         SharedComicCard(sharedComic)
                         Spacer(modifier = Modifier.height(8.dp))
+                    } else if (actualSharedType != null && actualSharedId != null) {
+                        SharedContentPlaceholder(actualSharedType)
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
                     if (text.isNotBlank()) {
                         Text(
                             text = text,
                             color = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.combinedClickable(
+                                onClick = {
+                                    if (actualSharedId != null && actualSharedType != null && viewModel != null) {
+                                        when (actualSharedType) {
+                                            ShareType.COMIC -> {
+                                                if (sharedComic != null) {
+                                                    viewModel.setCurrentComic(sharedComic)
+                                                    viewModel.handleNavigation(Screen.Overview.route)
+                                                }
+                                            }
+                                            ShareType.POST -> {
+                                                viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
+                                            }
+                                            ShareType.COMMENT -> {
+                                                // Since we don't store targetId in message, we can't route perfectly
+                                                // but for now we route to a thread if possible or engagement
+                                                viewModel.handleNavigation(Screen.Engagement.route)
+                                            }
+                                        }
+                                    }
+                                },
+                                onLongClick = { showOptionsMenu = true }
+                            ),
                         )
                     }
                 }
@@ -97,28 +126,6 @@ fun ChatBubble(
                         tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
                     )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun SharedComicCard(comic: Comic) {
-    Card(
-        modifier = Modifier.width(200.dp),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column {
-            coil.compose.AsyncImage(
-                model = comic.coverImageUrl,
-                contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(100.dp),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop
-            )
-            Column(modifier = Modifier.padding(8.dp)) {
-                Text(text = comic.title, style = MaterialTheme.typography.labelLarge, maxLines = 1)
-                Text(text = comic.author, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
