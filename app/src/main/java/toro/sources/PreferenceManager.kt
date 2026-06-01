@@ -1,4 +1,4 @@
-package toro.sources.dataModels
+package toro.sources
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey

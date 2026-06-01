@@ -3,28 +3,33 @@ package toro.sources.components
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Comment
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.PostAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import toro.sources.AppViewModel
+import com.toro.models.ShareType
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun SmartInput(
     title: String? = null,
@@ -39,7 +44,9 @@ fun SmartInput(
 ) {
     var inputText by remember(initialText) { mutableStateOf(initialText) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    var isSpoiler by remember {mutableStateOf(false)}
     var titleText by remember(title) { mutableStateOf(title ?: "") }
+    var isExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(titleText, inputText) {
         onValueChange?.invoke(
@@ -86,7 +93,7 @@ fun SmartInput(
     LaunchedEffect(sharedContent) {
         sharedContent?.let {
             if (inputText.isEmpty()) {
-                inputText = "Sharing ${it.type.name.lowercase()}: ${it.title}\n${it.previewText}"
+                inputText = "Sharing ${it.type.name.lowercase()}: ${it.title}"
             }
         }
     }
@@ -99,46 +106,31 @@ fun SmartInput(
         verticalArrangement = Arrangement.Bottom
     ) {
         if (sharedContent != null) {
-            Surface(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp),
-                shape = MaterialTheme.shapes.small,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                tonalElevation = 2.dp
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier.padding(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                if (sharedContent!!.type == ShareType.COMIC) {
+                    // Logic to find comic by ID for preview if needed, 
+                    // or just use SharedContentPlaceholder
+                    SharedContentPlaceholder(sharedContent!!.type)
+                } else {
+                    SharedContentPlaceholder(sharedContent!!.type)
+                }
+                
+                Spacer(modifier = Modifier.weight(1f))
+                
+                IconButton(
+                    onClick = { viewModel?.setSharedContent(null) },
+                    modifier = Modifier.size(24.dp)
                 ) {
                     Icon(
-                        imageVector = when (sharedContent?.type) {
-                            toro.sources.dataModels.ShareType.COMIC -> Icons.Default.Add
-                            toro.sources.dataModels.ShareType.POST -> Icons.Default.PostAdd
-                            toro.sources.dataModels.ShareType.COMMENT -> Icons.AutoMirrored.Filled.Comment
-                            else -> Icons.Default.Add
-                        },
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                        Icons.Default.Close,
+                        contentDescription = "Remove",
+                        modifier = Modifier.size(16.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Sharing ${sharedContent?.title}",
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.weight(1f),
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                    )
-                    IconButton(
-                        onClick = { viewModel?.setSharedContent(null) },
-                        modifier = Modifier.size(24.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Remove",
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
                 }
             }
         }
@@ -203,25 +195,111 @@ fun SmartInput(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Bottom
         ) {
-            if (supportUpload) {
-                IconButton(
-                    onClick = { launcher.launch("image/*") },
-                    modifier = Modifier
-                        .size(48.dp)
-                        .padding(bottom = 4.dp) // Align with the bottom pill
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Upload",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
+            AnimatedContent(
+                targetState = isExpanded,
+                transitionSpec = {
+                    fadeIn().togetherWith(fadeOut())
+                },
+                modifier = Modifier.weight(1f),
+                label = "InputExpansion"
+            ) { expanded ->
+                if (expanded) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(end = 8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        ) {
+                            if (supportUpload) {
+                                IconButton(
+                                    onClick = { launcher.launch("image/*") },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = "Upload",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            
+                            Spacer(modifier = Modifier.weight(1f))
+                            
+                            IconButton(
+                                onClick = { isExpanded = false },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Collapse",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                if (supportTitle) {
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            tonalElevation = 4.dp,
+                            shadowElevation = 2.dp,
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                if (supportTitle) {
+                                    Box(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+                                        if (titleText.isEmpty()) {
+                                            Text(
+                                                "Title...",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                            )
+                                        }
+                                        BasicTextField(
+                                            value = titleText,
+                                            onValueChange = {
+                                                titleText = it
+                                                onTitleChange?.invoke(it)
+                                            },
+                                            singleLine = true,
+                                            textStyle = MaterialTheme.typography.titleMedium.copy(
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            ),
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                }
+
+                                Box(modifier = Modifier.fillMaxWidth()) {
+                                    if (inputText.isEmpty()) {
+                                        Text(
+                                            placeholder,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                        )
+                                    }
+                                    BasicTextField(
+                                        value = inputText,
+                                        onValueChange = { inputText = it },
+                                        minLines = 3,
+                                        maxLines = 10,
+                                        textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        ),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                                Switch(
+                                    checked = isSpoiler,
+                                    onCheckedChange = { isSpoiler = it }
+                                )
+                            }
+                        }
+                    }
+                } else {
                     Surface(
                         shape = CircleShape,
                         tonalElevation = 4.dp,
@@ -229,61 +307,23 @@ fun SmartInput(
                         color = MaterialTheme.colorScheme.surfaceVariant,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 6.dp)
+                            .padding(end = 8.dp)
+                            .clickable { isExpanded = true }
                     ) {
-                        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                            if (titleText.isEmpty()) {
-                                Text(
-                                    "Title...",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                )
-                            }
-                            BasicTextField(
-                                value = titleText,
-                                onValueChange = {
-                                    titleText = it
-                                    onTitleChange?.invoke(it)
-                                },
-                                singleLine = true,
-                                textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                ),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    }
-                }
-
-                Surface(
-                    shape = CircleShape,
-                    tonalElevation = 4.dp,
-                    shadowElevation = 2.dp,
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        if (inputText.isEmpty()) {
+                        Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                             Text(
-                                placeholder,
+                                if (inputText.isEmpty()) placeholder else inputText,
                                 style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                color = if (inputText.isEmpty()) 
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f) 
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = Ellipsis
                             )
                         }
-                        BasicTextField(
-                            value = inputText,
-                            onValueChange = { inputText = it },
-                            maxLines = 5,
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
-                            modifier = Modifier.fillMaxWidth()
-                        )
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.width(4.dp))
 
             IconButton(
                 onClick = {
@@ -296,9 +336,11 @@ fun SmartInput(
                             selectedUri
                         )
                         inputText = ""
+                        titleText = ""
                         selectedUri = null
                         mentionedUserIds.clear()
                         sharedComicIds.clear()
+                        isExpanded = false
                     }
                 },
                 modifier = Modifier

@@ -6,7 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
-import toro.sources.dataModels.Comic
+import com.toro.models.Comic
 
 @Dao
 interface ComicDao {

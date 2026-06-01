@@ -50,15 +50,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import toro.sources.dataModels.CommentLocation
-import toro.sources.dataModels.NotificationType
-import toro.sources.dataModels.PreferenceManager
 import toro.sources.network.RetrofitClient
 import toro.sources.pages.AuthorSearchPage
 import toro.sources.pages.ChatInboxPage
 import toro.sources.pages.ChatThreadPage
 import toro.sources.pages.CommentThreadPage
 import toro.sources.pages.CommentsPage
+import com.toro.models.*
 import toro.sources.pages.EngagementPage
 import toro.sources.pages.FriendRequestPage
 import toro.sources.pages.HomePage
@@ -75,6 +73,7 @@ import toro.sources.pages.SignUpPage
 import toro.sources.pages.UploadPage
 import toro.sources.pages.WelcomeScreen
 import toro.sources.ui.theme.SourcesTheme
+import toro.sources.components.ShareDialog
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -234,6 +233,20 @@ fun AppNavigation(viewModel: AppViewModel) {
     val currentUser by viewModel.currentUser.collectAsState()
     val pendingNav by viewModel.pendingNavigation.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
+    val showShareDialog by viewModel.showShareDialog.collectAsState()
+    val sharedContent by viewModel.sharedContent.collectAsState()
+
+    if (showShareDialog && sharedContent != null) {
+        ShareDialog(
+            viewModel = viewModel,
+            sharedId = sharedContent!!.id,
+            sharedType = sharedContent!!.type,
+            sharedTitle = sharedContent!!.title,
+            sharedPreview = sharedContent!!.previewText,
+            onDismiss = { viewModel.showShareDialog(false) }
+        )
+    }
+
     LaunchedEffect(error) {
         error?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -561,7 +574,7 @@ fun AppNavigation(viewModel: AppViewModel) {
             composable(Screen.Upload.route) {
                 UploadPage(
                     viewModel = viewModel,
-                    onBackClick = { navController.popBackStack() },
+                    onBackClick = { navController.navigate(Screen.Upload.route) },
                     onUploadComplete = {
                         navController.navigate("home/${currentUser.username}") {
                             popUpTo(navController.graph.findStartDestination().id) { inclusive = true }

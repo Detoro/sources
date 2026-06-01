@@ -13,9 +13,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.ClickableText
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import toro.sources.AppViewModel
 import toro.sources.Screen
-import toro.sources.dataModels.ShareType
+import com.toro.models.ShareType
 
 @Composable
 fun ChatBubble(
@@ -69,12 +76,38 @@ fun ChatBubble(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                     if (text.isNotBlank()) {
-                        Text(
-                            text = text,
-                            color = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyLarge,
+                        val annotatedString = buildAnnotatedString {
+                            val pattern = Regex("(@\\w+)|(#\\w+)")
+                            val matches = pattern.findAll(text)
+                            var lastIndex = 0
+                            matches.forEach { match ->
+                                append(text.substring(lastIndex, match.range.first))
+                                val matchValue = match.value
+                                pushStringAnnotation(
+                                    tag = if (matchValue.startsWith("@")) "USER" else "COMIC",
+                                    annotation = matchValue.drop(1)
+                                )
+                                withStyle(style = SpanStyle(
+                                    color = if (isFromMe) Color.Cyan else MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    textDecoration = TextDecoration.Underline
+                                )) {
+                                    append(matchValue)
+                                }
+                                pop()
+                                lastIndex = match.range.last + 1
+                            }
+                            append(text.substring(lastIndex))
+                        }
+
+                        ClickableText(
+                            text = annotatedString,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                color = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
                             modifier = Modifier.combinedClickable(
                                 onClick = {
+                                    // Fallback click for the whole bubble if it's a shared item
                                     if (actualSharedId != null && actualSharedType != null && viewModel != null) {
                                         when (actualSharedType) {
                                             ShareType.COMIC -> {
@@ -84,18 +117,55 @@ fun ChatBubble(
                                                 }
                                             }
                                             ShareType.POST -> {
-                                                viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
+                                                viewModel.handleNavigation(Screen.Engagement.route)
                                             }
                                             ShareType.COMMENT -> {
-                                                // Since we don't store targetId in message, we can't route perfectly
-                                                // but for now we route to a thread if possible or engagement
-                                                viewModel.handleNavigation(Screen.Engagement.route)
+                                                viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
+                                            }
+                                            ShareType.USER -> {
+                                                viewModel.getUserProfile(actualSharedId)
                                             }
                                         }
                                     }
                                 },
                                 onLongClick = { showOptionsMenu = true }
                             ),
+                            onClick = { offset ->
+                                var handled = false
+                                annotatedString.getStringAnnotations(tag = "USER", start = offset, end = offset)
+                                    .firstOrNull()?.let { annotation ->
+                                        viewModel?.findUserByUsername(annotation.item) { userId ->
+                                            viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                        }
+                                        handled = true
+                                    }
+                                
+                                if (!handled) {
+                                    annotatedString.getStringAnnotations(tag = "COMIC", start = offset, end = offset)
+                                        .firstOrNull()?.let { annotation ->
+                                            viewModel?.findComicByTitle(annotation.item) { comic ->
+                                                viewModel.setCurrentComic(comic)
+                                                viewModel.handleNavigation(Screen.Overview.route)
+                                            }
+                                            handled = true
+                                        }
+                                }
+
+                                // If no link was clicked, trigger the bubble's onClick
+                                if (!handled && actualSharedId != null && actualSharedType != null && viewModel != null) {
+                                    when (actualSharedType) {
+                                        ShareType.COMIC -> {
+                                            if (sharedComic != null) {
+                                                viewModel.setCurrentComic(sharedComic)
+                                                viewModel.handleNavigation(Screen.Overview.route)
+                                            }
+                                        }
+                                        ShareType.POST -> viewModel.handleNavigation(Screen.Engagement.route)
+                                        ShareType.COMMENT -> viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
+                                        ShareType.USER -> viewModel.getUserProfile(actualSharedId)
+                                    }
+                                }
+                            }
                         )
                     }
                 }

@@ -14,11 +14,11 @@ import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.Screen
 import toro.sources.components.CommentItem
-import toro.sources.components.ShareDialog
-import toro.sources.dataModels.ShareType
+import com.toro.models.ShareType
 import toro.sources.components.SmartInput
-import toro.sources.dataModels.Comment
-import toro.sources.dataModels.CommentLocation
+import com.toro.models.Comment
+import com.toro.models.CommentLocation
+import com.toro.models.SharedContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +34,6 @@ fun CommentsPage(
         CommentLocation.ON_POST -> viewModel.postComments
     }.collectAsState()
     var replyingTo by remember { mutableStateOf<Comment?>(null) }
-    var sharingComment by remember { mutableStateOf<Comment?>(null) }
 
     LaunchedEffect(targetId, commentLocation) {
         when (commentLocation) {
@@ -118,17 +117,6 @@ fun CommentsPage(
             }
         }
     ) { paddingValues ->
-        if (sharingComment != null) {
-            ShareDialog(
-                viewModel = viewModel,
-                sharedId = sharingComment!!.id,
-                sharedType = ShareType.COMMENT,
-                sharedTitle = "Comment by ${sharingComment!!.authorName}",
-                sharedPreview = sharingComment!!.content.take(50),
-                onDismiss = { sharingComment = null }
-            )
-        }
-
         if (comments.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -156,8 +144,17 @@ fun CommentsPage(
                             viewModel.handleNavigation(Screen.Profile.createRoute(userId))
                         },
                         onShareClick = { c ->
-                            sharingComment = c
-                        }
+                            viewModel.setSharedContent(
+                                SharedContent(
+                                    id = c.id,
+                                    type = ShareType.COMMENT,
+                                    title = "Comment by ${c.authorName}",
+                                    previewText = c.content.take(50)
+                                )
+                            )
+                            viewModel.showShareDialog(true)
+                        },
+                        viewModel = viewModel
                     )
                 }
             }

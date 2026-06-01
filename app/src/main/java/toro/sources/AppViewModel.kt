@@ -12,60 +12,39 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import toro.sources.dataModels.Chapter
-import toro.sources.dataModels.Comic
-import toro.sources.dataModels.LoginCredentials
-import toro.sources.dataModels.AuthRequest
-import toro.sources.dataModels.Notification
-import toro.sources.dataModels.Post
-import toro.sources.dataModels.ChatMessage
-import toro.sources.dataModels.AuthResponse
-import toro.sources.dataModels.ChatRequest
-import toro.sources.dataModels.Comment
 import toro.sources.db.ComicRepository
 import toro.sources.network.RetrofitClient
 import android.content.Context
 import android.provider.OpenableColumns
 import kotlinx.coroutines.flow.first
-import toro.sources.dataModels.Page
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
-import toro.sources.dataModels.AuthorRequest
-import toro.sources.dataModels.CommentRequest
-import toro.sources.dataModels.PostRequest
-import toro.sources.dataModels.FcmTokenRequest
-import toro.sources.dataModels.Conversation
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.String
-import androidx.core.net.toUri
-import toro.sources.dataModels.UpdateBioRequest
-import toro.sources.dataModels.UpdateUsernameRequest
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import com.cloudinary.android.MediaManager
 import com.cloudinary.android.callback.UploadCallback
 import com.cloudinary.android.callback.ErrorInfo
-import toro.sources.dataModels.UserProfile
 import com.google.firebase.messaging.FirebaseMessaging
 import toro.sources.notifications.NotificationEventBus
+import com.toro.models.*
 import java.util.zip.ZipInputStream
 import java.io.File
 import java.io.FileOutputStream
-import toro.sources.dataModels.RegisterComicRequest
-import toro.sources.dataModels.RegisterChaptersRequest
-import toro.sources.dataModels.ChapterUploadData
-import toro.sources.dataModels.CommentLocation
 import kotlin.collections.map
 
 enum class SearchSource {
@@ -136,17 +115,24 @@ class AppViewModel(
     private val _chapters = MutableStateFlow<List<Chapter>>(emptyList())
     val chapters = _chapters.asStateFlow()
 
-    private val _inbox = MutableStateFlow<List<Conversation>>(emptyList())
-    val inbox: StateFlow<List<Conversation>> = _inbox
+    val inbox: StateFlow<List<Conversation>> = repository.getConversations()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _currentConversationId = MutableStateFlow<String?>(null)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val chatMessages: StateFlow<List<ChatMessage>> = _currentConversationId
+        .flatMapLatest { id ->
+            if (id != null) repository.getMessagesForConversation(id)
+            else flowOf(emptyList())
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _currentComic = MutableStateFlow<Comic?>(null)
     val currentComic = _currentComic.asStateFlow()
 
     private val _communityPosts = MutableStateFlow<List<Post>>(emptyList())
     val communityPosts = _communityPosts.asStateFlow()
-
-    private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
-    val chatMessages = _chatMessages.asStateFlow()
 
     private val _postComments = MutableStateFlow<List<Comment>>(emptyList())
     val postComments = _postComments.asStateFlow()
@@ -201,6 +187,16 @@ class AppViewModel(
     private val _pendingNavigation = MutableStateFlow<String?>(null)
     val pendingNavigation = _pendingNavigation.asStateFlow()
 
+    private val _sharedContent = MutableStateFlow<SharedContent?>(null)
+    val sharedContent = _sharedContent.asStateFlow()
+
+    private val _showShareDialog = MutableStateFlow(false)
+    val showShareDialog = _showShareDialog.asStateFlow()
+
+    fun showShareDialog(show: Boolean) {
+        _showShareDialog.value = show
+    }
+
     val subscribedComics: StateFlow<List<Comic>> = repository.getSubscribedComics()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -222,7 +218,7 @@ class AppViewModel(
             _currentUser.value = AuthResponse(
                 userId = userData.userId,
                 username = userData.username,
-                avatarUrl = userData.avatarUrl?.toUri()
+                avatarUrl = userData.avatarUrl
             )
             _userProfile.value = UserProfile(
                 id = userData.userId,
@@ -344,7 +340,7 @@ class AppViewModel(
                 RetrofitClient.preferenceManager.saveUserData(
                     response.userId,
                     response.username,
-                    response.avatarUrl?.toString()
+                    response.avatarUrl
                 )
                 getUserProfile(response.userId)
                 fetchAndRegisterFcmToken()
@@ -375,7 +371,7 @@ class AppViewModel(
                 RetrofitClient.preferenceManager.saveUserData(
                     response.userId,
                     response.username,
-                    response.avatarUrl?.toString()
+                    response.avatarUrl
                 )
                 getUserProfile(response.userId)
                 fetchAndRegisterFcmToken()
@@ -411,7 +407,7 @@ class AppViewModel(
                 RetrofitClient.preferenceManager.saveUserData(
                     _currentUser.value.userId,
                     _currentUser.value.username,
-                    _currentUser.value.avatarUrl?.toString(),
+                    _currentUser.value.avatarUrl,
                     response.message
                 )
                 Log.i("Success", "Bio updated successfully")
@@ -434,7 +430,7 @@ class AppViewModel(
                 RetrofitClient.preferenceManager.saveUserData(
                     _currentUser.value.userId,
                     _currentUser.value.username,
-                    _currentUser.value.avatarUrl?.toString()
+                    _currentUser.value.avatarUrl
                 )
                 Log.i("Success", "Username updated successfully")
             } catch (e: Exception) {
@@ -459,7 +455,7 @@ class AppViewModel(
                             Log.i("Cloudinary", "Upload success: $publicUrl")
                             
                             viewModelScope.launch {
-                                _currentUser.value = _currentUser.value.copy(avatarUrl = publicUrl.toUri())
+                                _currentUser.value = _currentUser.value.copy(avatarUrl = publicUrl)
 
                                 try {
                                     RetrofitClient.comicApiService.updateAvatar(publicUrl)
@@ -505,9 +501,11 @@ class AppViewModel(
         context: Context,
         title: String = "",
         author: String = "",
+        pgRating: PgRating = PgRating.PG13,
         description: String = "",
         comicId: String? = null,
         chapterUris: List<Uri>,
+        genres: List<Genre> = emptyList(),
         selectedCover: Uri? = null
     ) {
         viewModelScope.launch {
@@ -533,6 +531,8 @@ class AppViewModel(
                             author = author,
                             description = description,
                             coverUrl = coverUrl,
+                            pgRating = pgRating,
+                            genres = genres,
                             chapters = chaptersData
                         )
                     )
@@ -554,7 +554,11 @@ class AppViewModel(
         }
     }
 
-    private suspend fun processAndUploadChapter(context: Context, uri: Uri, chapterNumber: Float): ChapterUploadData = coroutineScope {
+    private suspend fun processAndUploadChapter(
+        context: Context,
+        uri: Uri,
+        chapterNumber: Float
+    ): ChapterUploadData = withContext(Dispatchers.IO) {
         val tempDir = File(context.cacheDir, "upload_extract_${System.currentTimeMillis()}")
         tempDir.mkdirs()
 
@@ -644,34 +648,47 @@ class AppViewModel(
         _isUploading.value = false
     }
     fun getChatMessages(conversationId: String) {
+        _currentConversationId.value = conversationId
         viewModelScope.launch {
             try {
                 val messages = RetrofitClient.comicApiService.getChatMessages(conversationId)
-                _chatMessages.value = messages.sortedByDescending { it.timestamp }
+                repository.saveMessages(messages.map { it.copy(conversationId = conversationId) })
             } catch (e: Exception) {
-                _errorMessage.value = "Failed to load chat: ${e.message}"
+                Log.e("Chat", "Failed to fetch messages: ${e.message}")
             }
         }
     }
 
     fun clearChatMessages() {
-        _chatMessages.value = emptyList()
+        _currentConversationId.value = null
     }
-    fun sendMessage(conversationId: String, targetUserId: String, content: String, sharedComicId: String? = null) {
+    fun sendMessage(
+        conversationId: String,
+        targetUserId: String,
+        content: String,
+        sharedId: String? = null,
+        sharedType: ShareType? = null
+    ) {
         viewModelScope.launch {
             try {
-                val encryptedContent = encryptMessage(content)
-                
                 val newMessage = ChatMessage(
-                    id = "",
+                    id = "temp_${System.currentTimeMillis()}",
+                    conversationId = conversationId,
                     senderId = _currentUser.value.userId,
-                    content = encryptedContent,
+                    content = content, // Store unencrypted locally or match what you want
                     timestamp = System.currentTimeMillis(),
-                    isEncrypted = true,
-                    sharedComicId = sharedComicId
+                    isEncrypted = false,
+                    sharedId = sharedId,
+                    sharedType = sharedType
                 )
-                RetrofitClient.comicApiService.sendMessage(conversationId, targetUserId, newMessage)
+                repository.saveMessage(newMessage)
+                
+                val encryptedContent = encryptMessage(content)
+                val networkMessage = newMessage.copy(content = encryptedContent, isEncrypted = true)
+                
+                RetrofitClient.comicApiService.sendMessage(conversationId, targetUserId, networkMessage)
                 getChatMessages(conversationId)
+                _sharedContent.value = null
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to send message: ${e.message}"
             }
@@ -721,10 +738,8 @@ class AppViewModel(
         viewModelScope.launch {
             try {
                 val conversations = RetrofitClient.comicApiService.getInbox()
-                _inbox.value = conversations
-
+                repository.saveConversations(conversations)
             } catch (e: Exception) {
-                _errorMessage.value = "Failed to load inbox: ${e.message}"
                 Log.e("ChatInbox", "Error loading conversations", e)
             }
         }
@@ -733,7 +748,6 @@ class AppViewModel(
         viewModelScope.launch {
             try {
                 _catalog.value = RetrofitClient.comicApiService.searchComics(query)
-                Log.i("catalog", "${_catalog.value}")
             } catch (e: Exception) {
                 _errorMessage.value = "Search failed: ${e.message}"
             }
@@ -863,48 +877,77 @@ class AppViewModel(
             }
         }
     }
-    fun makePost(title:String?, postContent: String, tags: List<String> = emptyList()) {
+    fun makePost(
+        title:String?,
+        postContent: String,
+        tags: List<String> = emptyList(),
+        sharedId: String? = null,
+        sharedType: ShareType? = null
+    ) {
         viewModelScope.launch {
             try {
                 val request = PostRequest(
                     title = title,
                     content = postContent,
-                    tags = tags
+                    tags = tags,
+                    sharedId = sharedId,
+                    sharedType = sharedType
                 )
                 val response = RetrofitClient.comicApiService.makePost(request)
                 Log.i("Post", "Post created: ${response.message}")
                 getCommunityPosts()
+                _sharedContent.value = null
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to make post: ${e.message}"
             }
         }
     }
-    fun addPostComment(postId: String, content: String, mentionedUserIds: List<String> = emptyList(), parentId: String? = null) {
+    fun addPostComment(
+        postId: String,
+        content: String,
+        mentionedUserIds: List<String> = emptyList(),
+        parentId: String? = null,
+        sharedId: String? = null,
+        sharedType: ShareType? = null
+    ) {
         viewModelScope.launch {
             try {
                 val newComment = CommentRequest(
                     content = content,
                     mentionedUserIds = mentionedUserIds,
-                    parentId = parentId
+                    parentId = parentId,
+                    sharedId = sharedId,
+                    sharedType = sharedType
                 )
                 RetrofitClient.comicApiService.addPostComment(postId, newComment)
                 getPostComments(postId)
+                _sharedContent.value = null
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to post comment: ${e.message}"
             }
         }
     }
 
-    fun addChapterComment(chapterId: String, content: String, mentionedUserIds: List<String> = emptyList(), parentId: String? = null) {
+    fun addChapterComment(
+        chapterId: String,
+        content: String,
+        mentionedUserIds: List<String> = emptyList(),
+        parentId: String? = null,
+        sharedId: String? = null,
+        sharedType: ShareType? = null
+    ) {
         viewModelScope.launch {
             try {
                 val newComment = CommentRequest(
                     content = content,
                     mentionedUserIds = mentionedUserIds,
-                    parentId = parentId
+                    parentId = parentId,
+                    sharedId = sharedId,
+                    sharedType = sharedType
                 )
                 RetrofitClient.comicApiService.addChapterComment(chapterId, newComment)
                 getChapterComments(chapterId)
+                _sharedContent.value = null
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to post comic comment: ${e.message}"
             }
@@ -1050,10 +1093,40 @@ class AppViewModel(
             repository.clearAllData()
         }
     }
+
+    fun setSharedContent(content: SharedContent?) {
+        Log.i("Shared content", "$content")
+        _sharedContent.value = content
+    }
+
+    fun findUserByUsername(username: String, onFound: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val results = RetrofitClient.comicApiService.searchUsers(username)
+                results.find { it.username.equals(username, ignoreCase = true) }?.let {
+                    onFound(it.id)
+                }
+            } catch (e: Exception) {
+                Log.e("AppViewModel", "User not found", e)
+            }
+        }
+    }
+
+    fun findComicByTitle(title: String, onFound: (Comic) -> Unit) {
+        viewModelScope.launch {
+            try {
+                catalog.value.find { it.title.equals(title, ignoreCase = true) }?.let {
+                    onFound(it)
+                }
+            } catch (e: Exception) {
+                Log.e("AppViewModel", "Can not find comic", e)
+            }
+        }
+    }
 }
 fun convertTimestamp(timestamp: Long): String {
     val instant = Instant.ofEpochMilli(timestamp)
     val date = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
     return date.format(formatter)
 }

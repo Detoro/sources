@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.components.BillboardCarousel
 import toro.sources.components.ComicCarousel
-import toro.sources.dataModels.Comic
+import com.toro.models.Comic
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

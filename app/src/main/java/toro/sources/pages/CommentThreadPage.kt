@@ -14,11 +14,11 @@ import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.Screen
 import toro.sources.components.CommentItem
-import toro.sources.components.ShareDialog
-import toro.sources.dataModels.ShareType
+import com.toro.models.ShareType
 import toro.sources.components.SmartInput
-import toro.sources.dataModels.Comment
-import toro.sources.dataModels.CommentLocation
+import com.toro.models.Comment
+import com.toro.models.CommentLocation
+import com.toro.models.SharedContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +38,6 @@ fun CommentThreadPage(
     
     var replyingTo by remember { mutableStateOf<Comment?>(null) }
     var initialText by remember { mutableStateOf("") }
-    var sharingComment by remember { mutableStateOf<Comment?>(null) }
 
     LaunchedEffect(targetId, commentLocation) {
         when (commentLocation) {
@@ -117,17 +116,6 @@ fun CommentThreadPage(
             }
         }
     ) { paddingValues ->
-        if (sharingComment != null) {
-            ShareDialog(
-                viewModel = viewModel,
-                sharedId = sharingComment!!.id,
-                sharedType = ShareType.COMMENT,
-                sharedTitle = "Comment by ${sharingComment!!.authorName}",
-                sharedPreview = sharingComment!!.content.take(50),
-                onDismiss = { sharingComment = null }
-            )
-        }
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -145,9 +133,18 @@ fun CommentThreadPage(
                         onAuthorClick = { userId ->
                             viewModel.handleNavigation(Screen.Profile.createRoute(userId))
                         },
-                        onShareClick = { c ->
-                            sharingComment = c
-                        }
+                        onShareClick = {
+                            viewModel.setSharedContent(
+                                SharedContent(
+                                    id = it.id,
+                                    type = ShareType.COMMENT,
+                                    title = "Comment by ${it.authorName}",
+                                    previewText = it.content.take(50)
+                                )
+                            )
+                            viewModel.showShareDialog(true)
+                        },
+                        viewModel = viewModel
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     Text(
@@ -182,9 +179,18 @@ fun CommentThreadPage(
                         onAuthorClick = { userId ->
                             viewModel.handleNavigation(Screen.Profile.createRoute(userId))
                         },
-                        onShareClick = { c ->
-                            sharingComment = c
-                        }
+                        onShareClick = {
+                            viewModel.setSharedContent(
+                                SharedContent(
+                                    id = it.id,
+                                    type = ShareType.COMMENT,
+                                    title = "Comment by ${it.authorName}",
+                                    previewText = it.content.take(50)
+                                )
+                            )
+                            viewModel.showShareDialog(true)
+                        },
+                        viewModel = viewModel
                     )
                 }
             }

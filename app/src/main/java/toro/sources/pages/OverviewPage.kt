@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -39,11 +40,12 @@ import androidx.compose.runtime.*
 import androidx.compose.material.icons.filled.Share
 import toro.sources.AppViewModel
 import toro.sources.components.ShareDialog
-import toro.sources.dataModels.ShareType
-import toro.sources.dataModels.Chapter
+import com.toro.models.ShareType
+import com.toro.models.Chapter
 import toro.sources.components.ChapterRow
 import toro.sources.components.ReadingProgressBar
 import toro.sources.components.SubscribeButton
+import toro.sources.components.ComicInfoBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,6 +58,7 @@ fun OverviewPage(
     val comic by viewModel.currentComic.collectAsState()
     val chapters by viewModel.chapters.collectAsState()
     var showShareDialog by remember { mutableStateOf(false) }
+    var showInfoSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(comic?.id) {
         comic?.let { comic ->
@@ -79,6 +82,9 @@ fun OverviewPage(
                         }) {
                             Icon(Icons.Default.Share, contentDescription = "Share")
                         }
+                        IconButton(onClick = { showInfoSheet = true }) {
+                            Icon(Icons.Default.Info, contentDescription = "Comic info")
+                        }
                         IconButton(onClick = {
                             viewModel.removeComicFromLibrary(safeComic.id, onRemoved = onBackClick)
                         }) {
@@ -89,6 +95,12 @@ fun OverviewPage(
             )
         }
     ) { paddingValues ->
+        if (showInfoSheet && comic != null) {
+            ComicInfoBottomSheet(
+                comic = comic!!,
+                onDismiss = { showInfoSheet = false }
+            )
+        }
         if (showShareDialog && comic != null) {
             ShareDialog(
                 viewModel = viewModel,

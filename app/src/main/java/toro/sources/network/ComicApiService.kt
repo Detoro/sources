@@ -5,29 +5,31 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
-import toro.sources.dataModels.AuthRequest
-import toro.sources.dataModels.AuthResponse
-import toro.sources.dataModels.AuthorRequest
-import toro.sources.dataModels.Chapter
-import toro.sources.dataModels.ChatMessage
-import toro.sources.dataModels.ChatRequest
-import toro.sources.dataModels.Comic
-import toro.sources.dataModels.Comment
-import toro.sources.dataModels.CommentRequest
-import toro.sources.dataModels.Conversation
-import toro.sources.dataModels.Page
-import toro.sources.dataModels.Post
-import toro.sources.dataModels.PostRequest
-import toro.sources.dataModels.ServerResponse
-import toro.sources.dataModels.SubscribeResponse
-import toro.sources.dataModels.UserProfile
-import toro.sources.dataModels.UpdateBioRequest
-import toro.sources.dataModels.UpdateUsernameRequest
-import toro.sources.dataModels.FcmTokenRequest
-import toro.sources.dataModels.RegisterChaptersRequest
-import toro.sources.dataModels.RegisterComicRequest
+import com.toro.models.AuthRequest
+import com.toro.models.AuthResponse
+import com.toro.models.AuthorRequest
+import com.toro.models.Chapter
+import com.toro.models.ChatMessage
+import com.toro.models.ChatRequest
+import com.toro.models.Comic
+import com.toro.models.Comment
+import com.toro.models.CommentRequest
+import com.toro.models.Conversation
+import com.toro.models.Page
+import com.toro.models.Post
+import com.toro.models.PostRequest
+import com.toro.models.ServerResponse
+import com.toro.models.SubscribeResponse
+import com.toro.models.UserProfile
+import com.toro.models.UpdateBioRequest
+import com.toro.models.UpdateUsernameRequest
+import com.toro.models.FcmTokenRequest
+import com.toro.models.RegisterChaptersRequest
+import com.toro.models.RegisterComicRequest
 
 interface ComicApiService {
+
+    // comics apis
     @GET("api/comics/catalog")
     suspend fun getCatalog(): List<Comic>
 
@@ -41,20 +43,21 @@ interface ComicApiService {
         @Path("chapterId") chapterId: String
     ): List<Page>
 
-    @GET("api/chat/conversations")
-    suspend fun getInbox(): List<Conversation>
+    @POST("api/comics/chapter/comments/{commentId}/like")
+    suspend fun likeChapterComment(
+        @Path("commentId") commentId: String
+    ): ServerResponse
 
-    @GET("api/comics/search")
-    suspend fun searchComics(@Query("q") query: String): List<Comic>
+    @GET("api/comics/{chapterId}/comments")
+    suspend fun getChapterComments(
+        @Path("chapterId") chapterId: String
+    ): List<Comment>
 
-    @POST("api/subscribe/author")
-    suspend fun subscribeToAuthor(@Body request: AuthorRequest)
-
-    @POST("api/subscribe/comic/{comicId}")
-    suspend fun toggleComicSubscription(@Path("comicId") comicId: String): SubscribeResponse
-
-    @GET("api/subscriptions")
-    suspend fun getSubscribedComics(): List<Comic>
+    @POST("api/comics/{chapterId}/comments")
+    suspend fun addChapterComment(
+        @Path("chapterId") chapterId: String,
+        @Body comment: CommentRequest
+    ): ServerResponse
 
     @POST("api/comics/register")
     suspend fun registerNewComic(
@@ -73,14 +76,28 @@ interface ComicApiService {
         @Path("chapterId") chapterId: String,
     ): ServerResponse
 
+    @GET("api/comics/search")
+    suspend fun searchComics(@Query("q") query: String): List<Comic>
+
+    @POST("api/comics/subscribe/author")
+    suspend fun subscribeToAuthor(@Body request: AuthorRequest)
+
+    @POST("api/comics/subscribe/comic/{comicId}")
+    suspend fun toggleComicSubscription(@Path("comicId") comicId: String): SubscribeResponse
+
+    @GET("api/comics/subscriptions")
+    suspend fun getSubscribedComics(): List<Comic>
+
+    // Auth apis
     @POST("api/auth/register")
     suspend fun signUp(@Body request: AuthRequest): AuthResponse
 
     @POST("api/auth/login")
     suspend fun login(@Body request: AuthRequest): AuthResponse
 
-    @POST("api/users/avatar")
-    suspend fun updateAvatar(@Body avatar: String): ServerResponse
+    // Chat apis
+    @GET("api/chat/conversations")
+    suspend fun getInbox(): List<Conversation>
 
     @GET("api/chat/requests")
     suspend fun getChatRequests(): List<ChatRequest>
@@ -104,12 +121,7 @@ interface ComicApiService {
         @Body message: ChatMessage
     ): ServerResponse
 
-    @GET("api/users/search")
-    suspend fun searchUsers(@Query("q") query: String): List<UserProfile>
-
-    @GET("api/users/subscribed-authors")
-    suspend fun getSubscribedAuthors(): List<UserProfile>
-
+    // community apis
     @GET("api/community/posts")
     suspend fun getCommunityPosts(): List<Post>
 
@@ -134,25 +146,11 @@ interface ComicApiService {
         @Body comment: CommentRequest
     ): ServerResponse
 
-    @POST("api/community/comments/{commentId}/like")
+    @POST("api/community/posts/comments/{commentId}/like")
     suspend fun likePostComment(@Path("commentId") commentId: String): ServerResponse
 
-    @POST("api/comics/chapter/comments/{commentId}/like")
-    suspend fun likeChapterComment(
-        @Path("commentId") commentId: String
-    ): ServerResponse
 
-    @GET("api/comics/{chapterId}/comments")
-    suspend fun getChapterComments(
-        @Path("chapterId") chapterId: String
-    ): List<Comment>
-
-    @POST("api/comics/{chapterId}/comments")
-    suspend fun addChapterComment(
-        @Path("chapterId") chapterId: String,
-        @Body comment: CommentRequest
-    ): ServerResponse
-
+    // users apis
     @GET("api/users/{userId}/profile")
     suspend fun getUserProfile(@Path("userId") userId: String): UserProfile
 
@@ -173,4 +171,13 @@ interface ComicApiService {
 
     @POST("api/users/fcm-token")
     suspend fun registerFcmToken(@Body request: FcmTokenRequest): ServerResponse
+
+    @GET("api/users/search")
+    suspend fun searchUsers(@Query("q") query: String): List<UserProfile>
+
+    @GET("api/users/subscribed-authors")
+    suspend fun getSubscribedAuthors(): List<UserProfile>
+
+    @POST("api/users/avatar")
+    suspend fun updateAvatar(@Body avatar: String): ServerResponse
 }

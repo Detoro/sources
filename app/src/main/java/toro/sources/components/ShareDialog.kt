@@ -15,8 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.Screen
-import toro.sources.dataModels.ShareType
-import toro.sources.dataModels.SharedContent
+import com.toro.models.ShareType
+import com.toro.models.SharedContent
 
 @Composable
 fun ShareDialog(

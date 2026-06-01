@@ -1,12 +1,12 @@
 package toro.sources.components
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowLeft
 import androidx.compose.material.icons.automirrored.filled.ArrowRight
@@ -39,43 +39,36 @@ fun ReaderNavigationBar(
         color = MaterialTheme.colorScheme.surface
     ) {
         Row(
-            modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box (
-                contentAlignment = Alignment.BottomStart
-            ) {
-                IconButton(onClick = onLike) {
-                    Icon(
-                        if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Like Chapter",
-                        tint = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+            IconButton(onClick = onLike) {
+                Icon(
+                    if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Like Chapter",
+                    tint = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
-            Box (
-                contentAlignment = Alignment.BottomEnd
+            
+            Spacer(modifier = Modifier.weight(1f))
+            
+            IconButton(
+                onClick = onPrev,
+                modifier = Modifier.scale(2.0f, 1.5f)
             ) {
-                IconButton(
-                    onClick = onPrev,
-                    modifier = Modifier.scale(2.0f, 1.5f)
-                ) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowLeft,
-                        contentDescription = "Previous Chapter"
-                    )
-                }
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowLeft,
+                    contentDescription = "Previous Chapter"
+                )
             }
-            Box (
-                contentAlignment = Alignment.BottomEnd
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            IconButton(
+                onClick = onNext,
+                modifier = Modifier.scale(2.0f, 1.5f)
             ) {
-                IconButton(
-                    onClick = onNext,
-                    modifier = Modifier.scale(2.0f, 1.5f)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowRight, contentDescription = "Next Chapter")
-                }
+                Icon(Icons.AutoMirrored.Filled.ArrowRight, contentDescription = "Next Chapter")
             }
         }
     }

@@ -8,8 +8,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
 import java.util.UUID
-import toro.sources.dataModels.Comic
-import toro.sources.dataModels.Chapter
+import com.toro.models.Comic
+import com.toro.models.Chapter
 
 class CbzParser(private val context: Context) {
 

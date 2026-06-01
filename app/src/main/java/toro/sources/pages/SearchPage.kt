@@ -38,7 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.SearchSource
-import toro.sources.dataModels.Comic
+import com.toro.models.Comic
 import toro.sources.components.ComicCoverCard
 
 @OptIn(ExperimentalMaterial3Api::class)

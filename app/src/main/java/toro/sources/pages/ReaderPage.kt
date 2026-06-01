@@ -5,13 +5,17 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -23,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,13 +35,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.components.CommentsSection
 import toro.sources.components.MuteToggleButton
 import toro.sources.components.ReaderNavigationBar
 import toro.sources.components.SmartContentPage
-import toro.sources.dataModels.Comic
+import com.toro.models.Comic
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -94,11 +102,20 @@ fun ReaderScreen(
             }
     }
 
+    LaunchedEffect(pagerState.currentPage) {
+        if (pagerState.currentPage < pageCount) {
+            onPageChanged(pagerState.currentPage)
+        }
+    }
+
+    var globalScale by remember { mutableFloatStateOf(1f) }
+    var globalOffset by remember { mutableStateOf(Offset.Zero) }
+
     // Navbar visibility logic
     val isImeVisible = WindowInsets.isImeVisible
     val isNavbarVisible by remember {
         derivedStateOf {
-            if (isImeVisible) {
+            if (isImeVisible || globalScale > 1f) {
                 false
             } else if (comic.scrollDirection == "HORIZONTAL") {
                 // Show at the end (comments page)
@@ -110,48 +127,95 @@ fun ReaderScreen(
         }
     }
 
-    LaunchedEffect(pagerState.currentPage) {
-        if (pagerState.currentPage < pageCount) {
-            onPageChanged(pagerState.currentPage)
-        }
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
             .imePadding()
     ) {
-        if (comic.scrollDirection == "HORIZONTAL") {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxSize()
-            ) { pageIndex ->
-                if (pageIndex < pageCount) {
-                    SmartContentPage(pageIndex, viewModel)
-                } else {
-                    CommentsSection(
-                        viewModel = viewModel,
-                        chapterId = chapterId,
-                        onViewAllClick = { onViewAllComments(chapterId) },
-                        onCommentClick = { comment -> onCommentThreadClick(chapterId, comment.id) }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(
+                    scaleX = globalScale,
+                    scaleY = globalScale,
+                    translationX = globalOffset.x,
+                    translationY = globalOffset.y
+                )
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onDoubleTap = {
+                            if (globalScale > 1f) {
+                                globalScale = 1f
+                                globalOffset = Offset.Zero
+                            } else {
+                                globalScale = 2.5f
+                            }
+                        }
                     )
                 }
-            }
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
-            ) {
-                items(count = pageCount) { pageIndex ->
-                    SmartContentPage(pageIndex, viewModel)
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        awaitFirstDown()
+                        do {
+                            val event = awaitPointerEvent()
+                            val zoom = event.calculateZoom()
+                            val pan = event.calculatePan()
+
+                            if (zoom != 1f || pan != Offset.Zero) {
+                                val newScale = (globalScale * zoom).coerceIn(1f, 5f)
+                                globalScale = newScale
+
+                                if (globalScale > 1f) {
+                                    val maxX = (size.width * (globalScale - 1)) / 2
+                                    val maxY = (size.height * (globalScale - 1)) / 2
+
+                                    globalOffset = Offset(
+                                        x = (globalOffset.x + pan.x).coerceIn(-maxX, maxX),
+                                        y = (globalOffset.y + pan.y).coerceIn(-maxY, maxY)
+                                    )
+                                    event.changes.forEach { it.consume() }
+                                } else {
+                                    globalOffset = Offset.Zero
+                                }
+                            }
+                        } while (event.changes.any { it.pressed })
+                    }
                 }
-                item {
-                    CommentsSection(
-                        viewModel = viewModel,
-                        chapterId = chapterId,
-                        onViewAllClick = { onViewAllComments(chapterId) },
-                        onCommentClick = { comment -> onCommentThreadClick(chapterId, comment.id) }
-                    )
+        ) {
+            if (comic.scrollDirection == "HORIZONTAL") {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxSize()
+                ) { pageIndex ->
+                    if (pageIndex < pageCount) {
+                        SmartContentPage(pageIndex, viewModel)
+                        val chapter = chapters.find { it.id == chapterId }
+                        chapter?.lastReadPageIndex = pageIndex
+                    } else {
+                        CommentsSection(
+                            viewModel = viewModel,
+                            onViewAllClick = { onViewAllComments(chapterId) },
+                            onMakeFirstComment = { onViewAllComments(chapterId) },
+                            onCommentClick = { comment -> onCommentThreadClick(chapterId, comment.id) },
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
+                ) {
+                    items(count = pageCount) { pageIndex ->
+                        SmartContentPage(pageIndex, viewModel)
+                    }
+                    item {
+                        CommentsSection(
+                            viewModel = viewModel,
+                            onViewAllClick = { onViewAllComments(chapterId) },
+                            onMakeFirstComment = { onViewAllComments(chapterId) },
+                            onCommentClick = { comment -> onCommentThreadClick(chapterId, comment.id) },
+                        )
+                    }
                 }
             }
         }
@@ -159,7 +223,7 @@ fun ReaderScreen(
         if (comic.hasMusic) {
             MuteToggleButton(
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
+                    .align(Alignment.TopStart)
                     .padding(16.dp)
             )
         }

@@ -13,7 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import toro.sources.dataModels.Comic
+import com.toro.models.Comic
 
 @Composable
 fun SharedComicCard(comic: Comic) {

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import toro.sources.AppViewModel
 import toro.sources.components.SmartInput
+import toro.sources.components.SharedContentPlaceholder
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -29,6 +30,7 @@ fun PostPage(
     var postTitle by remember { mutableStateOf("") }
     var postText by remember { mutableStateOf("") }
     val currentUser by viewModel.currentUser.collectAsState()
+    val sharedContent by viewModel.sharedContent.collectAsState()
 
     Scaffold(
         topBar = {
@@ -42,7 +44,6 @@ fun PostPage(
             )
         },
         bottomBar = {
-            val sharedContent by viewModel.sharedContent.collectAsState()
             SmartInput(
                 supportTitle = true,
                 supportUpload = true,
@@ -114,6 +115,12 @@ fun PostPage(
                         color = Color.White
                     )
                     Spacer(modifier = Modifier.height(4.dp))
+                    
+                    if (sharedContent != null) {
+                        SharedContentPlaceholder(sharedContent!!.type)
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
                     Text(
                         text = postText.ifBlank { "Waiting on your post..." },
                         fontSize = 14.sp,

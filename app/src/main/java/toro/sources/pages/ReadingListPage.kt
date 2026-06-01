@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.R
 import toro.sources.components.ComicRow
-import toro.sources.dataModels.Comic
+import com.toro.models.Comic
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable

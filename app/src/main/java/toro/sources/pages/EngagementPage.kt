@@ -17,9 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
@@ -27,10 +25,10 @@ import toro.sources.Screen
 import toro.sources.components.AuthorsRow
 import toro.sources.components.SectionTitle
 import toro.sources.components.PostCard
-import toro.sources.components.ShareDialog
-import toro.sources.dataModels.ShareType
+import com.toro.models.ShareType
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import com.toro.models.SharedContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +41,6 @@ fun EngagementPage(
 ) {
     val posts by viewModel.communityPosts.collectAsState()
     val selectedAuthorIds by viewModel.selectedAuthorIds.collectAsState()
-    var sharingPost by remember { mutableStateOf<toro.sources.dataModels.Post?>(null) }
 
     val filteredPosts = remember(posts, selectedAuthorIds) {
         if (selectedAuthorIds.isEmpty()) {
@@ -74,17 +71,6 @@ fun EngagementPage(
             )
         }
     ) { paddingValues ->
-        if (sharingPost != null) {
-            ShareDialog(
-                viewModel = viewModel,
-                sharedId = sharingPost!!.id,
-                sharedType = ShareType.POST,
-                sharedTitle = sharingPost!!.title ?: "Discussion",
-                sharedPreview = sharingPost!!.content.take(50),
-                onDismiss = { sharingPost = null }
-            )
-        }
-
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -116,8 +102,16 @@ fun EngagementPage(
                             onAuthorClick = { userId ->
                                 viewModel.handleNavigation(Screen.Profile.createRoute(userId))
                             },
-                            onShareClick = { p ->
-                                sharingPost = p
+                            onShareClick = {
+                                viewModel.setSharedContent(
+                                    SharedContent(
+                                        id = it.id,
+                                        type = ShareType.POST,
+                                        title = it.title ?: "Post by ${it.authorName}",
+                                        previewText = it.content.take(50)
+                                    )
+                                )
+                                viewModel.showShareDialog(true)
                             },
                             modifier = Modifier.width(300.dp)
                         )
@@ -138,8 +132,16 @@ fun EngagementPage(
                     onAuthorClick = { userId ->
                         viewModel.handleNavigation(Screen.Profile.createRoute(userId))
                     },
-                    onShareClick = { p ->
-                        sharingPost = p
+                    onShareClick = {
+                        viewModel.setSharedContent(
+                            SharedContent(
+                                id = it.id,
+                                type = ShareType.POST,
+                                title = it.title ?: "Post by ${it.authorName}",
+                                previewText = it.content.take(50)
+                            )
+                        )
+                        viewModel.showShareDialog(true)
                     },
                     modifier = Modifier.fillMaxWidth()
                 )

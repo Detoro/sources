@@ -8,15 +8,18 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import toro.sources.CbzParser
 import toro.sources.network.ComicApiService
-import toro.sources.dataModels.Chapter
-import toro.sources.dataModels.Comic
-import toro.sources.dataModels.Page
+import com.toro.models.Chapter
+import com.toro.models.Comic
+import com.toro.models.Conversation
+import com.toro.models.ChatMessage
+import com.toro.models.Page
 import java.io.File
 
 class ComicRepository(
     private val context: Context,
     private val comicDao: ComicDao,
     private val chapterDao: ChapterDao,
+    private val conversationDao: ConversationDao,
     private val cbzParser: CbzParser,
     private val apiService: ComicApiService
 ) {
@@ -131,7 +134,7 @@ class ComicRepository(
         return withContext(Dispatchers.IO) {
             val directory = File(context.filesDir, "sideloaded_comics/$comicId/$chapterId")
 
-            if (!directory.exists()) return@withContext emptyList<Page>()
+            if (!directory.exists()) return@withContext emptyList()
 
             directory.listFiles()
                 ?.filter { it.isFile && isImage(it.name) }
@@ -183,7 +186,23 @@ class ComicRepository(
         comicDao.insertComics(comics)
     }
 
-    suspend fun insertChapters(chapters: List<Chapter>) {
-        chapterDao.insertChapters(chapters)
+    fun getConversations(): Flow<List<Conversation>> {
+        return conversationDao.getAllConversations()
+    }
+
+    fun getMessagesForConversation(conversationId: String): Flow<List<ChatMessage>> {
+        return conversationDao.getMessagesForConversation(conversationId)
+    }
+
+    suspend fun saveConversations(conversations: List<Conversation>) {
+        conversationDao.insertConversations(conversations)
+    }
+
+    suspend fun saveMessages(messages: List<ChatMessage>) {
+        conversationDao.insertMessages(messages)
+    }
+
+    suspend fun saveMessage(message: ChatMessage) {
+        conversationDao.insertMessage(message)
     }
 }

@@ -31,6 +31,8 @@ import toro.sources.Screen
 import toro.sources.AppViewModel
 import toro.sources.components.PostCard
 import toro.sources.components.ComicCoverCard
+import com.toro.models.SharedContent
+import com.toro.models.ShareType
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
@@ -264,7 +266,15 @@ fun ProfilePage(
                                                     }
                                                 },
                                                 onShareClick = { p ->
-                                                    viewModel.handleNavigation(Screen.PostComments.createRoute(p.id))
+                                                    viewModel.setSharedContent(
+                                                        SharedContent(
+                                                            id = p.id,
+                                                            type = ShareType.POST,
+                                                            title = p.title ?: "Post by ${p.authorName}",
+                                                            previewText = p.content.take(50)
+                                                        )
+                                                    )
+                                                    viewModel.showShareDialog(true)
                                                 }
                                             )
                                         }

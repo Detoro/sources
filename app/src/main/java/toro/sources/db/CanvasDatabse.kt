@@ -4,18 +4,23 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import toro.sources.dataModels.Comic
-import toro.sources.dataModels.Chapter
+import androidx.room.TypeConverters
+import com.toro.models.Comic
+import com.toro.models.Chapter
+import com.toro.models.Conversation
+import com.toro.models.ChatMessage
 
 @Database(
-    entities = [Comic::class, Chapter::class],
-    version = 9,
+    entities = [Comic::class, Chapter::class, Conversation::class, ChatMessage::class],
+    version = 12,
     exportSchema = false
 )
+@TypeConverters(Converters::class)
 abstract class CanvasDatabase : RoomDatabase() {
 
     abstract fun comicDao(): ComicDao
     abstract fun chapterDao(): ChapterDao
+    abstract fun conversationDao(): ConversationDao
 
     companion object {
         @Volatile

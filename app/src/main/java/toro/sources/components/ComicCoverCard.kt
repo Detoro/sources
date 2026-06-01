@@ -23,7 +23,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import toro.sources.AppViewModel
-import toro.sources.dataModels.Comic
+import com.toro.models.Comic
+import com.toro.models.ShareType
+import com.toro.models.SharedContent
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -72,7 +74,15 @@ fun ComicCoverCard(
                 text = { Text("Share") },
                 onClick = {
                     showOptionsMenu = false
-                    onClick()
+                    viewModel.setSharedContent(
+                        SharedContent(
+                            id = comic.id,
+                            type = ShareType.COMIC,
+                            title = comic.title,
+                            previewText = "Comic"
+                        )
+                    )
+                    viewModel.showShareDialog(true)
                 }
             )
 

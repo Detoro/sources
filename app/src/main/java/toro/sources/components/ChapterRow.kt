@@ -15,7 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import toro.sources.dataModels.Chapter
+import com.toro.models.Chapter
 
 @Composable
 fun ChapterRow(chapter: Chapter, onClick: () -> Unit) {

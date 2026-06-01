@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,6 +17,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import toro.sources.Screen
+import toro.sources.AppViewModel
 import toro.sources.convertTimestamp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,7 +31,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import toro.sources.dataModels.Comment
+import com.toro.models.Comment
+import com.toro.models.ShareType
 
 @Composable
 fun CommentItem(
@@ -39,7 +43,8 @@ fun CommentItem(
     onLikeClick: (Comment) -> Unit = {},
     onCommentClick: (Comment) -> Unit = {},
     onAuthorClick: (String) -> Unit = {},
-    onShareClick: (Comment) -> Unit = {}
+    onShareClick: (Comment) -> Unit = {},
+    viewModel: AppViewModel? = null
 ) {
     var showMenu by remember { mutableStateOf(false) }
     
@@ -111,10 +116,31 @@ fun CommentItem(
                         }
                     }
                 }
+                val sharedId = comment.sharedId
+                val sharedType = comment.sharedType
+
+                if (sharedId != null && sharedType != null) {
+                    SharedContentPlaceholder(sharedType)
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
                 Text(
                     text = comment.content,
                     style = if (isThreadHeader) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 2.dp)
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .clickable(
+                            enabled = sharedId != null,
+                            onClick = {
+                                if (sharedId != null && sharedType != null && viewModel != null) {
+                                    when (sharedType) {
+                                        ShareType.COMIC -> viewModel.handleNavigation(Screen.Overview.route)
+                                        ShareType.POST -> viewModel.handleNavigation(Screen.Engagement.route)
+                                        ShareType.COMMENT -> viewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
+                                        ShareType.USER -> viewModel.handleNavigation(Screen.Profile.createRoute(sharedId))
+                                    }
+                                }
+                            }
+                        )
                 )
 
                 CommentActions(

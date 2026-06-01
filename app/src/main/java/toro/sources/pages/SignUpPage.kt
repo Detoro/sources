@@ -40,7 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import toro.sources.dataModels.AuthRequest
+import com.toro.models.AuthRequest
 import toro.sources.R
 import java.text.SimpleDateFormat
 import java.util.Date
