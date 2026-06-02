@@ -69,10 +69,43 @@ fun ChatBubble(
             ) {
                 Column {
                     if (sharedComic != null) {
-                        SharedComicCard(sharedComic)
+                        SharedComicCard(
+                            sharedComic,
+                            onClick = {
+                                when (sharedType) {
+                                    ShareType.COMIC -> {
+                                        viewModel?.handleNavigation(Screen.Overview.createRoute(sharedId!!))
+                                    }
+                                    ShareType.POST -> {
+                                        viewModel?.handleNavigation(Screen.PostComments.createRoute(sharedId!!))
+                                    }
+                                    ShareType.COMMENT -> {
+                                        // In this case, we don't know the parent post ID from the sharedId alone easily
+                                        // unless we fetch it. For now, route to comments if possible.
+                                        viewModel?.handleNavigation(Screen.PostComments.createRoute(sharedId!!))
+                                    }
+                                    ShareType.USER -> {
+                                        viewModel?.handleNavigation(Screen.Profile.createRoute(sharedId!!))
+                                    }
+                                    else -> {}
+                                }
+                            }
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                     } else if (actualSharedType != null && actualSharedId != null) {
-                        SharedContentPlaceholder(actualSharedType)
+                        SharedContentPlaceholder(
+                            type = actualSharedType,
+                            onClick = {
+                                if (viewModel != null) {
+                                    when (actualSharedType) {
+                                        ShareType.COMIC -> viewModel.handleNavigation(Screen.Overview.createRoute(actualSharedId))
+                                        ShareType.POST -> viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
+                                        ShareType.COMMENT -> viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
+                                        ShareType.USER -> viewModel.handleNavigation(Screen.Profile.createRoute(actualSharedId))
+                                    }
+                                }
+                            }
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                     if (text.isNotBlank()) {
@@ -111,19 +144,18 @@ fun ChatBubble(
                                     if (actualSharedId != null && actualSharedType != null && viewModel != null) {
                                         when (actualSharedType) {
                                             ShareType.COMIC -> {
-                                                if (sharedComic != null) {
-                                                    viewModel.setCurrentComic(sharedComic)
-                                                    viewModel.handleNavigation(Screen.Overview.route)
-                                                }
+                                                viewModel.loadAndNavigateToSharedComic(actualSharedId)
                                             }
                                             ShareType.POST -> {
-                                                viewModel.handleNavigation(Screen.Engagement.route)
-                                            }
-                                            ShareType.COMMENT -> {
                                                 viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
                                             }
+                                            ShareType.COMMENT -> {
+                                                // Since we only have the comment ID (not the parent post/chapter ID),
+                                                // routing to the main engagement feed is the safest fallback for now.
+                                                viewModel.handleNavigation(Screen.Engagement.route)
+                                            }
                                             ShareType.USER -> {
-                                                viewModel.getUserProfile(actualSharedId)
+                                                viewModel.handleNavigation(Screen.Profile.createRoute(actualSharedId))
                                             }
                                         }
                                     }

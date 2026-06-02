@@ -1,5 +1,7 @@
 package toro.sources.components
 
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,20 +15,30 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.toro.models.Comic
 
 @Composable
-fun SharedComicCard(comic: Comic) {
+fun SharedComicCard(
+    comic: Comic,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null
+) {
     Card(
-        modifier = Modifier.width(200.dp),
+        modifier = Modifier.width(50.dp)
+            .height(50.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column {
-            coil.compose.AsyncImage(
+        Row {
+            AsyncImage(
                 model = comic.coverImageUrl,
                 contentDescription = null,
-                modifier = Modifier.fillMaxWidth().height(100.dp),
+                modifier = Modifier.fillMaxWidth(),
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
             )
             Column(modifier = Modifier.padding(8.dp)) {

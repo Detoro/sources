@@ -55,6 +55,7 @@ fun PostCard(
         modifier = modifier
         .background(MaterialTheme.colorScheme.surface)
         .padding(16.dp)
+        .fillMaxWidth()
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -64,7 +65,7 @@ fun PostCard(
                 modifier = Modifier
                     .size(32.dp)
                     .clip(CircleShape)
-                    .background(Color.LightGray)
+                    .background(Color.Transparent)
                     .clickable(
                         onClick = { onAuthorClick(post.authorId) }
                     ),
@@ -108,55 +109,54 @@ fun PostCard(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         // Shared Content
         val sharedId = post.sharedId
         val sharedType = post.sharedType
         if (sharedId != null && sharedType != null) {
-            SharedContentPlaceholder(sharedType)
+            SharedContentPlaceholder(
+                type = sharedType,
+                onClick = {
+                    when (sharedType) {
+                        ShareType.COMIC -> {
+                            viewModel.handleNavigation(Screen.Overview.createRoute(sharedId))
+                        }
+                        ShareType.POST -> {
+                            viewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
+                        }
+                        ShareType.COMMENT -> {
+                            // In this case, we don't know the parent post ID from the sharedId alone easily
+                            // unless we fetch it. For now, route to comments if possible.
+                            viewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
+                        }
+                        ShareType.USER -> {
+                            viewModel.handleNavigation(Screen.Profile.createRoute(sharedId))
+                        }
+                    }
+                }
+            )
             Spacer(modifier = Modifier.height(8.dp))
         }
 
         // Content
         Column(
-            modifier = Modifier.clickable(
-                enabled = sharedId != null,
-                onClick = {
-                    if (sharedId != null && sharedType != null) {
-                        when (sharedType) {
-                            ShareType.COMIC -> {
-                                // For comics, we ideally need the whole object or just route by ID
-                                // If we don't have the object, we can only route if Screen.Overview supports ID
-                                // For now, handle as best as we can
-                                viewModel.handleNavigation(Screen.Overview.route)
-                            }
-                            ShareType.POST -> {
-                                viewModel.handleNavigation(Screen.Engagement.route)
-                            }
-                            ShareType.COMMENT -> {
-                                viewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
-                            }
-                            ShareType.USER -> {
-                                viewModel.handleNavigation(Screen.Profile.createRoute(sharedId))
-                            }
-                        }
-                    }
-                }
-            )
+            modifier = Modifier.clickable {
+                onCommentClick()
+            }
         ) {
             Text(
                 text = post.title ?: "Discussion Topic",
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
-            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = post.content,
                 fontSize = 14.sp,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
+            Spacer(modifier = Modifier.height(1.dp))
         }
 
         Row(

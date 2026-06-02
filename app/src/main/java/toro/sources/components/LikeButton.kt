@@ -30,10 +30,10 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LikeButton(
+    modifier: Modifier = Modifier,
     likeCount: Int = 0,
     isPostLiked: Boolean,
-    onLikePost: () -> Unit,
-    modifier: Modifier = Modifier
+    onLikePost: () -> Unit
 ) {
 
     val scale by animateFloatAsState(

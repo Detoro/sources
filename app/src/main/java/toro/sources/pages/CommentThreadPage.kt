@@ -139,7 +139,8 @@ fun CommentThreadPage(
                                     id = it.id,
                                     type = ShareType.COMMENT,
                                     title = "Comment by ${it.authorName}",
-                                    previewText = it.content.take(50)
+                                    previewText = it.content.take(50),
+                                    targetId = targetId
                                 )
                             )
                             viewModel.showShareDialog(true)
@@ -185,7 +186,8 @@ fun CommentThreadPage(
                                     id = it.id,
                                     type = ShareType.COMMENT,
                                     title = "Comment by ${it.authorName}",
-                                    previewText = it.content.take(50)
+                                    previewText = it.content.take(50),
+                                    targetId = targetId
                                 )
                             )
                             viewModel.showShareDialog(true)

@@ -117,7 +117,10 @@ fun PostPage(
                     Spacer(modifier = Modifier.height(4.dp))
                     
                     if (sharedContent != null) {
-                        SharedContentPlaceholder(sharedContent!!.type)
+                        SharedContentPlaceholder(
+                            type = sharedContent!!.type,
+                            onClick = { /* No-op in post preview */ }
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 

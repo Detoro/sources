@@ -205,4 +205,8 @@ class ComicRepository(
     suspend fun saveMessage(message: ChatMessage) {
         conversationDao.insertMessage(message)
     }
+
+    suspend fun deleteMessageById(messageId: String) {
+        conversationDao.deleteMessageById(messageId)
+    }
 }

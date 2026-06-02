@@ -149,7 +149,8 @@ fun CommentsPage(
                                     id = c.id,
                                     type = ShareType.COMMENT,
                                     title = "Comment by ${c.authorName}",
-                                    previewText = c.content.take(50)
+                                    previewText = c.content.take(50),
+                                    targetId = targetId
                                 )
                             )
                             viewModel.showShareDialog(true)

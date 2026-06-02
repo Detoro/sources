@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -15,7 +14,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import toro.sources.AppViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
@@ -23,12 +21,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons.Filled
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
@@ -36,7 +40,9 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.mutableStateListOf
 import com.toro.models.Genre
 import com.toro.models.PgRating
@@ -46,8 +52,7 @@ import com.toro.models.PgRating
 fun NewSeriesForm(
     viewModel: AppViewModel,
     onCancel: () -> Unit
-)
-{
+) {
     var title by remember { mutableStateOf("") }
     var ratingExpanded by remember { mutableStateOf(false) }
     var genreExpanded by remember { mutableStateOf(false) }
@@ -76,146 +81,173 @@ fun NewSeriesForm(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? -> selectedCoverUri = uri }
 
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                "New Series",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("New Series") },
+                navigationIcon = {
+                    IconButton(onClick = onCancel) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        title = ""
+                        author = ""
+                        description = ""
+                        selectedChapterUris = emptyList()
+                        selectedCoverUri = null
+                        selectedComicRating = PgRating.ALL
+                        selectedComicGenres.clear()
+                    }) {
+                        Icon(Filled.Close, contentDescription = "Post")
+                    }
+                }
             )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                "Cancel",
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { onCancel() })
         }
-
-        OutlinedTextField(
-            value = title,
-            onValueChange = { title = it },
-            label = { Text("Comic Title") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        OutlinedTextField(
-            value = author,
-            onValueChange = { author = it },
-            label = { Text("Author / Creator") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        ExposedDropdownMenuBox(
-            expanded = ratingExpanded,
-            onExpandedChange = { ratingExpanded = !ratingExpanded }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 24.dp)
+                .imePadding()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedTextField(
-                value = selectedComicRating.name,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Select Series Rating") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = ratingExpanded) },
-                modifier = Modifier.menuAnchor().fillMaxWidth()
+                value = title,
+                onValueChange = { title = it },
+                label = { Text("Comic Title") },
+                modifier = Modifier.fillMaxWidth()
             )
 
-            ExposedDropdownMenu(
+            OutlinedTextField(
+                value = author,
+                onValueChange = { author = it },
+                label = { Text("Author / Creator") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            ExposedDropdownMenuBox(
                 expanded = ratingExpanded,
-                onDismissRequest = { ratingExpanded = false }
+                onExpandedChange = { ratingExpanded = !ratingExpanded }
             ) {
-                ratingOptions.forEach { rating ->
-                    DropdownMenuItem(
-                        text = { Text(rating.name) },
-                        onClick = {
-                            selectedComicRating = rating
-                            ratingExpanded = false
-                        }
-                    )
+                OutlinedTextField(
+                    value = selectedComicRating.name,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Select Series Rating") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = ratingExpanded) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = ratingExpanded,
+                    onDismissRequest = { ratingExpanded = false }
+                ) {
+                    ratingOptions.forEach { rating ->
+                        DropdownMenuItem(
+                            text = { Text(rating.name) },
+                            onClick = {
+                                selectedComicRating = rating
+                                ratingExpanded = false
+                            }
+                        )
+                    }
                 }
             }
-        }
 
-        ExposedDropdownMenuBox(
-            expanded = genreExpanded,
-            onExpandedChange = { genreExpanded = it }
-        ) {
+            ExposedDropdownMenuBox(
+                expanded = genreExpanded,
+                onExpandedChange = { genreExpanded = it }
+            ) {
+                OutlinedTextField(
+                    value = displayText,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Select Series Genres") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = genreExpanded) },
+                    modifier = Modifier
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = genreExpanded,
+                    onDismissRequest = { genreExpanded = false }
+                ) {
+                    genreOptions.forEach { genre ->
+                        val isSelected = selectedComicGenres.contains(genre)
+                        DropdownMenuItem(
+                            text = { Text(genre.name) },
+                            onClick = {
+                                if (isSelected) {
+                                    selectedComicGenres.remove(genre)
+                                } else {
+                                    selectedComicGenres.add(genre)
+                                }
+                            },
+                            leadingIcon = {
+                                Checkbox(
+                                    checked = isSelected,
+                                    onCheckedChange = null
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+
             OutlinedTextField(
-                value = displayText,
-                onValueChange = {},
-                readOnly = true,
-                label = { Text("Select Series Genres") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = genreExpanded) },
-                modifier = Modifier.menuAnchor().fillMaxWidth()
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Synopsis") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3
             )
 
-            ExposedDropdownMenu(
-                expanded = genreExpanded,
-                onDismissRequest = { genreExpanded = false }
+            OutlinedButton(
+                onClick = { coverPickerLauncher.launch("image/*") },
+                modifier = Modifier.fillMaxWidth()
             ) {
-                genreOptions.forEach { genre ->
-                    val isSelected = selectedComicGenres.contains(genre)
-                    DropdownMenuItem(
-                        text = { Text(genre.name) },
-                        onClick = {
-                            if (isSelected) {
-                                selectedComicGenres.remove(genre)
-                            } else {
-                                selectedComicGenres.add(genre)
-                            }
-                        },
-                        leadingIcon = {
-                            Checkbox(
-                                checked = isSelected,
-                                onCheckedChange = null
-                            )
-                        }
-                    )
-                }
+                Icon(Icons.Default.Image, null)
+                Spacer(Modifier.width(8.dp))
+                Text(if (selectedCoverUri != null) "Cover Selected" else "Select Cover Image")
             }
-        }
 
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Synopsis") },
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 3
-        )
+            OutlinedButton(
+                onClick = { chapterPickerLauncher.launch("application/*") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.CloudUpload, null)
+                Spacer(Modifier.width(8.dp))
+                Text(if (selectedChapterUris.isNotEmpty()) "${selectedChapterUris.size} Chapters Selected" else "Select .cbz Files")
+            }
 
-        OutlinedButton(
-            onClick = { coverPickerLauncher.launch("image/*") },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.Image, null)
-            Spacer(Modifier.width(8.dp))
-            Text(if (selectedCoverUri != null) "Cover Selected" else "Select Cover Image")
-        }
-
-        OutlinedButton(
-            onClick = { chapterPickerLauncher.launch("application/*") },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.CloudUpload, null)
-            Spacer(Modifier.width(8.dp))
-            Text(if (selectedChapterUris.isNotEmpty()) "${selectedChapterUris.size} Chapters Selected" else "Select .cbz Files")
-        }
-
-        val isValid =
-            title.isNotBlank() && author.isNotBlank() && selectedChapterUris.isNotEmpty() && !isUploading
-        Button(
-            onClick = {
-                viewModel.uploadNewChapters(
-                    context = context,
-                    title = title,
-                    author = author,
-                    pgRating = selectedComicRating,
-                    description = description,
-                    chapterUris = selectedChapterUris,
-                    selectedCover = selectedCoverUri
-                )
-            },
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            enabled = isValid
-        ) {
-            Text("Create Series & Upload")
+            val isValid =
+                title.isNotBlank() && author.isNotBlank() && selectedChapterUris.isNotEmpty() && !isUploading
+            Button(
+                onClick = {
+                    viewModel.uploadNewChapters(
+                        context = context,
+                        title = title,
+                        author = author,
+                        pgRating = selectedComicRating,
+                        description = description,
+                        chapterUris = selectedChapterUris,
+                        selectedCover = selectedCoverUri
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                enabled = isValid
+            ) {
+                Text("Create Series & Upload")
+            }
         }
     }
 }

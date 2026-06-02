@@ -105,15 +105,10 @@ fun ComicInfoBottomSheet(
             // Mock for creator works
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(3) {
-                   Surface(
-                       modifier = Modifier.size(80.dp, 120.dp),
-                       color = MaterialTheme.colorScheme.surfaceVariant,
-                       shape = RoundedCornerShape(4.dp)
-                   ) {
-                       Box(contentAlignment = Alignment.Center) {
-                           Text("Work", style = MaterialTheme.typography.labelSmall)
-                       }
-                   }
+                    SharedComicCard(
+                       comic = comic,
+                       onClick = {}
+                   )
                 }
             }
         }

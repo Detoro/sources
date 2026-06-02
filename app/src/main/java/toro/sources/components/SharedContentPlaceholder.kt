@@ -1,7 +1,9 @@
 package toro.sources.components
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,13 +25,28 @@ import androidx.compose.ui.unit.dp
 import com.toro.models.ShareType
 
 @Composable
-fun SharedContentPlaceholder(type: ShareType) {
+fun SharedContentPlaceholder(
+    type: ShareType,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null
+) {
     Card(
-        modifier = Modifier.width(160.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
     ) {
-        Row(modifier = Modifier.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Icon(
                 imageVector = when (type) {
                     ShareType.POST -> Icons.Default.PostAdd
@@ -42,7 +59,7 @@ fun SharedContentPlaceholder(type: ShareType) {
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = type.name.uppercase(), 
+                text = type.name.uppercase(),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold
             )

@@ -47,6 +47,7 @@ fun CommentItem(
     viewModel: AppViewModel? = null
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var showComment by remember { mutableStateOf(!comment.isSpoiler) }
     
     Column(
         modifier = Modifier
@@ -120,27 +121,31 @@ fun CommentItem(
                 val sharedType = comment.sharedType
 
                 if (sharedId != null && sharedType != null) {
-                    SharedContentPlaceholder(sharedType)
+                    SharedContentPlaceholder(
+                        type = sharedType,
+                        onClick = {
+                            if (viewModel != null) {
+                                when (sharedType) {
+                                    ShareType.COMIC -> viewModel.handleNavigation(Screen.Overview.createRoute(sharedId))
+                                    ShareType.POST -> viewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
+                                    ShareType.COMMENT -> viewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
+                                    ShareType.USER -> viewModel.handleNavigation(Screen.Profile.createRoute(sharedId))
+                                }
+                            }
+                        }
+                    )
                     Spacer(modifier = Modifier.height(4.dp))
                 }
                 Text(
-                    text = comment.content,
+                    text = if (showComment) comment.content else "This is a spoiler",
                     style = if (isThreadHeader) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
                     modifier = Modifier
                         .padding(top = 2.dp)
-                        .clickable(
-                            enabled = sharedId != null,
-                            onClick = {
-                                if (sharedId != null && sharedType != null && viewModel != null) {
-                                    when (sharedType) {
-                                        ShareType.COMIC -> viewModel.handleNavigation(Screen.Overview.route)
-                                        ShareType.POST -> viewModel.handleNavigation(Screen.Engagement.route)
-                                        ShareType.COMMENT -> viewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
-                                        ShareType.USER -> viewModel.handleNavigation(Screen.Profile.createRoute(sharedId))
-                                    }
-                                }
+                        .clickable {
+                            if (comment.isSpoiler) {
+                                showComment = !showComment
                             }
-                        )
+                        }
                 )
 
                 CommentActions(

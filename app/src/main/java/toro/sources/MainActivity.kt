@@ -57,6 +57,8 @@ import toro.sources.pages.ChatThreadPage
 import toro.sources.pages.CommentThreadPage
 import toro.sources.pages.CommentsPage
 import com.toro.models.*
+import toro.sources.components.AddChapterForm
+import toro.sources.components.NewSeriesForm
 import toro.sources.pages.EngagementPage
 import toro.sources.pages.FriendRequestPage
 import toro.sources.pages.HomePage
@@ -86,7 +88,11 @@ sealed class Screen(val route: String) {
     object Reader : Screen("reader/{chapterId}") {
         fun createRoute(chapterId: String) = "reader/$chapterId"
     }
-    object Overview : Screen("overview")
+    object Overview : Screen("overview/{comicId}") {
+        fun createRoute(comicId: String) = "overview/$comicId"
+    }
+    object AddComic : Screen("add_comic")
+    object AddChapter : Screen("add_chapter")
     object Post : Screen("post")
     object Engagement : Screen("engagement")
     object Settings : Screen("settings")
@@ -243,6 +249,7 @@ fun AppNavigation(viewModel: AppViewModel) {
             sharedType = sharedContent!!.type,
             sharedTitle = sharedContent!!.title,
             sharedPreview = sharedContent!!.previewText,
+            sharedTargetId = sharedContent!!.targetId,
             onDismiss = { viewModel.showShareDialog(false) }
         )
     }
@@ -354,8 +361,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                 ReadingList(
                     viewModel = viewModel,
                     onComicClick = { comic ->
-                        viewModel.setCurrentComic(comic)
-                        navController.navigate(Screen.Overview.route)
+                        navController.navigate(Screen.Overview.createRoute(comic.id))
                     },
                     onAddComic = { navController.navigate(Screen.Search.route) }
                 )
@@ -402,8 +408,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                 HomePage(
                     viewModel = viewModel,
                     onComicClick = { comic ->
-                        viewModel.setCurrentComic(comic)
-                        navController.navigate(Screen.Overview.route)
+                        navController.navigate(Screen.Overview.createRoute(comic.id))
                     },
                     onAccountClick = {
                         navController.navigate(Screen.Profile.createRoute(currentUser.userId)) {
@@ -559,13 +564,19 @@ fun AppNavigation(viewModel: AppViewModel) {
                     onBackClick = { navController.popBackStack() }
                 )
             }
-            composable(Screen.Overview.route) {
+            composable(Screen.Overview.route) { backStackEntry ->
+                val comicId = backStackEntry.arguments?.getString("comicId") ?: return@composable
+
+                LaunchedEffect(comicId) {
+                    viewModel.loadComicById(comicId)
+                }
+
                 OverviewPage(
                     viewModel = viewModel,
                     onBackClick = { navController.popBackStack() },
                     onAuthorClick = {
                         navController.navigate(Screen.Engagement.route)
-                                    },
+                    },
                     onChapterClick = { chapter ->
                         navController.navigate(Screen.Reader.createRoute(chapter.id))
                     }
@@ -574,12 +585,30 @@ fun AppNavigation(viewModel: AppViewModel) {
             composable(Screen.Upload.route) {
                 UploadPage(
                     viewModel = viewModel,
-                    onBackClick = { navController.navigate(Screen.Upload.route) },
+                    onBackClick = { navController.popBackStack() },
+                    onUploadNewComic = {
+                        navController.navigate(Screen.AddComic.route)
+                    },
+                    onUploadNewChapter = {
+                        navController.navigate(Screen.AddChapter.route)
+                    },
                     onUploadComplete = {
                         navController.navigate("home/${currentUser.username}") {
                             popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                         }
                     }
+                )
+            }
+            composable(Screen.AddComic.route) {
+                NewSeriesForm(
+                    viewModel = viewModel,
+                    onCancel = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.AddChapter.route) {
+                AddChapterForm(
+                    viewModel = viewModel,
+                    onCancel = { navController.popBackStack() }
                 )
             }
             composable(Screen.Search.route) {

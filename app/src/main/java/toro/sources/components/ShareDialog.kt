@@ -12,6 +12,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.Screen
@@ -25,6 +26,7 @@ fun ShareDialog(
     sharedType: ShareType,
     sharedTitle: String,
     sharedPreview: String,
+    sharedTargetId: String? = null,
     onDismiss: () -> Unit
 ) {
     var showChatPicker by remember { mutableStateOf(false) }
@@ -46,7 +48,8 @@ fun ShareDialog(
                                             sharedId,
                                             sharedType,
                                             sharedTitle,
-                                            sharedPreview
+                                            sharedPreview,
+                                            sharedTargetId
                                         )
                                     )
                                     viewModel.handleNavigation(Screen.Chat.createRoute(conversation.conversationId))
@@ -87,7 +90,8 @@ fun ShareDialog(
                                     sharedId,
                                     sharedType,
                                     sharedTitle,
-                                    sharedPreview
+                                    sharedPreview,
+                                    sharedTargetId
                                 )
                             )
                             viewModel.handleNavigation(Screen.Post.route)
@@ -103,7 +107,8 @@ fun ShareDialog(
                                     sharedId,
                                     sharedType,
                                     sharedTitle,
-                                    sharedPreview
+                                    sharedPreview,
+                                    sharedTargetId
                                 )
                             )
                             viewModel.handleNavigation(Screen.Engagement.route)
@@ -121,7 +126,7 @@ fun ShareDialog(
 
 @Composable
 private fun ShareOption(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     label: String,
     onClick: () -> Unit
 ) {

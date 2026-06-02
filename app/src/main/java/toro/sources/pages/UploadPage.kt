@@ -31,8 +31,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.imePadding
-import toro.sources.components.AddChapterForm
-import toro.sources.components.NewSeriesForm
 import toro.sources.components.UploadMode
 import toro.sources.components.UploadModeSelection
 
@@ -41,6 +39,8 @@ import toro.sources.components.UploadModeSelection
 fun UploadPage(
     viewModel: AppViewModel,
     onBackClick: () -> Unit,
+    onUploadNewComic: () -> Unit,
+    onUploadNewChapter: () -> Unit,
     onUploadComplete: () -> Unit
 ) {
     var uploadMode by remember { mutableStateOf<UploadMode?>(null) }
@@ -60,7 +60,12 @@ fun UploadPage(
             TopAppBar(
                 title = { Text("Creator Studio") },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(
+                        onClick = {
+                            onBackClick()
+                            uploadMode = null
+                        }
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -89,16 +94,10 @@ fun UploadPage(
                 } else {
                     when (uploadMode) {
                         UploadMode.NEW_SERIES -> {
-                            NewSeriesForm(
-                                viewModel = viewModel,
-                                onCancel = { uploadMode = null }
-                            )
+                            onUploadNewComic()
                         }
                         UploadMode.ADD_CHAPTER -> {
-                            AddChapterForm(
-                                viewModel = viewModel,
-                                onCancel = { uploadMode = null }
-                            )
+                            onUploadNewChapter()
                         }
                         else -> {}
                     }
