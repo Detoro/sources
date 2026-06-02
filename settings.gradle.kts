@@ -24,3 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "sources"
 include(":app")
+include(":shared")
+project(":shared").projectDir = File("../shared")

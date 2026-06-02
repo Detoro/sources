@@ -41,6 +41,7 @@ import com.cloudinary.android.callback.UploadCallback
 import com.cloudinary.android.callback.ErrorInfo
 import com.google.firebase.messaging.FirebaseMessaging
 import toro.sources.notifications.NotificationEventBus
+import toro.sources.crypto.CryptoUtils
 import com.toro.models.*
 import java.util.zip.ZipInputStream
 import java.io.File
@@ -497,6 +498,16 @@ class AppViewModel(
         }
     }
 
+    fun getComicById(comicId: String) {
+        viewModelScope.launch {
+            try {
+                _currentComic.value = RetrofitClient.comicApiService.getComicById(comicId)
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to get Comic: ${e.message}"
+            }
+        }
+    }
+
     fun uploadNewChapters(
         context: Context,
         title: String = "",
@@ -687,6 +698,8 @@ class AppViewModel(
                 val networkMessage = newMessage.copy(content = encryptedContent, isEncrypted = true)
                 
                 RetrofitClient.comicApiService.sendMessage(conversationId, targetUserId, networkMessage)
+                repository.deleteMessageById(newMessage.id)
+
                 getChatMessages(conversationId)
                 _sharedContent.value = null
             } catch (e: Exception) {
@@ -695,14 +708,11 @@ class AppViewModel(
         }
     }
     private fun encryptMessage(content: String): String {
-        // reading e2e stuff
-        Log.i("encrypt", "encrypted")
-        return content
+        return CryptoUtils.encrypt(content)
     }
+
     fun decryptMessage(content: String): String {
-        // same as above
-        Log.i("decrypt", "decrypted")
-        return content
+        return CryptoUtils.decrypt(content)
     }
     fun getChatRequests() {
         viewModelScope.launch {
@@ -1097,6 +1107,39 @@ class AppViewModel(
     fun setSharedContent(content: SharedContent?) {
         Log.i("Shared content", "$content")
         _sharedContent.value = content
+    }
+
+    fun loadAndNavigateToSharedComic(comicId: String) {
+        viewModelScope.launch {
+            var comicToLoad = myLibrary.value.find { it.id == comicId }
+
+            if (comicToLoad == null) {
+                comicToLoad = catalog.value.find { it.id == comicId }
+            }
+            if (comicToLoad != null) {
+                setCurrentComic(comicToLoad)
+                handleNavigation(Screen.Overview.route)
+            } else {
+                getComicById(comicId)
+                _errorMessage.value = "Comic not found or unavailable."
+            }
+        }
+    }
+
+    fun loadComicById(comicId: String) {
+        viewModelScope.launch {
+            var comicToLoad = myLibrary.value.find { it.id == comicId }
+
+            if (comicToLoad == null) {
+                comicToLoad = catalog.value.find { it.id == comicId }
+            }
+
+            if (comicToLoad != null) {
+                _currentComic.value = comicToLoad
+            } else {
+                _errorMessage.value = "Comic not found or unavailable."
+            }
+        }
     }
 
     fun findUserByUsername(username: String, onFound: (String) -> Unit) {

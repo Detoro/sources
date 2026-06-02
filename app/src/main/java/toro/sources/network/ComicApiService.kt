@@ -33,6 +33,9 @@ interface ComicApiService {
     @GET("api/comics/catalog")
     suspend fun getCatalog(): List<Comic>
 
+    @GET("api/comics/{comicId}")
+    suspend fun getComicById(@Path("comicId") comicId: String): Comic
+
     @GET("api/comics/{comicId}/chapters")
     suspend fun getChaptersForComic(
         @Path("comicId") comicId: String
