@@ -209,4 +209,12 @@ class ComicRepository(
     suspend fun deleteMessageById(messageId: String) {
         conversationDao.deleteMessageById(messageId)
     }
+
+    suspend fun deleteMessagesForConversation(conversationId: String) {
+        conversationDao.deleteMessagesForConversation(conversationId)
+    }
+
+    suspend fun deleteConversationById(conversationId: String) {
+        conversationDao.deleteConversationById(conversationId)
+    }
 }

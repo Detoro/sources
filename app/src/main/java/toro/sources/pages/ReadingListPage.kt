@@ -11,29 +11,53 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import toro.sources.AppViewModel
 import toro.sources.R
 import toro.sources.components.ComicRow
 import com.toro.models.Comic
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun ReadingList(
+fun ReadingListPage(
     viewModel: AppViewModel,
     onComicClick: (Comic) -> Unit,
     onAddComic: () -> Unit
 ) {
-    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val subscribed by viewModel.subscribedComics.collectAsState()
     val recentlyRead by viewModel.recentlyReadComics.collectAsState()
 
+    ReadingListContent(
+        subscribedComics = subscribed,
+        recentlyReadComics = recentlyRead,
+        onComicClick = onComicClick,
+        onAddComic = onAddComic,
+        viewModel = viewModel
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@Composable
+fun ReadingListContent(
+    subscribedComics: List<Comic>,
+    recentlyReadComics: List<Comic>,
+    onComicClick: (Comic) -> Unit,
+    onAddComic: () -> Unit,
+    viewModel: AppViewModel? = null
+) {
+    var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
+    var expanded by remember { mutableStateOf(false) }
+    var dropDownSelection by remember { mutableStateOf("Recently Updated") }
     val tabs = listOf("Recents", "Subscribed")
+    val currentList = if (selectedTabIndex == 0) recentlyReadComics else subscribedComics
 
     Scaffold(
         topBar = { TopAppBar(title = { Text(stringResource(R.string.reading_list)) }) },
@@ -59,23 +83,74 @@ fun ReadingList(
                 }
             }
 
+            Row(
+                modifier = Modifier.padding(horizontal = 5.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (selectedTabIndex == 0) recentlyReadComics.size.toString() else subscribedComics.size.toString(),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontSize = 17.sp
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                Box {
+                    TextButton(
+                        onClick = { expanded = true }
+                    ) {
+                        Text(dropDownSelection)
+                    }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Recently Read") },
+                            onClick = {
+                                expanded = false
+                                dropDownSelection = "Recently Read"
+                                currentList.sortedByDescending { it.lastReadTimestamp }
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Recently Updated") },
+                            onClick = {
+                                expanded = false
+                                dropDownSelection = "Recently Updated"
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Recently Subscribed") },
+                            onClick = {
+                                expanded = false
+                                dropDownSelection = "Recently Subscribed"
+                            }
+                        )
+                    }
+                }
+            }
+            HorizontalDivider(Modifier.alpha(0.4f))
+
             // The Content
             LazyColumn(
                 modifier = Modifier.fillMaxSize()
             ) {
-                if (selectedTabIndex == 0) {
-                    items(recentlyRead) { comic ->
+
+                items(currentList) { comic ->
+                    if (viewModel != null) {
                         ComicRow(comic, viewModel, onComicClick)
                         HorizontalDivider()
-                    }
-                } else {
-                    items(subscribed) { comic ->
-                        ComicRow(comic, viewModel, onComicClick)
+                    } else {
+                        ListItem(
+                            headlineContent = { Text(comic.title) },
+                            supportingContent = { Text(comic.authorName) }
+                        )
                         HorizontalDivider()
                     }
                 }
 
-                if (recentlyRead.isEmpty() && subscribed.isEmpty()) {
+                if (recentlyReadComics.isEmpty() && subscribedComics.isEmpty()) {
                     item {
                         Box(
                             modifier = Modifier

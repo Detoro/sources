@@ -57,9 +57,9 @@ fun CommentItem(
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
             DefaultAvatar(
-                modifier = Modifier
-                    .size(if (isThreadHeader) 44.dp else 36.dp)
-                    .clickable { onAuthorClick(comment.authorId) }
+                avatarUrl = comment.authorAvatarUrl,
+                size = if (isThreadHeader) 44 else 36,
+                modifier = Modifier.clickable { onAuthorClick(comment.authorId) }
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {

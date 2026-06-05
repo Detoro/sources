@@ -46,6 +46,12 @@ interface ComicApiService {
         @Path("chapterId") chapterId: String
     ): List<Page>
 
+    @POST("api/comics/{comicId}/rate")
+    suspend fun rateComic(
+        @Path("comicId") comicId: String,
+        @Query("rating") rating: Int
+    ): ServerResponse
+
     @POST("api/comics/chapter/comments/{commentId}/like")
     suspend fun likeChapterComment(
         @Path("commentId") commentId: String
@@ -82,9 +88,6 @@ interface ComicApiService {
     @GET("api/comics/search")
     suspend fun searchComics(@Query("q") query: String): List<Comic>
 
-    @POST("api/comics/subscribe/author")
-    suspend fun subscribeToAuthor(@Body request: AuthorRequest)
-
     @POST("api/comics/subscribe/comic/{comicId}")
     suspend fun toggleComicSubscription(@Path("comicId") comicId: String): SubscribeResponse
 
@@ -97,6 +100,12 @@ interface ComicApiService {
 
     @POST("api/auth/login")
     suspend fun login(@Body request: AuthRequest): AuthResponse
+
+    @POST("api/comics/{comicId}/chapters/{chapterId}/read")
+    suspend fun markChapterAsRead(
+        @Path("comicId") comicId: String,
+        @Path("chapterId") chapterId: String,
+    ): ServerResponse
 
     // Chat apis
     @GET("api/chat/conversations")
@@ -157,6 +166,9 @@ interface ComicApiService {
     @GET("api/users/{userId}/profile")
     suspend fun getUserProfile(@Path("userId") userId: String): UserProfile
 
+    @POST("api/users/{userId}/unfriend")
+    suspend fun unfriendUser(@Path("userId") userId: String): ServerResponse
+
     @POST("api/users/{userId}/profile/bio")
     suspend fun updateBio(@Path("userId") userId: String, @Body request: UpdateBioRequest): ServerResponse
 
@@ -178,8 +190,11 @@ interface ComicApiService {
     @GET("api/users/search")
     suspend fun searchUsers(@Query("q") query: String): List<UserProfile>
 
-    @GET("api/users/subscribed-authors")
+    @GET("api/users/author/subscribe")
     suspend fun getSubscribedAuthors(): List<UserProfile>
+
+    @POST("api/users/author/subscribe")
+    suspend fun subscribeToAuthor(@Body request: AuthorRequest)
 
     @POST("api/users/avatar")
     suspend fun updateAvatar(@Body avatar: String): ServerResponse

@@ -45,7 +45,7 @@ fun HomePage(
         uri?.let {
             viewModel.importLocalComic(
                 title = "Imported Comic",
-                author = "Someone",
+                author = "Unknown",
                 description = "Imported from device",
                 comicUri = it
             )
@@ -55,7 +55,7 @@ fun HomePage(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Explore Sources") },
+                title = { Text("Explore") },
                 actions = {
                     IconButton(onClick = { onNotificationsClick() }) {
                         BadgedBox(
@@ -74,7 +74,7 @@ fun HomePage(
                         Icon(Icons.Default.Add, contentDescription = "Import Comic")
                     }
                     IconButton(onClick = { onAccountClick() }) {
-                        Icon(Icons.Default.Person, contentDescription = "Account")
+                        Icon(Icons.Default.Person, contentDescription = "Profile")
                     }
                 }
             )

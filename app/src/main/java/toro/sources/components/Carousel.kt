@@ -108,7 +108,7 @@ fun BillboardCarousel(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = comic.author,
+                        text = comic.authorName,
                         style = MaterialTheme.typography.bodyLarge,
                         color = Color.White.copy(alpha = 0.8f)
                     )

@@ -68,7 +68,7 @@ import toro.sources.pages.OverviewPage
 import toro.sources.pages.PostPage
 import toro.sources.pages.ProfilePage
 import toro.sources.pages.ReaderScreen
-import toro.sources.pages.ReadingList
+import toro.sources.pages.ReadingListPage
 import toro.sources.pages.SearchPage
 import toro.sources.pages.SettingsPage
 import toro.sources.pages.SignUpPage
@@ -282,7 +282,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                 NavigationBar {
                     NavigationBarItem(
                         icon = { Icon(Icons.AutoMirrored.Filled.LibraryBooks, contentDescription = "Library") },
-                        label = { Text("Library") },
+                        label = { Text("Home") },
                         selected = currentRoute == Screen.Home.route,
                         onClick = {
                             navController.navigate("home/${currentUser.username}") {
@@ -358,7 +358,7 @@ fun AppNavigation(viewModel: AppViewModel) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.ReadingList.route) {
-                ReadingList(
+                ReadingListPage(
                     viewModel = viewModel,
                     onComicClick = { comic ->
                         navController.navigate(Screen.Overview.createRoute(comic.id))

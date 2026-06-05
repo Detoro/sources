@@ -12,7 +12,7 @@ import com.toro.models.ChatMessage
 
 @Database(
     entities = [Comic::class, Chapter::class, Conversation::class, ChatMessage::class],
-    version = 12,
+    version = 13,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

@@ -48,7 +48,7 @@ fun ChatBubble(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp),
+            .padding(vertical = 10.dp),
         horizontalArrangement = if (isFromMe) Arrangement.End else Arrangement.Start
     ) {
         Column(horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start) {

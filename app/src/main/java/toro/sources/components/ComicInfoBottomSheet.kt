@@ -6,18 +6,24 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.toro.models.Comic
+import toro.sources.AppViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComicInfoBottomSheet(
     comic: Comic,
+    viewModel: AppViewModel,
     onDismiss: () -> Unit
 ) {
+    val worksByAuthor by viewModel.targetUserWorks.collectAsState()
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -96,19 +102,18 @@ fun ComicInfoBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "Other works by ${comic.author}",
+                text = "Other works by ${comic.authorName}",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(8.dp))
-            
-            // Mock for creator works
+
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(3) {
+                items(worksByAuthor) { comic ->
                     SharedComicCard(
-                       comic = comic,
-                       onClick = {}
-                   )
+                        comic,
+                        onClick = {}
+                    )
                 }
             }
         }

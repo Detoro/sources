@@ -13,7 +13,7 @@ import com.toro.models.Chapter
 
 class CbzParser(private val context: Context) {
 
-    suspend fun parseAndSave(fileUri: Uri, givenTitle: String, author: String, description: String): Pair<Comic, Chapter> {
+    suspend fun parseAndSave(fileUri: Uri, givenTitle: String, author: String, description: String, authorId: String = ""): Pair<Comic, Chapter> {
         return withContext(Dispatchers.IO) {
 
             val comicId = UUID.randomUUID().toString()
@@ -49,7 +49,8 @@ class CbzParser(private val context: Context) {
             val comic = Comic(
                 id = comicId,
                 title = givenTitle,
-                author = author,
+                authorId = authorId,
+                authorName = author,
                 description = description,
                 coverImageUrl = coverPath,
                 isLocalSideload = true,

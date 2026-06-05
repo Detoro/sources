@@ -1,51 +1,27 @@
 package toro.sources.pages
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import androidx.compose.runtime.*
-import androidx.compose.material.icons.filled.Share
 import toro.sources.AppViewModel
-import toro.sources.components.ShareDialog
+import toro.sources.components.*
 import com.toro.models.ShareType
 import com.toro.models.Chapter
-import toro.sources.components.ChapterRow
-import toro.sources.components.ReadingProgressBar
-import toro.sources.components.SubscribeButton
-import toro.sources.components.ComicInfoBottomSheet
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +33,9 @@ fun OverviewPage(
 ) {
     val comic by viewModel.currentComic.collectAsState()
     val chapters by viewModel.chapters.collectAsState()
+    val userRating by viewModel.userRating.collectAsState()
+    
+    var showActionSheet by remember { mutableStateOf(false) }
     var showShareDialog by remember { mutableStateOf(false) }
     var showInfoSheet by remember { mutableStateOf(false) }
 
@@ -69,48 +48,28 @@ fun OverviewPage(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(comic?.title ?: "Loading...") },
+                title = { },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    comic?.let { safeComic ->
-                        IconButton(onClick = {
-                            showShareDialog = true
-                        }) {
-                            Icon(Icons.Default.Share, contentDescription = "Share")
-                        }
-                        IconButton(onClick = { showInfoSheet = true }) {
-                            Icon(Icons.Default.Info, contentDescription = "Comic info")
+                    comic?.let {
+                        IconButton(onClick = { showActionSheet = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Actions")
                         }
                         IconButton(onClick = {
-                            viewModel.removeComicFromLibrary(safeComic.id, onRemoved = onBackClick)
+                            showInfoSheet = true
+                            viewModel.getUserWorks(comic!!.authorId)
                         }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Remove from Library")
+                            Icon(Icons.Outlined.Info, contentDescription = "Actions")
                         }
                     }
                 }
             )
         }
     ) { paddingValues ->
-        if (showInfoSheet && comic != null) {
-            ComicInfoBottomSheet(
-                comic = comic!!,
-                onDismiss = { showInfoSheet = false }
-            )
-        }
-        if (showShareDialog && comic != null) {
-            ShareDialog(
-                viewModel = viewModel,
-                sharedId = comic!!.id,
-                sharedType = ShareType.COMIC,
-                sharedTitle = comic!!.title,
-                sharedPreview = comic!!.description.take(50),
-                onDismiss = { showShareDialog = false }
-            )
-        }
         if (comic == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -118,45 +77,105 @@ fun OverviewPage(
         } else {
             val safeComic = comic!!
 
+            if (showActionSheet) {
+                ComicActionBottomSheet(
+                    comic = safeComic,
+                    onDismiss = { showActionSheet = false },
+                    onShare = { showShareDialog = true },
+                    onRemove = {
+                        viewModel.removeComicFromLibrary(safeComic.id, onRemoved = onBackClick)
+                    }
+                )
+            }
+
+            if (showInfoSheet) {
+                ComicInfoBottomSheet(
+                    comic = safeComic,
+                    viewModel,
+                    onDismiss = { showInfoSheet = false }
+                )
+            }
+
+            if (showShareDialog) {
+                ShareDialog(
+                    viewModel = viewModel,
+                    sharedId = safeComic.id,
+                    sharedType = ShareType.COMIC,
+                    sharedTitle = safeComic.title,
+                    sharedPreview = safeComic.description.take(50),
+                    onDismiss = { showShareDialog = false }
+                )
+            }
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
                 item {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp)
+                            .padding(bottom = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         AsyncImage(
                             model = safeComic.coverImageUrl,
                             contentDescription = "Cover",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier
-                                .width(120.dp)
-                                .height(180.dp)
+                                .fillMaxWidth()
+                                .height(300.dp)
                         )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column {
-                            Text(
-                                text = safeComic.title,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            TextButton(
-                                onClick = onAuthorClick
-                            ) {
-                                Icon(Icons.Default.AccountCircle, contentDescription = "Author icon")
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = safeComic.author,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
 
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = safeComic.title,
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
+
+                        TextButton(
+                            onClick = onAuthorClick
+                        ) {
+                            Text(
+                                text = safeComic.authorName,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Rating Section
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            InteractiveRatingStars(
+                                initialRating = userRating,
+                                onRatingSelected = { rating ->
+                                    viewModel.rateComic(safeComic.id, rating)
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = String.format(Locale.getDefault(), "%.1f", safeComic.rating),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Action Buttons
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
                             SubscribeButton(
                                 isComicSubscribed = safeComic.isSubscribed,
                                 isLocalSideload = safeComic.isLocalSideload,
@@ -164,35 +183,27 @@ fun OverviewPage(
                                     viewModel.toggleComicSubscription(safeComic.id)
                                 },
                                 onSubscribeToAuthor = {
-                                    viewModel.subscribeToAuthor(safeComic.author)
+                                    viewModel.subscribeToAuthor(safeComic.authorId)
                                 }
                             )
-
-                            val overallProgress = if (chapters.isNotEmpty()) {
-                                chapters.map {
-                                    if (it.pageCount > 0) it.lastReadPageIndex.toFloat() / it.pageCount else 0f
-                                }.sum() / chapters.size
-                            } else 0f
-
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Reading Progress",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                                ReadingProgressBar(progress = overallProgress)
                         }
                     }
                 }
 
                 item {
                     Text(
+                        text = "Synopsis",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)
+                    )
+                    Text(
                         text = safeComic.description,
                         style = MaterialTheme.typography.bodyMedium,
+                        lineHeight = 20.sp,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-
                     HorizontalDivider()
                 }
 
@@ -208,7 +219,10 @@ fun OverviewPage(
                 items(chapters) { chapter ->
                     ChapterRow(
                         chapter = chapter,
-                        onClick = { onChapterClick(chapter) }
+                        onClick = {
+                            onChapterClick(chapter)
+                            viewModel.markChapterAsRead(safeComic.id, chapter.id)
+                        }
                     )
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                 }

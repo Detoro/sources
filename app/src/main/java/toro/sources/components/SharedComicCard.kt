@@ -43,7 +43,7 @@ fun SharedComicCard(
             )
             Column(modifier = Modifier.padding(8.dp)) {
                 Text(text = comic.title, style = MaterialTheme.typography.labelLarge, maxLines = 1)
-                Text(text = comic.author, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = comic.authorName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

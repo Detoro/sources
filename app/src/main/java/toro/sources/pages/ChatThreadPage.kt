@@ -1,5 +1,6 @@
 package toro.sources.pages
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
@@ -8,6 +9,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -20,7 +24,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
@@ -38,6 +44,7 @@ fun ChatThreadPage(
     val messages by viewModel.chatMessages.collectAsState()
     val me by viewModel.currentUser.collectAsState()
     val inbox by viewModel.inbox.collectAsState()
+    var expanded by remember { mutableStateOf(false) }
 
     val activeChat = remember(conversationId, inbox) {
         inbox.find { it.conversationId == conversationId }
@@ -45,7 +52,7 @@ fun ChatThreadPage(
     val targetUserId = activeChat?.otherUserId ?: ""
 
     LaunchedEffect(conversationId, targetUserId) {
-        viewModel.clearChatMessages()
+        viewModel.resetChatState()
         viewModel.getChatMessages(conversationId)
         if (targetUserId.isNotEmpty()) {
             viewModel.getUserProfile(targetUserId)
@@ -54,7 +61,7 @@ fun ChatThreadPage(
 
     DisposableEffect(Unit) {
         onDispose {
-            viewModel.clearChatMessages()
+            viewModel.resetChatState()
         }
     }
 
@@ -66,12 +73,39 @@ fun ChatThreadPage(
                     TextButton(
                         onClick = { onProfileClick(targetUserId) }
                     ) {
-                        Text("Chatting with ${activeChat?.otherUserName}")
+                        Text("${activeChat?.otherUserName}".uppercase())
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    Box {
+                        IconButton(onClick = { expanded = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = "Back")
+                        }
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Unadd Friend") },
+                                onClick = { 
+                                    expanded = false
+                                    viewModel.unAddFriend(targetUserId)
+                                    onBackClick()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Clear Chat") },
+                                onClick = { 
+                                    expanded = false
+                                    viewModel.clearChatHistory(conversationId)
+                                }
+                            )
+                        }
                     }
                 }
             )

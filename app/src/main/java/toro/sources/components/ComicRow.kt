@@ -41,7 +41,7 @@ fun ComicRow(comic: Comic, viewModel: AppViewModel, onClick: (Comic) -> Unit) {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = comic.author,
+                text = comic.authorName,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
