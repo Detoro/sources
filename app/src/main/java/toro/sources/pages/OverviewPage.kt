@@ -160,7 +160,7 @@ fun OverviewPage(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = String.format(Locale.getDefault(), "%.1f", safeComic.rating),
+                                text = String.format(Locale.getDefault(), "%.1f", userRating),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary

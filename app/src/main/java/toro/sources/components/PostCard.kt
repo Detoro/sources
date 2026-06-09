@@ -130,22 +130,38 @@ fun PostCard(
         }
 
         // Content
+        var isExpanded by remember { mutableStateOf(false) }
+        
         Column(
-            modifier = Modifier.clickable {
-                onCommentClick()
-            }
+            modifier = Modifier.padding(vertical = 4.dp)
         ) {
             Text(
                 text = post.title ?: "Discussion Topic",
                 fontWeight = FontWeight.Bold,
-                fontSize = 16.sp
+                fontSize = 16.sp,
+                modifier = Modifier.clickable { onCommentClick() }
             )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = post.content,
                 fontSize = 14.sp,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+                maxLines = if (isExpanded) Int.MAX_VALUE else 3,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.clickable { 
+                    if (post.content.length > 150) isExpanded = !isExpanded
+                    else onCommentClick()
+                }
             )
+            if (post.content.length > 150) {
+                Text(
+                    text = if (isExpanded) "Show Less" else "Read More",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .clickable { isExpanded = !isExpanded }
+                )
+            }
             Spacer(modifier = Modifier.height(1.dp))
         }
 

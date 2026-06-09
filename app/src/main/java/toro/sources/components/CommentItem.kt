@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.toro.models.Comment
@@ -136,17 +137,34 @@ fun CommentItem(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                 }
-                Text(
-                    text = if (showComment) comment.content else "This is a spoiler",
-                    style = if (isThreadHeader) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                var isExpanded by remember { mutableStateOf(false) }
+                
+                Column(
                     modifier = Modifier
                         .padding(top = 2.dp)
                         .clickable {
                             if (comment.isSpoiler) {
                                 showComment = !showComment
+                            } else {
+                                isExpanded = !isExpanded
                             }
                         }
-                )
+                ) {
+                    Text(
+                        text = if (showComment) comment.content else "This is a spoiler",
+                        style = if (isThreadHeader) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                        maxLines = if (isExpanded) Int.MAX_VALUE else 4,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (showComment && comment.content.length > 200) {
+                        Text(
+                            text = if (isExpanded) "Show Less" else "Read More",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
 
                 CommentActions(
                     comment = comment,

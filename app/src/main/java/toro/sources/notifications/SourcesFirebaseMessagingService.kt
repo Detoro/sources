@@ -7,6 +7,7 @@ import toro.sources.network.RetrofitClient
 import com.toro.models.FcmTokenRequest
 import com.toro.models.Notification
 import com.toro.models.NotificationType
+import toro.sources.db.CanvasDatabase
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,8 +37,14 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
         val title = remoteMessage.notification?.title ?: remoteMessage.data["title"] ?: "New Notification"
         val message = remoteMessage.notification?.body ?: remoteMessage.data["message"] ?: ""
         val data = remoteMessage.data
-        
+        val messageId = data["id"] ?: ""
+
         Log.i("FCM", "Title: $title, Message: $message, Data: $data")
+
+        if (title == "DELIVERY_RECEIPT" && messageId.isNotEmpty()) {
+            handleDeliveryReceipt(messageId)
+            return
+        }
 
         val helper = NotificationHelper(applicationContext)
         helper.showNotification(title, message, data)
@@ -49,10 +56,29 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
             message = message,
             timestamp = System.currentTimeMillis(),
             isRead = false,
-            relatedId = data["id"]
+            relatedId = messageId
         )
         scope.launch {
             NotificationEventBus.postNotification(notification)
+            if (notification.type == NotificationType.CHAT && messageId.isNotEmpty()) {
+                try {
+                    RetrofitClient.comicApiService.markMessageAsDelivered(messageId)
+                } catch (e: Exception) {
+                    Log.e("FCM", "Failed to send delivery receipt for $messageId ${e.message}")
+                }
+            }
+        }
+    }
+
+    private fun handleDeliveryReceipt(messageId: String) {
+        scope.launch {
+            try {
+                val db = CanvasDatabase.getDatabase(applicationContext)
+                db.conversationDao().updateMessageDeliveryStatus(messageId, true)
+                Log.i("FCM", "Updated delivery status for message $messageId")
+            } catch (e: Exception) {
+                Log.e("FCM", "Error updating delivery status", e)
+            }
         }
     }
 }

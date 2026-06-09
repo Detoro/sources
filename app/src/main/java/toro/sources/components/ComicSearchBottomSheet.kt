@@ -18,10 +18,10 @@ import toro.sources.AppViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComicSearchBottomSheet(
-    viewModel: AppViewModel?,
+    viewModel: AppViewModel,
     onDismiss: () -> Unit,
 ) {
-    val searchQuery by viewModel!!.searchQuery.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
     val searchResults by viewModel.searchResults.collectAsState()
 
     var isSearchFocused by remember { mutableStateOf(false) }
