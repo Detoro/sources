@@ -2,31 +2,42 @@ package toro.sources.pages
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import toro.sources.components.ChatRequestsList
 import toro.sources.components.ActiveChatsList
 import toro.sources.R
-import androidx.compose.ui.res.stringResource
 import toro.sources.AppViewModel
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +49,9 @@ fun ChatInboxPage(
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val pendingRequestsCount by viewModel.pendingRequestsCount.collectAsState()
+    var isSearching by remember { mutableStateOf(false) }
+    val searchQuery by viewModel.inboxSearchQuery.collectAsState()
+    val focusManager = LocalFocusManager.current
 
     val requestsTitle = if (pendingRequestsCount > 0) {
         "${stringResource(R.string.requests)} ($pendingRequestsCount)"
@@ -53,10 +67,52 @@ fun ChatInboxPage(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.inbox)) }) },
+        topBar = {
+            TopAppBar(
+                title = {
+                    if (isSearching) {
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { viewModel.updateInboxSearchQuery(it) },
+                            placeholder = { Text("Search chats & names...") },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                            ),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                            trailingIcon = {
+                                IconButton(onClick = {
+                                    if (searchQuery.isNotEmpty()) viewModel.updateInboxSearchQuery("")
+                                    else isSearching = false
+                                }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Close Search")
+                                }
+                            }
+                        )
+                    } else {
+                        Text(stringResource(R.string.inbox))
+                    }
+                },
+                actions = {
+                    if (!isSearching && selectedTabIndex == 0) {
+                        IconButton(onClick = { isSearching = true }) {
+                            Icon(Icons.Default.Search, contentDescription = "Search Inbox")
+                        }
+                    }
+                }
+            )
+        },
         floatingActionButton = {
-            FloatingActionButton(onClick = { onFriendRequest() }) {
-                Icon(Icons.Filled.Add, contentDescription = "Send Friend Request")
+            if (!isSearching) {
+                FloatingActionButton(onClick = { onFriendRequest() }) {
+                    Icon(Icons.Filled.Add, contentDescription = "Send Friend Request")
+                }
             }
         }
     ) { paddingValues ->
@@ -65,7 +121,6 @@ fun ChatInboxPage(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // The Tabs
             PrimaryTabRow(selectedTabIndex = selectedTabIndex) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
@@ -76,7 +131,6 @@ fun ChatInboxPage(
                 }
             }
 
-            // The Content
             if (selectedTabIndex == 0) {
                 ActiveChatsList(
                     viewModel,

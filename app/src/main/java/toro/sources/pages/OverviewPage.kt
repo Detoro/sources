@@ -56,14 +56,14 @@ fun OverviewPage(
                 },
                 actions = {
                     comic?.let {
-                        IconButton(onClick = { showActionSheet = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Actions")
-                        }
                         IconButton(onClick = {
                             showInfoSheet = true
                             viewModel.getUserWorks(comic!!.authorId)
                         }) {
                             Icon(Icons.Outlined.Info, contentDescription = "Actions")
+                        }
+                        IconButton(onClick = { showActionSheet = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Actions")
                         }
                     }
                 }

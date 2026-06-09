@@ -150,21 +150,20 @@ class MainActivity : ComponentActivity() {
     private fun handleIntent(intent: Intent?, viewModel: AppViewModel) {
         intent?.let {
             val routingType = it.getStringExtra("type")
-            val conversationId = it.getStringExtra("conversationId")
-            val postId = it.getStringExtra("postId")
+            val id = it.getStringExtra("id")
 
             when (routingType) {
                 NotificationType.CHAT.name -> {
-                    if (conversationId != null) {
-                        viewModel.handleNavigation(Screen.Chat.createRoute(conversationId))
+                    if (id != null) {
+                        viewModel.handleNavigation(Screen.Chat.createRoute(id))
                     }
                 }
                 NotificationType.LIKE.name -> {
                     viewModel.handleNavigation(Screen.Engagement.route)
                 }
                 NotificationType.COMMENT.name, NotificationType.FOLLOW.name -> {
-                    if (postId != null) {
-                        viewModel.handleNavigation(Screen.PostComments.createRoute(postId))
+                    if (id != null) {
+                        viewModel.handleNavigation(Screen.PostComments.createRoute(id))
                     } else {
                         viewModel.handleNavigation(Screen.Notifications.route)
                     }
@@ -174,8 +173,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
             it.removeExtra("type")
-            it.removeExtra("conversationId")
-            it.removeExtra("postId")
+            it.removeExtra("id")
         }
     }
 

@@ -1,5 +1,6 @@
 package toro.sources.pages
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -14,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
+import toro.sources.Screen
 import toro.sources.convertTimestamp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,6 +70,9 @@ fun NotificationsPage(
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
+                        },
+                        modifier = Modifier.clickable {
+                            viewModel.handleNavigation(Screen.Chat.createRoute(notification.relatedId ?: ""))
                         }
                     )
                     HorizontalDivider()

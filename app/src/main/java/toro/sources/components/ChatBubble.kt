@@ -1,7 +1,11 @@
 package toro.sources.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.combinedClickable
+import android.content.ClipData
+import android.content.Context
+import android.content.ClipboardManager
+import android.util.Log
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -12,14 +16,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.text.ClickableText
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.Screen
 import com.toro.models.ShareType
@@ -28,18 +34,18 @@ import com.toro.models.ShareType
 fun ChatBubble(
     text: String,
     isFromMe: Boolean,
+    viewModel: AppViewModel,
     isDelivered: Boolean = false,
     showStatus: Boolean = false,
     sharedComicId: String? = null,
     sharedId: String? = null,
     sharedType: ShareType? = null,
-    viewModel: AppViewModel? = null
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
-    val catalog by viewModel?.catalog?.collectAsState() ?: remember { mutableStateOf(emptyList()) }
-    
+    val catalog by viewModel.catalog.collectAsState()
     val actualSharedId = sharedId ?: sharedComicId
     val actualSharedType = if (sharedId != null) sharedType else if (sharedComicId != null) ShareType.COMIC else null
+    val context = LocalContext.current
 
     val sharedComic = remember(actualSharedId, actualSharedType, catalog) {
         if (actualSharedType == ShareType.COMIC) catalog.find { it.id == actualSharedId } else null
@@ -48,7 +54,7 @@ fun ChatBubble(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp),
+            .padding(vertical = 3.dp),
         horizontalArrangement = if (isFromMe) Arrangement.End else Arrangement.Start
     ) {
         Column(horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start) {
@@ -72,23 +78,7 @@ fun ChatBubble(
                         SharedComicCard(
                             sharedComic,
                             onClick = {
-                                when (sharedType) {
-                                    ShareType.COMIC -> {
-                                        viewModel?.handleNavigation(Screen.Overview.createRoute(sharedId!!))
-                                    }
-                                    ShareType.POST -> {
-                                        viewModel?.handleNavigation(Screen.PostComments.createRoute(sharedId!!))
-                                    }
-                                    ShareType.COMMENT -> {
-                                        // In this case, we don't know the parent post ID from the sharedId alone easily
-                                        // unless we fetch it. For now, route to comments if possible.
-                                        viewModel?.handleNavigation(Screen.PostComments.createRoute(sharedId!!))
-                                    }
-                                    ShareType.USER -> {
-                                        viewModel?.handleNavigation(Screen.Profile.createRoute(sharedId!!))
-                                    }
-                                    else -> {}
-                                }
+                                viewModel.handleNavigation(Screen.Overview.createRoute(sharedId!!))
                             }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -96,107 +86,89 @@ fun ChatBubble(
                         SharedContentPlaceholder(
                             type = actualSharedType,
                             onClick = {
-                                if (viewModel != null) {
-                                    when (actualSharedType) {
-                                        ShareType.COMIC -> viewModel.handleNavigation(Screen.Overview.createRoute(actualSharedId))
-                                        ShareType.POST -> viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
-                                        ShareType.COMMENT -> viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
-                                        ShareType.USER -> viewModel.handleNavigation(Screen.Profile.createRoute(actualSharedId))
-                                    }
+                                when (actualSharedType) {
+                                    ShareType.COMIC -> viewModel.handleNavigation(Screen.Overview.createRoute(actualSharedId))
+                                    ShareType.POST -> viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
+                                    ShareType.COMMENT -> viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
+                                    ShareType.USER -> viewModel.handleNavigation(Screen.Profile.createRoute(actualSharedId))
                                 }
                             }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                     if (text.isNotBlank()) {
-                        val annotatedString = buildAnnotatedString {
-                            val pattern = Regex("(@\\w+)|(#\\w+)")
-                            val matches = pattern.findAll(text)
-                            var lastIndex = 0
-                            matches.forEach { match ->
-                                append(text.substring(lastIndex, match.range.first))
-                                val matchValue = match.value
-                                pushStringAnnotation(
-                                    tag = if (matchValue.startsWith("@")) "USER" else "COMIC",
-                                    annotation = matchValue.drop(1)
-                                )
-                                withStyle(style = SpanStyle(
-                                    color = if (isFromMe) Color.Cyan else MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold,
-                                    textDecoration = TextDecoration.Underline
-                                )) {
-                                    append(matchValue)
+                        val mentionColor = if (isFromMe) Color.Cyan else MaterialTheme.colorScheme.primary
+                        val annotatedString = remember(text, isFromMe, mentionColor) {
+                            buildAnnotatedString {
+                                val pattern = Regex("@(\\w+(?:\\s\\w+)?)(?=\\s|$)")
+                                val matches = pattern.findAll(text)
+                                var lastIndex = 0
+                                matches.forEach { match ->
+                                    append(text.substring(lastIndex, match.range.first))
+                                    val matchValue = match.value
+                                    val username = matchValue.drop(1)
+                                    
+                                    pushStringAnnotation(
+                                        tag = "USER",
+                                        annotation = username
+                                    )
+                                    withStyle(style = SpanStyle(
+                                        color = mentionColor,
+                                        fontWeight = FontWeight.Bold,
+                                        textDecoration = TextDecoration.Underline
+                                    )) {
+                                        append(matchValue)
+                                    }
+                                    pop()
+                                    lastIndex = match.range.last + 1
                                 }
-                                pop()
-                                lastIndex = match.range.last + 1
+                                append(text.substring(lastIndex))
                             }
-                            append(text.substring(lastIndex))
                         }
+                        
+                        var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
-                        ClickableText(
+                        Text(
                             text = annotatedString,
                             style = MaterialTheme.typography.bodyLarge.copy(
                                 color = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                             ),
-                            modifier = Modifier.combinedClickable(
-                                onClick = {
-                                    // Fallback click for the whole bubble if it's a shared item
-                                    if (actualSharedId != null && actualSharedType != null && viewModel != null) {
-                                        when (actualSharedType) {
-                                            ShareType.COMIC -> {
-                                                viewModel.loadAndNavigateToSharedComic(actualSharedId)
-                                            }
-                                            ShareType.POST -> {
-                                                viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
-                                            }
-                                            ShareType.COMMENT -> {
-                                                // Since we only have the comment ID (not the parent post/chapter ID),
-                                                // routing to the main engagement feed is the safest fallback for now.
-                                                viewModel.handleNavigation(Screen.Engagement.route)
-                                            }
-                                            ShareType.USER -> {
-                                                viewModel.handleNavigation(Screen.Profile.createRoute(actualSharedId))
-                                            }
+                            onTextLayout = { textLayoutResult = it },
+                            modifier = Modifier.pointerInput(annotatedString) {
+                                detectTapGestures(
+                                    onTap = { pos ->
+                                        val offset = textLayoutResult?.getOffsetForPosition(pos) ?: -1
+                                        if (offset != -1) {
+                                            annotatedString.getStringAnnotations("USER", offset, offset)
+                                                .firstOrNull()?.let { annotation ->
+                                                    viewModel.findUserByUsername(annotation.item) { userId ->
+                                                        Log.i("annotated userid", userId)
+                                                        viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                                    }
+                                                    return@detectTapGestures
+                                                }
                                         }
-                                    }
-                                },
-                                onLongClick = { showOptionsMenu = true }
-                            ),
-                            onClick = { offset ->
-                                var handled = false
-                                annotatedString.getStringAnnotations(tag = "USER", start = offset, end = offset)
-                                    .firstOrNull()?.let { annotation ->
-                                        viewModel?.findUserByUsername(annotation.item) { userId ->
-                                            viewModel.handleNavigation(Screen.Profile.createRoute(userId))
-                                        }
-                                        handled = true
-                                    }
-                                
-                                if (!handled) {
-                                    annotatedString.getStringAnnotations(tag = "COMIC", start = offset, end = offset)
-                                        .firstOrNull()?.let { annotation ->
-                                            viewModel?.findComicByTitle(annotation.item) { comic ->
-                                                viewModel.setCurrentComic(comic)
-                                                viewModel.handleNavigation(Screen.Overview.route)
-                                            }
-                                            handled = true
-                                        }
-                                }
 
-                                // If no link was clicked, trigger the bubble's onClick
-                                if (!handled && actualSharedId != null && actualSharedType != null && viewModel != null) {
-                                    when (actualSharedType) {
-                                        ShareType.COMIC -> {
-                                            if (sharedComic != null) {
-                                                viewModel.setCurrentComic(sharedComic)
-                                                viewModel.handleNavigation(Screen.Overview.route)
+                                        // Fallback click for the whole bubble if it's a shared item
+                                        if (actualSharedId != null && actualSharedType != null) {
+                                            when (actualSharedType) {
+                                                ShareType.COMIC -> {
+                                                    viewModel.loadAndNavigateToSharedComic(actualSharedId)
+                                                }
+                                                ShareType.POST -> {
+                                                    viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
+                                                }
+                                                ShareType.COMMENT -> {
+                                                    viewModel.handleNavigation(Screen.Engagement.route)
+                                                }
+                                                ShareType.USER -> {
+                                                    viewModel.handleNavigation(Screen.Profile.createRoute(actualSharedId))
+                                                }
                                             }
                                         }
-                                        ShareType.POST -> viewModel.handleNavigation(Screen.Engagement.route)
-                                        ShareType.COMMENT -> viewModel.handleNavigation(Screen.PostComments.createRoute(actualSharedId))
-                                        ShareType.USER -> viewModel.getUserProfile(actualSharedId)
-                                    }
-                                }
+                                    },
+                                    onLongPress = { showOptionsMenu = true }
+                                )
                             }
                         )
                     }
@@ -206,6 +178,15 @@ fun ChatBubble(
                     expanded = showOptionsMenu,
                     onDismissRequest = { showOptionsMenu = false }
                 ) {
+                    DropdownMenuItem(
+                        text = { Text("Copy") },
+                        onClick = {
+                            showOptionsMenu = false
+                            val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val clipData = ClipData.newPlainText("Copied Text", text)
+                            clipboardManager.setPrimaryClip(clipData)
+                        }
+                    )
                     DropdownMenuItem(
                         text = { Text("Edit") },
                         onClick = { showOptionsMenu = false }

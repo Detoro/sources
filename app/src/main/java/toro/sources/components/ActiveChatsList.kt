@@ -22,14 +22,14 @@ fun ActiveChatsList(
     onChatClick: (String) -> Unit,
     onProfileClick: (String) -> Unit
 ) {
-    val activeChats by viewModel.inbox.collectAsState()
+    val activeChats by viewModel.filteredInbox.collectAsState()
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(activeChats) { chat ->
             val conversationId = chat.conversationId
             val username = chat.otherUserName
             val otherUserId = chat.otherUserId
-            val lastMessage = chat.lastMessage!!
+            val lastMessage = viewModel.decryptMessage(chat.lastMessage!!)
 
             ListItem(
                 headlineContent = { Text(username, fontWeight = FontWeight.Bold) },

@@ -90,13 +90,13 @@ class AppViewModel(
                 SearchSource.LOCAL -> {
                     library.filter { comic ->
                         comic.title.contains(query, ignoreCase = true) ||
-                                comic.author.contains(query, ignoreCase = true)
+                                comic.authorName.contains(query, ignoreCase = true)
                     }
                 }
                 SearchSource.ONLINE -> {
                     online.filter { comic ->
                         comic.title.contains(query, ignoreCase = true) ||
-                                comic.author.contains(query, ignoreCase = true)
+                                comic.authorName.contains(query, ignoreCase = true)
                     }
                 }
             }
@@ -207,6 +207,31 @@ class AppViewModel(
     private var chapterPages: List<Page> = emptyList()
     private var chaptersJob: kotlinx.coroutines.Job? = null
 
+    private val _userRating = MutableStateFlow(0)
+    val userRating: StateFlow<Int> = _userRating.asStateFlow()
+
+    private val _inboxSearchQuery = MutableStateFlow("")
+    val inboxSearchQuery = _inboxSearchQuery.asStateFlow()
+
+    val filteredInbox: StateFlow<List<Conversation>> = combine(inbox, _inboxSearchQuery) { list, query ->
+        if (query.isBlank()) {
+            list
+        } else {
+            list.filter { convo ->
+                val nameMatch = convo.otherUserName.contains(query, ignoreCase = true)
+
+                val messageMatch = try {
+                    decryptMessage(convo.lastMessage ?: "").contains(query, ignoreCase = true)
+                } catch (e: Exception) {
+                    convo.lastMessage?.contains(query, ignoreCase = true)
+                    Log.i("filtered inbox", "${e.message}")
+                }
+
+                nameMatch || messageMatch == true
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     init {
         getCatalog()
         getChatRequests()
@@ -300,6 +325,7 @@ class AppViewModel(
         viewModelScope.launch {
             try {
                 RetrofitClient.comicApiService.subscribeToAuthor(AuthorRequest(authorId))
+                getSubscribedAuthors()
             } catch (e: Exception) {
                 Log.e("Subscription", "Failed to subscribe to author: ${e.message}")
             }
@@ -349,6 +375,7 @@ class AppViewModel(
                 onSuccess()
                 Log.i("Success", "Logged in successfully as ${response.username}!")
             } catch (e: Exception) {
+                _errorMessage.value = e.message
                 Log.e("Failure", "Login failed: ${e.message}")
             }
         }
@@ -379,6 +406,7 @@ class AppViewModel(
                 onSuccess()
                 Log.i("Success", "Sign up successfully as ${response.username}!")
             } catch (e: Exception) {
+                _errorMessage.value = e.message
                 Log.e("Failure", "Signup failed: ${e.message}")
             }
         }
@@ -670,8 +698,14 @@ class AppViewModel(
         }
     }
 
-    fun clearChatMessages() {
+    fun resetChatState() {
         _currentConversationId.value = null
+    }
+
+    fun clearChatHistory(conversationId: String) {
+        viewModelScope.launch {
+            repository.deleteMessagesForConversation(conversationId)
+        }
     }
     fun sendMessage(
         conversationId: String,
@@ -683,10 +717,10 @@ class AppViewModel(
         viewModelScope.launch {
             try {
                 val newMessage = ChatMessage(
-                    id = "temp_${System.currentTimeMillis()}",
+                    id = "",
                     conversationId = conversationId,
                     senderId = _currentUser.value.userId,
-                    content = content, // Store unencrypted locally or match what you want
+                    content = content,
                     timestamp = System.currentTimeMillis(),
                     isEncrypted = false,
                     sharedId = sharedId,
@@ -741,6 +775,21 @@ class AppViewModel(
                 _chatRequests.value = _chatRequests.value.filter { it.id != requestId }
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to decline request: ${e.message}"
+            }
+        }
+    }
+    fun unAddFriend(userId: String) {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.comicApiService.unfriendUser(userId)
+                _currentConversationId.value?.let { conversationId ->
+                    repository.deleteMessagesForConversation(conversationId)
+                    repository.deleteConversationById(conversationId)
+                    resetChatState()
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Failed to unfriend: ${e.message}"
+                Log.e("ChatInbox", "Error unfriending", e)
             }
         }
     }
@@ -1092,6 +1141,10 @@ class AppViewModel(
         _pendingNavigation.value = null
     }
 
+    fun updateInboxSearchQuery(query: String) {
+        _inboxSearchQuery.value = query
+    }
+
     fun toggleDarkTheme(enabled: Boolean) {
         viewModelScope.launch {
             RetrofitClient.preferenceManager.setDarkTheme(enabled)
@@ -1155,14 +1208,33 @@ class AppViewModel(
         }
     }
 
-    fun findComicByTitle(title: String, onFound: (Comic) -> Unit) {
+    fun rateComic(comicId: String, rating: Int) {
         viewModelScope.launch {
             try {
-                catalog.value.find { it.title.equals(title, ignoreCase = true) }?.let {
-                    onFound(it)
-                }
+                RetrofitClient.comicApiService.rateComic(comicId, rating)
+                _userRating.value = rating
             } catch (e: Exception) {
-                Log.e("AppViewModel", "Can not find comic", e)
+                _errorMessage.value = "Failed to submit rating: ${e.message}"
+            }
+        }
+    }
+
+    fun markChapterAsRead(comicId: String, chapterId: String) {
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.comicApiService.markChapterAsRead(comicId, chapterId)
+                val currentChapters = _chapters.value
+                _chapters.value = currentChapters.map { chapter ->
+                    if (chapter.id == chapterId) {
+                        chapter.copy(
+                            isRead = true,
+                        )
+                    } else chapter
+                }
+                Log.d("Chapter read", "Success ${response.message}")
+            } catch(e: Exception) {
+                _errorMessage.value = "Failed to mark as read: ${e.message}"
+                Log.e("Chapter error", "Failed to mark as read: ${e.message}")
             }
         }
     }

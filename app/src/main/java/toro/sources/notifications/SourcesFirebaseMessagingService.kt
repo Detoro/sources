@@ -49,7 +49,7 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
             message = message,
             timestamp = System.currentTimeMillis(),
             isRead = false,
-            relatedId = data["conversationId"] ?: data["postId"] ?: data["requestId"]
+            relatedId = data["id"]
         )
         scope.launch {
             NotificationEventBus.postNotification(notification)
