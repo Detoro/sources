@@ -133,6 +133,9 @@ interface ComicApiService {
         @Body message: ChatMessage
     ): ServerResponse
 
+    @POST("api/chat/messages/{messageId}/delivered")
+    suspend fun markMessageAsDelivered(@Path("messageId") messageId: String): ServerResponse
+
     // community apis
     @GET("api/community/posts")
     suspend fun getCommunityPosts(): List<Post>
