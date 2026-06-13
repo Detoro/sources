@@ -41,8 +41,15 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
 
         Log.i("FCM", "Title: $title, Message: $message, Data: $data")
 
-        if (title == "DELIVERY_RECEIPT" && messageId.isNotEmpty()) {
-            handleDeliveryReceipt(messageId)
+        if (messageId.isNotEmpty()) {
+            when(title) {
+                "DELIVERY_RECEIPT" -> {
+                    handleDeliveryReceipt(messageId)
+                }
+                "MESSAGE_DELETED" -> {
+                    handleMessageDelete(messageId)
+                }
+            }
             return
         }
 
@@ -78,6 +85,17 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
                 Log.i("FCM", "Updated delivery status for message $messageId")
             } catch (e: Exception) {
                 Log.e("FCM", "Error updating delivery status", e)
+            }
+        }
+    }
+    private fun handleMessageDelete(messageId: String) {
+        scope.launch {
+            try {
+                val db = CanvasDatabase.getDatabase(applicationContext)
+                db.conversationDao().deleteMessageById(messageId)
+                Log.i("FCM", "Message deleted $messageId")
+            } catch (e: Exception) {
+                Log.e("FCM", "Error deleting message", e)
             }
         }
     }

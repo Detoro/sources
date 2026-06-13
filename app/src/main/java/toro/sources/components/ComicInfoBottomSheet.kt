@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.toro.models.Comic
 import toro.sources.AppViewModel
+import toro.sources.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,32 +70,91 @@ fun ComicInfoBottomSheet(
                 }
             }
             HorizontalDivider()
-            
             Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Author Bio populated here. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
             
             // Creators
             InfoSectionHeader("Creators")
+            
+            // Authors
             Text(
-                text = "Written by: ${comic.writtenBy}",
+                text = "Written by:",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
             )
+            if (comic.authors.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    comic.authors.forEach { author ->
+                        TextButton(
+                            onClick = { viewModel.handleNavigation(Screen.Profile.createRoute(author.id)) },
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text(
+                                text = author.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                }
+            } else {
+                TextButton(
+                    onClick = { viewModel.handleNavigation(Screen.Profile.createRoute(comic.authorId)) }
+                ) {
+                    Text(
+                        text = comic.writtenBy.ifEmpty { comic.authorName },
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Artists
             Text(
-                text = "Art by: ${comic.artBy}",
+                text = "Art by:",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
             )
+            if (comic.artists.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    comic.artists.forEach { artist ->
+                        TextButton(
+                            onClick = { viewModel.handleNavigation(Screen.Profile.createRoute(artist.id)) },
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text(
+                                text = artist.name,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                        }
+                    }
+                }
+            } else {
+                TextButton(
+                    onClick = { }
+                ) {
+                    Text(
+                        text = comic.artBy.ifEmpty { "Unknown" },
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
+            }
             
             Spacer(modifier = Modifier.height(12.dp))
             
             Text(
-                text = "Author Bio populated here. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+                text = comic.description,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

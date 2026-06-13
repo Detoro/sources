@@ -9,7 +9,7 @@ import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
 import java.util.UUID
 import com.toro.models.Comic
-import com.toro.models.Chapter
+import Chapter
 
 class CbzParser(private val context: Context) {
 

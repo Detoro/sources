@@ -26,26 +26,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
+import com.toro.models.ChatMessage
 import toro.sources.AppViewModel
 import toro.sources.Screen
 import com.toro.models.ShareType
 
 @Composable
 fun ChatBubble(
-    text: String,
+    message: ChatMessage,
     isFromMe: Boolean,
     viewModel: AppViewModel,
-    isDelivered: Boolean = false,
     showStatus: Boolean = false,
-    sharedComicId: String? = null,
-    sharedId: String? = null,
-    sharedType: ShareType? = null,
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
     val catalog by viewModel.catalog.collectAsState()
-    val actualSharedId = sharedId ?: sharedComicId
-    val actualSharedType = if (sharedId != null) sharedType else if (sharedComicId != null) ShareType.COMIC else null
+    val actualSharedId = message.sharedId ?: message.sharedComicId
+    val actualSharedType = if (message.sharedId != null) message.sharedType else if (message.sharedComicId != null) ShareType.COMIC else null
     val context = LocalContext.current
+    val isDelivered = message.isDelivered
+    val text = remember(message.content, message.isEncrypted) {
+        if (message.isEncrypted) viewModel.decryptMessage(message.content) else message.content
+    }
 
     val sharedComic = remember(actualSharedId, actualSharedType, catalog) {
         if (actualSharedType == ShareType.COMIC) catalog.find { it.id == actualSharedId } else null
@@ -78,7 +80,7 @@ fun ChatBubble(
                         SharedComicCard(
                             sharedComic,
                             onClick = {
-                                viewModel.handleNavigation(Screen.Overview.createRoute(sharedId!!))
+                                viewModel.handleNavigation(Screen.Overview.createRoute(message.sharedId!!))
                             }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -96,6 +98,32 @@ fun ChatBubble(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
+
+                    if (message.imageUrl != null) {
+                        AsyncImage(
+                            model = message.imageUrl,
+                            contentDescription = "Shared Image",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .padding(bottom = 4.dp)
+                        )
+                    }
+
+                    if (message.videoUrl != null) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.Black.copy(alpha = 0.4f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Video: ${message.videoUrl}", color = Color.White)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
                     if (text.isNotBlank()) {
                         val mentionColor = if (isFromMe) Color.Cyan else MaterialTheme.colorScheme.primary
                         val annotatedString = remember(text, isFromMe, mentionColor) {
@@ -189,11 +217,17 @@ fun ChatBubble(
                     )
                     DropdownMenuItem(
                         text = { Text("Edit") },
-                        onClick = { showOptionsMenu = false }
+                        onClick = {
+                            showOptionsMenu = false
+                            viewModel.setEditingMessage(message)
+                        }
                     )
                     DropdownMenuItem(
                         text = { Text("Delete") },
-                        onClick = { showOptionsMenu = false }
+                        onClick = {
+                            showOptionsMenu = false
+                            viewModel.deleteMessage(message.conversationId, message.id)
+                        }
                     )
                 }
             }

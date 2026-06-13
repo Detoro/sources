@@ -53,7 +53,7 @@ fun ChatThreadPage(
 ) {
     val messages by viewModel.chatMessages.collectAsState()
     val me by viewModel.currentUser.collectAsState()
-    val inbox by viewModel.inbox.collectAsState()
+    val inbox by viewModel.filteredInbox.collectAsState()
     var expanded by remember { mutableStateOf(false) }
     var isSearching by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
@@ -183,20 +183,36 @@ fun ChatThreadPage(
         bottomBar = {
             if (!isSearching) {
                 val sharedContent by viewModel.sharedContent.collectAsState()
+                val editingMessage by viewModel.editingMessage.collectAsState()
+                
                 SmartInput(
-                    onSend = { _, text, _, _, _ ->
-                        if (targetUserId.isNotEmpty()) {
+                    onSend = { _, text, _, _, attachment ->
+                        val currentEditingMessage = editingMessage
+                        if (currentEditingMessage != null) {
+                            viewModel.editMessage(
+                                currentEditingMessage.conversationId,
+                                currentEditingMessage.id,
+                                text
+                            )
+                            viewModel.setEditingMessage(null)
+                        } else if (targetUserId.isNotEmpty()) {
                             viewModel.sendMessage(
                                 conversationId,
                                 targetUserId,
                                 text,
                                 sharedId = sharedContent?.id,
-                                sharedType = sharedContent?.type
+                                sharedType = sharedContent?.type,
+                                attachment = attachment
                             )
                         }
                     },
-                    placeholder = "Type a message...",
-                    supportUpload = true,
+                    initialText = remember(editingMessage) { 
+                        editingMessage?.let { msg ->
+                            if (msg.isEncrypted) viewModel.decryptMessage(msg.content) else msg.content
+                        } ?: ""
+                    },
+                    placeholder = if (editingMessage != null) "Edit message..." else "Type a message...",
+                    supportUpload = editingMessage == null,
                     viewModel = viewModel
                 )
             }
@@ -215,19 +231,11 @@ fun ChatThreadPage(
         ) {
             itemsIndexed(filteredMessages, key = { _, msg -> msg.id }) { index, msg ->
                 val isFromMe = msg.senderId == me.userId
-                
-                val displayContent = remember(msg.content, msg.isEncrypted) {
-                    if (msg.isEncrypted) viewModel.decryptMessage(msg.content) else msg.content
-                }
 
                 ChatBubble(
-                    text = displayContent,
+                    message = msg,
                     isFromMe = isFromMe,
-                    isDelivered = msg.isDelivered,
                     showStatus = isFromMe && index == lastUserMessageIndex,
-                    sharedComicId = msg.sharedComicId,
-                    sharedId = msg.sharedId,
-                    sharedType = msg.sharedType,
                     viewModel = viewModel
                 )
             }

@@ -6,13 +6,13 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.toro.models.Comic
-import com.toro.models.Chapter
+import Chapter
 import com.toro.models.Conversation
 import com.toro.models.ChatMessage
 
 @Database(
     entities = [Comic::class, Chapter::class, Conversation::class, ChatMessage::class],
-    version = 13,
+    version = 15,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

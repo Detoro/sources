@@ -2,7 +2,6 @@ package toro.sources.pages
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -20,7 +19,8 @@ import coil.compose.AsyncImage
 import toro.sources.AppViewModel
 import toro.sources.components.*
 import com.toro.models.ShareType
-import com.toro.models.Chapter
+import Chapter
+import androidx.compose.foundation.lazy.items
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -160,7 +160,7 @@ fun OverviewPage(
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = String.format(Locale.getDefault(), "%.1f", userRating),
+                                text = String.format(Locale.getDefault(), "%.1f", userRating.toFloat()),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary

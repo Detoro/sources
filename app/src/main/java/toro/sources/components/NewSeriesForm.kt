@@ -56,7 +56,7 @@ fun NewSeriesForm(
     var title by remember { mutableStateOf("") }
     var ratingExpanded by remember { mutableStateOf(false) }
     var genreExpanded by remember { mutableStateOf(false) }
-    var author by remember { mutableStateOf("") }
+    val author by viewModel.currentUser.collectAsState()
     var description by remember { mutableStateOf("") }
     var selectedChapterUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var selectedCoverUri by remember { mutableStateOf<Uri?>(null) }
@@ -93,7 +93,6 @@ fun NewSeriesForm(
                 actions = {
                     IconButton(onClick = {
                         title = ""
-                        author = ""
                         description = ""
                         selectedChapterUris = emptyList()
                         selectedCoverUri = null
@@ -119,13 +118,6 @@ fun NewSeriesForm(
                 value = title,
                 onValueChange = { title = it },
                 label = { Text("Comic Title") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = author,
-                onValueChange = { author = it },
-                label = { Text("Author / Creator") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -228,13 +220,13 @@ fun NewSeriesForm(
             }
 
             val isValid =
-                title.isNotBlank() && author.isNotBlank() && selectedChapterUris.isNotEmpty() && !isUploading
+                title.isNotBlank() && selectedChapterUris.isNotEmpty() && !isUploading
             Button(
                 onClick = {
                     viewModel.uploadNewChapters(
                         context = context,
                         title = title,
-                        author = author,
+                        author = author.username,
                         pgRating = selectedComicRating,
                         description = description,
                         chapterUris = selectedChapterUris,

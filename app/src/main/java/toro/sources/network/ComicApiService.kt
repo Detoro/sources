@@ -8,7 +8,7 @@ import retrofit2.http.Query
 import com.toro.models.AuthRequest
 import com.toro.models.AuthResponse
 import com.toro.models.AuthorRequest
-import com.toro.models.Chapter
+import Chapter
 import com.toro.models.ChatMessage
 import com.toro.models.ChatRequest
 import com.toro.models.Comic
@@ -24,14 +24,18 @@ import com.toro.models.UserProfile
 import com.toro.models.UpdateBioRequest
 import com.toro.models.UpdateUsernameRequest
 import com.toro.models.FcmTokenRequest
-import com.toro.models.RegisterChaptersRequest
-import com.toro.models.RegisterComicRequest
+import RegisterChaptersRequest
+import RegisterComicRequest
+import retrofit2.http.DELETE
 
 interface ComicApiService {
 
     // comics apis
     @GET("api/comics/catalog")
     suspend fun getCatalog(): List<Comic>
+
+    @GET("api/comics/recommendation")
+    suspend fun getRecommendation(): List<Comic>
 
     @GET("api/comics/{comicId}")
     suspend fun getComicById(@Path("comicId") comicId: String): Comic
@@ -130,6 +134,19 @@ interface ComicApiService {
     suspend fun sendMessage(
         @Path("conversationId") conversationId: String,
         @Query("targetUserId") targetUserId: String,
+        @Body message: ChatMessage
+    ): ServerResponse
+
+    @DELETE("api/chat/{conversationId}/messages/{messageId}")
+    suspend fun deleteMessage(
+        @Path("conversationId") conversationId: String,
+        @Path("messageId") messageId: String
+    ): ServerResponse
+
+    @POST("api/chat/{conversationId}/messages/{messageId}/edit")
+    suspend fun updateMessage(
+        @Path("conversationId") conversationId: String,
+        @Path("messageId") messageId: String,
         @Body message: ChatMessage
     ): ServerResponse
 

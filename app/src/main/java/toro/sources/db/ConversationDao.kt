@@ -43,4 +43,13 @@ interface ConversationDao {
 
     @Query("DELETE FROM chat_messages WHERE conversationId = :conversationId")
     suspend fun deleteMessagesForConversation(conversationId: String)
+
+    @Query("UPDATE chat_messages SET isDelivered = :delivered WHERE id = :messageId")
+    suspend fun updateMessageDeliveryStatus(messageId: String, delivered: Boolean)
+
+    @Query("UPDATE chat_messages SET isRead = :read WHERE id = :messageId")
+    suspend fun updateMessageReadStatus(messageId: String, read: Boolean)
+
+    @Query("UPDATE chat_messages SET content = :content WHERE id = :messageId")
+    suspend fun updateMessageContent(messageId: String, content: String)
 }
