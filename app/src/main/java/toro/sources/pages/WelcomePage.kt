@@ -22,9 +22,10 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 
 @Composable
-fun WelcomeScreen(
+fun WelcomePage(
     username: String,
-    onComplete: (Uri?) -> Unit
+    onComplete: (Uri?) -> Unit,
+    onProceed: () -> Unit
 ) {
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -105,7 +106,9 @@ fun WelcomeScreen(
 
         // 4. The Action Buttons
         Button(
-            onClick = { onComplete(selectedImageUri) },
+            onClick = {
+                onComplete(selectedImageUri)
+                onProceed() },
             modifier = Modifier.fillMaxWidth(),
             enabled = selectedImageUri != null
         ) {
@@ -115,7 +118,9 @@ fun WelcomeScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedButton(
-            onClick = { onComplete(null) },
+            onClick = {
+                onComplete(null)
+                onProceed() },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Skip for now")

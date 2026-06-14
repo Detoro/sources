@@ -1,5 +1,9 @@
 package toro.sources
 
+import ChapterUploadData
+import RegisterChaptersRequest
+import RegisterComicRequest
+import Chapter
 import android.util.Log
 import android.net.Uri
 import kotlinx.coroutines.flow.combine
@@ -191,6 +195,9 @@ class AppViewModel(
     private val _sharedContent = MutableStateFlow<SharedContent?>(null)
     val sharedContent = _sharedContent.asStateFlow()
 
+    private val _editingMessage = MutableStateFlow<ChatMessage?>(null)
+    val editingMessage: StateFlow<ChatMessage?> = _editingMessage.asStateFlow()
+
     private val _showShareDialog = MutableStateFlow(false)
     val showShareDialog = _showShareDialog.asStateFlow()
 
@@ -288,6 +295,9 @@ class AppViewModel(
             val localComic = myLibrary.value.find { it.id == comic.id }
             _currentComic.value = localComic ?: comic
         }
+    }
+    fun setEditingMessage(message: ChatMessage?) {
+        _editingMessage.value = message
     }
     fun importLocalComic(
         title: String,
@@ -468,6 +478,22 @@ class AppViewModel(
             }
         }
     }
+
+    fun updateInterests(interests: List<String>) {
+        viewModelScope.launch {
+            try {
+                val userId = _currentUser.value.userId
+                if (userId.isEmpty()) return@launch
+
+                RetrofitClient.comicApiService.updateInterests(userId, UpdateInterestsRequest(interests))
+                Log.i("AppViewModel", "Interests updated successfully")
+            } catch (e: Exception) {
+                Log.e("AppViewModel", "Failed to update interests: ${e.message}")
+                _errorMessage.value = "Failed to update interests"
+            }
+        }
+    }
+
     fun uploadAvatar(selectedUri: Uri) {
         viewModelScope.launch {
             try {
@@ -532,6 +558,7 @@ class AppViewModel(
                 _currentComic.value = RetrofitClient.comicApiService.getComicById(comicId)
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to get Comic: ${e.message}"
+                Log.e("Failed to get Comic", "${e.message}")
             }
         }
     }
@@ -668,11 +695,9 @@ class AppViewModel(
                 val response = RetrofitClient.comicApiService.likeChapter(comicId, chapterId)
                 val currentChapters = _chapters.value
                 _chapters.value = currentChapters.map { chapter ->
-                    if (chapter.id == chapterId) {
-                        chapter.copy(
-                            isLiked = !chapter.isLiked,
-                        )
-                    } else chapter
+                    (if (chapter.id == chapterId) {
+                        chapter.isLiked = !chapter.isLiked
+                    } else chapter) as Chapter
                 }
                 Log.d("Chapter like", "Success ${response.message}")
             } catch (e: Exception) {
@@ -712,28 +737,40 @@ class AppViewModel(
         targetUserId: String,
         content: String,
         sharedId: String? = null,
-        sharedType: ShareType? = null
+        sharedType: ShareType? = null,
+        attachment: Uri? = null
     ) {
         viewModelScope.launch {
             try {
+                var mediaUrl: String? = null
+                var mediaType: String? = null
+                
+                if (attachment != null) {
+                    _isUploading.value = true
+                    mediaUrl = uploadFileToCloudinary(attachment)
+                    mediaType = if (mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".mov")) "VIDEO" else "IMAGE"
+                    _isUploading.value = false
+                }
+
+                val encryptedContent = encryptMessage(content)
                 val newMessage = ChatMessage(
                     id = "",
                     conversationId = conversationId,
                     senderId = _currentUser.value.userId,
-                    content = content,
+                    content = encryptedContent,
                     timestamp = System.currentTimeMillis(),
-                    isEncrypted = false,
+                    isEncrypted = true,
                     sharedId = sharedId,
-                    sharedType = sharedType
+                    sharedType = sharedType,
+                    imageUrl = if (mediaType == "IMAGE") mediaUrl else null,
+                    videoUrl = if (mediaType == "VIDEO") mediaUrl else null,
+                    mediaType = mediaType
                 )
                 repository.saveMessage(newMessage)
                 
-                val encryptedContent = encryptMessage(content)
-                val networkMessage = newMessage.copy(content = encryptedContent, isEncrypted = true)
-                
-                RetrofitClient.comicApiService.sendMessage(conversationId, targetUserId, networkMessage)
+                val serverResponse = RetrofitClient.comicApiService.sendMessage(conversationId, targetUserId, newMessage)
+                Log.i("Message status", serverResponse.message)
                 repository.deleteMessageById(newMessage.id)
-
                 getChatMessages(conversationId)
                 _sharedContent.value = null
             } catch (e: Exception) {
@@ -747,6 +784,37 @@ class AppViewModel(
 
     fun decryptMessage(content: String): String {
         return CryptoUtils.decrypt(content)
+    }
+    fun deleteMessage(conversationId: String, messageId: String) {
+        viewModelScope.launch {
+            try {
+                // Optimistic local delete
+                repository.deleteMessageById(messageId)
+                RetrofitClient.comicApiService.deleteMessage(conversationId, messageId)
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
+                Log.e("Message error", "Failed to delete message: ${e.message}")
+            }
+        }
+    }
+    fun editMessage(
+        conversationId: String,
+        messageId: String,
+        content: String
+    ) {
+        viewModelScope.launch {
+            try {
+                val encryptedContent = encryptMessage(content)
+                // Update local DB immediately for better UX
+                repository.updateMessageContent(messageId, content) 
+                
+                val updatedMessage = ChatMessage(id = messageId, content = encryptedContent, isEncrypted = true)
+                RetrofitClient.comicApiService.updateMessage(conversationId, messageId, updatedMessage)
+            } catch (e: Exception) {
+                _errorMessage.value = e.message
+                Log.e("Message error", "Failed to edit message: ${e.message}")
+            }
+        }
     }
     fun getChatRequests() {
         viewModelScope.launch {
@@ -1171,10 +1239,15 @@ class AppViewModel(
             }
             if (comicToLoad != null) {
                 setCurrentComic(comicToLoad)
-                handleNavigation(Screen.Overview.route)
+                handleNavigation(Screen.Overview.createRoute(comicId))
             } else {
-                getComicById(comicId)
-                _errorMessage.value = "Comic not found or unavailable."
+                try {
+                    getComicById(comicId)
+                    handleNavigation(Screen.Overview.createRoute(comicId))
+                } catch (e: Exception) {
+                    _errorMessage.value = "Comic not found or unavailable."
+                    Log.e("Navigation", "Error fetching comic $comicId: ${e.message}")
+                }
             }
         }
     }

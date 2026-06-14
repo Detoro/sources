@@ -48,7 +48,7 @@ import com.toro.models.Comic
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
-fun ReaderScreen(
+fun ReaderPage(
     pageCount: Int,
     comic: Comic,
     viewModel: AppViewModel,

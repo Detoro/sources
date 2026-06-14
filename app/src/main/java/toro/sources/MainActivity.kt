@@ -67,20 +67,22 @@ import toro.sources.pages.NotificationsPage
 import toro.sources.pages.OverviewPage
 import toro.sources.pages.PostPage
 import toro.sources.pages.ProfilePage
-import toro.sources.pages.ReaderScreen
+import toro.sources.pages.ReaderPage
 import toro.sources.pages.ReadingListPage
 import toro.sources.pages.SearchPage
 import toro.sources.pages.SettingsPage
 import toro.sources.pages.SignUpPage
 import toro.sources.pages.UploadPage
-import toro.sources.pages.WelcomeScreen
+import toro.sources.pages.WelcomePage
 import toro.sources.ui.theme.SourcesTheme
 import toro.sources.components.ShareDialog
+import toro.sources.pages.InterestsPage
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object SignUp : Screen("signup")
     object Welcome : Screen("welcome")
+    object Interests : Screen("interest")
     object Home : Screen("home/{userId}")
     object Upload : Screen("upload")
     object Inbox : Screen("inbox")
@@ -390,12 +392,27 @@ fun AppNavigation(viewModel: AppViewModel) {
                 )
             }
             composable(Screen.Welcome.route) {
-                WelcomeScreen(
+                WelcomePage(
                     username = viewModel.currentUser.collectAsState().value.username,
                     onComplete = { selectedUri ->
                         if (selectedUri != null) {
                             viewModel.uploadAvatar(selectedUri)
                         }
+                    },
+                    onProceed = {
+                        navController.navigate(Screen.Interests.route) {
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable(Screen.Interests.route) {
+                InterestsPage(
+                    username = viewModel.currentUser.collectAsState().value.username,
+                    onComplete = { selectedGenres ->
+                        viewModel.updateInterests(selectedGenres.map { it.name })
+                    },
+                    onProceed = {
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Welcome.route) { inclusive = true }
                         }
@@ -439,7 +456,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                     if (pageCount > 0) {
                         val currentChapterIndex = chapters.indexOfFirst { it.id == chapterId }
                         
-                        ReaderScreen(
+                        ReaderPage(
                             pageCount = pageCount,
                             comic = comic!!,
                             viewModel = viewModel,

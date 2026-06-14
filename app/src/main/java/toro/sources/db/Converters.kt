@@ -6,26 +6,17 @@ import com.toro.models.ComicStatus
 import com.toro.models.PgRating
 import com.toro.models.ShareType
 import com.toro.models.Genre
+import com.toro.models.Creator
 
 class Converters {
     @TypeConverter
-    fun fromStringList(value: List<String>): String {
-        return Json.encodeToString(value)
-    }
-
-    @TypeConverter
-    fun toStringList(value: String): List<String> {
-        return Json.decodeFromString(value)
-    }
-
-    @TypeConverter
     fun fromGenreList(value: List<Genre>): String {
-        return Json.encodeToString(value)
+        return Json.encodeToString<List<Genre>>(value)
     }
 
     @TypeConverter
     fun toGenreList(value: String): List<Genre> {
-        return Json.decodeFromString(value)
+        return Json.decodeFromString<List<Genre>>(value)
     }
 
     @TypeConverter
@@ -48,4 +39,14 @@ class Converters {
     @TypeConverter
     fun toShareType(value: String?): ShareType? =
         ShareType.entries.find { it.name == value }
+
+    @TypeConverter
+    fun fromCreatorList(value: List<Creator>): String {
+        return Json.encodeToString<List<Creator>>(value)
+    }
+
+    @TypeConverter
+    fun toCreatorList(value: String): List<Creator> {
+        return Json.decodeFromString<List<Creator>>(value)
+    }
 }

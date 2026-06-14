@@ -23,6 +23,7 @@ import com.toro.models.SubscribeResponse
 import com.toro.models.UserProfile
 import com.toro.models.UpdateBioRequest
 import com.toro.models.UpdateUsernameRequest
+import com.toro.models.UpdateInterestsRequest
 import com.toro.models.FcmTokenRequest
 import RegisterChaptersRequest
 import RegisterComicRequest
@@ -194,6 +195,9 @@ interface ComicApiService {
 
     @POST("api/users/{userId}/profile/username")
     suspend fun updateUsername(@Path("userId") userId: String, @Body request: UpdateUsernameRequest): ServerResponse
+
+    @POST("api/users/{userId}/profile/interests")
+    suspend fun updateInterests(@Path("userId") userId: String, @Body request: UpdateInterestsRequest): ServerResponse
 
     @GET("api/users/{userId}/posts")
     suspend fun getUserPosts(@Path("userId") userId: String): List<Post>
