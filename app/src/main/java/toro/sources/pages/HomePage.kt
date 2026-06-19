@@ -26,6 +26,8 @@ import toro.sources.Screen
 import com.toro.models.ShareType
 import com.toro.models.SharedContent
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -151,37 +153,6 @@ fun HomePage(
                         )
                     }
 
-                    val followedPosts = communityPosts.filter { followedAuthorIds.contains(it.authorId) }
-                    if (followedPosts.isNotEmpty()) {
-                        item {
-                            SectionHeader(title = "Creator Feed", modifier = Modifier.padding(horizontal = 16.dp))
-                        }
-                        items(followedPosts.take(3)) { post ->
-                            PostCard(
-                                viewModel = viewModel,
-                                post = post,
-                                onCommentClick = { onNotificationsClick() },
-                                onAuthorClick = { userId ->
-                                    viewModel.handleNavigation(Screen.Profile.createRoute(userId))
-                                },
-                                onShareClick = {
-                                    viewModel.setSharedContent(
-                                        SharedContent(
-                                            id = it.id,
-                                            type = ShareType.POST,
-                                            title = it.title ?: "Post by ${it.authorName}",
-                                            previewText = it.content.take(50)
-                                        )
-                                    )
-                                    viewModel.showShareDialog(true)
-                                },
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .fillMaxWidth()
-                            )
-                        }
-                    }
-
                     item {
                         ComicCarousel(
                             title = "Top Stories",
@@ -189,6 +160,54 @@ fun HomePage(
                             viewModel = viewModel,
                             onComicClick = onComicClick
                         )
+                    }
+
+                    val followedPosts = communityPosts.filter { followedAuthorIds.contains(it.authorId) }
+                    if (followedPosts.isNotEmpty()) {
+                        item {
+                            SectionHeader(
+                                title = "Creator Feed",
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                        }
+                        item {
+                            val pagerState = rememberPagerState(
+                                initialPage = 0,
+                                pageCount = { followedPosts.size }
+                            )
+                            HorizontalPager(
+                                state = pagerState,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight(),
+                                contentPadding = PaddingValues(horizontal = 24.dp),
+                                pageSpacing = 16.dp
+                            ) { postIndex ->
+                                val post = followedPosts[postIndex]
+                                PostCard(
+                                    viewModel = viewModel,
+                                    post = post,
+                                    onCommentClick = { onNotificationsClick() },
+                                    onAuthorClick = { userId ->
+                                        viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                    },
+                                    onShareClick = {
+                                        viewModel.setSharedContent(
+                                            SharedContent(
+                                                id = it.id,
+                                                type = ShareType.POST,
+                                                title = it.title ?: "Post by ${it.authorName}",
+                                                previewText = it.content.take(50)
+                                            )
+                                        )
+                                        viewModel.showShareDialog(true)
+                                    },
+                                    modifier = Modifier
+                                        .padding(horizontal = 16.dp)
+                                        .fillMaxWidth()
+                                )
+                            }
+                        }
                     }
 
                     val announcements = communityPosts.filter { it.authorId == "toro_creator" }

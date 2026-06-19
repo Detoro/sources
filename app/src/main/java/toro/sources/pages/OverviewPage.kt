@@ -1,7 +1,10 @@
 package toro.sources.pages
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -10,6 +13,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -20,8 +26,6 @@ import toro.sources.AppViewModel
 import toro.sources.components.*
 import com.toro.models.ShareType
 import Chapter
-import androidx.compose.foundation.lazy.items
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +38,7 @@ fun OverviewPage(
     val comic by viewModel.currentComic.collectAsState()
     val chapters by viewModel.chapters.collectAsState()
     val userRating by viewModel.userRating.collectAsState()
-    
+
     var showActionSheet by remember { mutableStateOf(false) }
     var showShareDialog by remember { mutableStateOf(false) }
     var showInfoSheet by remember { mutableStateOf(false) }
@@ -45,28 +49,46 @@ fun OverviewPage(
         }
     }
 
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
                 title = { },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), shape = RoundedCornerShape(50))
+                    ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
                     comic?.let {
-                        IconButton(onClick = {
-                            showInfoSheet = true
-                            viewModel.getUserWorks(comic!!.authorId)
-                        }) {
+                        IconButton(
+                            onClick = {
+                                showInfoSheet = true
+                                viewModel.getUserWorks(comic!!.authorId)
+                            },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), shape = RoundedCornerShape(50))
+                        ) {
                             Icon(Icons.Outlined.Info, contentDescription = "Actions")
                         }
-                        IconButton(onClick = { showActionSheet = true }) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconButton(
+                            onClick = { showActionSheet = true },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), shape = RoundedCornerShape(50))
+                        ) {
                             Icon(Icons.Default.MoreVert, contentDescription = "Actions")
                         }
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                scrollBehavior = scrollBehavior
             )
         }
     ) { paddingValues ->
@@ -77,134 +99,114 @@ fun OverviewPage(
         } else {
             val safeComic = comic!!
 
-            if (showActionSheet) {
-                ComicActionBottomSheet(
-                    comic = safeComic,
-                    onDismiss = { showActionSheet = false },
-                    onShare = { showShareDialog = true },
-                    onRemove = {
-                        viewModel.removeComicFromLibrary(safeComic.id, onRemoved = onBackClick)
-                    }
-                )
-            }
-
-            if (showInfoSheet) {
-                ComicInfoBottomSheet(
-                    comic = safeComic,
-                    viewModel,
-                    onDismiss = { showInfoSheet = false }
-                )
-            }
-
-            if (showShareDialog) {
-                ShareDialog(
-                    viewModel = viewModel,
-                    sharedId = safeComic.id,
-                    sharedType = ShareType.COMIC,
-                    sharedTitle = safeComic.title,
-                    sharedPreview = safeComic.description.take(50),
-                    onDismiss = { showShareDialog = false }
-                )
-            }
-
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = paddingValues.calculateBottomPadding() + 32.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
+
                 item {
-                    Column(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .height(450.dp)
                     ) {
                         AsyncImage(
                             model = safeComic.coverImageUrl,
                             contentDescription = "Cover",
                             contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        Box(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .height(300.dp)
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            MaterialTheme.colorScheme.background.copy(alpha = 0.6f),
+                                            MaterialTheme.colorScheme.background
+                                        ),
+                                        startY = 100f
+                                    )
+                                )
                         )
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Text(
-                            text = safeComic.title,
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 24.dp)
-                        )
-
-                        TextButton(
-                            onClick = onAuthorClick
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(horizontal = 24.dp, vertical = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = safeComic.authorName,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        // Rating Section
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            InteractiveRatingStars(
-                                initialRating = userRating,
-                                onRatingSelected = { rating ->
-                                    viewModel.rateComic(safeComic.id, rating)
-                                }
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = String.format(Locale.getDefault(), "%.1f", userRating.toFloat()),
-                                style = MaterialTheme.typography.titleMedium,
+                                text = safeComic.title,
+                                style = MaterialTheme.typography.headlineLarge,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onBackground
                             )
+
+                            TextButton(onClick = onAuthorClick) {
+                                Text(
+                                    text = safeComic.authorName,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
+                    }
+                }
 
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Action Buttons
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp),
-                            horizontalArrangement = Arrangement.Center
+                item {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                InteractiveRatingStars(
+                                    initialRating = userRating,
+                                    onRatingSelected = { rating ->
+                                        viewModel.rateComic(safeComic.id, rating)
+                                    }
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
                             SubscribeButton(
                                 isComicSubscribed = safeComic.isSubscribed,
                                 isLocalSideload = safeComic.isLocalSideload,
-                                onSubscribeToComic = {
-                                    viewModel.toggleComicSubscription(safeComic.id)
-                                },
-                                onSubscribeToAuthor = {
-                                    viewModel.subscribeToAuthor(safeComic.authorId)
-                                }
+                                onSubscribeToComic = { viewModel.toggleComicSubscription(safeComic.id) },
+                                onSubscribeToAuthor = { viewModel.subscribeToAuthor(safeComic.authorId) }
                             )
                         }
                     }
                 }
 
                 item {
-                    Text(
-                        text = "Synopsis",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp)
-                    )
-                    Text(
-                        text = safeComic.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        lineHeight = 20.sp,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider()
+                    Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                        Text(
+                            text = "Synopsis",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = safeComic.description,
+                            style = MaterialTheme.typography.bodyLarge,
+                            lineHeight = 24.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 item {
@@ -212,21 +214,51 @@ fun OverviewPage(
                         text = "Chapters",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier.padding(horizontal = 24.dp)
                     )
                 }
 
                 items(chapters) { chapter ->
-                    ChapterRow(
-                        chapter = chapter,
-                        onClick = {
-                            onChapterClick(chapter)
-                            viewModel.markChapterAsRead(safeComic.id, chapter.id)
-                        }
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        ChapterRow(
+                            chapter = chapter,
+                            onClick = {
+                                onChapterClick(chapter)
+                                viewModel.markChapterAsRead(safeComic.id, chapter.id)
+                            }
+                        )
+                    }
                 }
             }
         }
+    }
+    if (showActionSheet) {
+        ComicActionBottomSheet(
+            comic = comic!!,
+            onDismiss = { showActionSheet = false },
+            onShare = { showShareDialog = true },
+            onRemove = {
+                viewModel.removeComicFromLibrary(comic!!.id, onRemoved = onBackClick)
+            }
+        )
+    }
+
+    if (showInfoSheet) {
+        ComicInfoBottomSheet(
+            comic = comic!!,
+            viewModel,
+            onDismiss = { showInfoSheet = false }
+        )
+    }
+
+    if (showShareDialog) {
+        ShareDialog(
+            viewModel = viewModel,
+            sharedId = comic!!.id,
+            sharedType = ShareType.COMIC,
+            sharedTitle = comic!!.title,
+            sharedPreview = comic!!.description.take(50),
+            onDismiss = { showShareDialog = false }
+        )
     }
 }
