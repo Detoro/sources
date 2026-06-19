@@ -45,6 +45,7 @@ import toro.sources.components.MuteToggleButton
 import toro.sources.components.ReaderNavigationBar
 import toro.sources.components.SmartContentPage
 import com.toro.models.Comic
+import com.toro.models.ScrollDirection
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -182,7 +183,7 @@ fun ReaderPage(
                     }
                 }
         ) {
-            if (comic.scrollDirection == "HORIZONTAL") {
+            if (comic.scrollDirection == ScrollDirection.HORIZONTAL.name) {
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize()

@@ -54,7 +54,7 @@ fun LoginPage(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = stringResource(id = R.string.welcome_user, "user"),
+            text = stringResource(id = R.string.welcome_user, email),
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.primary
         )
@@ -64,16 +64,9 @@ fun LoginPage(
             value = email,
             onValueChange = { email = it },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            label = { Text(stringResource(R.string.email)) },
+            placeholder = { Text(stringResource(R.string.email)) },
             leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
             singleLine = true,
-            supportingText = {
-                Text(
-                    text = stringResource(R.string.must_be_a_valid_email),
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -84,7 +77,7 @@ fun LoginPage(
                 password = it
                 isError = false
             },
-            label = { Text(stringResource(R.string.password)) },
+            placeholder = { Text(stringResource(R.string.password)) },
             singleLine = true,
 
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),

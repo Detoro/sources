@@ -232,6 +232,7 @@ fun DatePickerModalInput(
     val datePickerState = rememberDatePickerState(initialDisplayMode = DisplayMode.Input)
 
     DatePickerDialog(
+        modifier = Modifier.imePadding(),
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = {

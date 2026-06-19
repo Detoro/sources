@@ -11,7 +11,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -23,6 +22,7 @@ import toro.sources.AppViewModel
 import toro.sources.Screen
 import toro.sources.components.AuthorsRow
 import toro.sources.components.PostCard
+import toro.sources.components.PostCardShimmer
 import com.toro.models.ShareType
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -31,6 +31,11 @@ import androidx.compose.material3.Tab
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
 import com.toro.models.SharedContent
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,8 +47,10 @@ fun EngagementPage(
     onBackClick: () -> Unit
 ) {
     val posts by viewModel.communityPosts.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     val selectedAuthorIds by viewModel.selectedAuthorIds.collectAsState()
     var selectedTab by remember { mutableIntStateOf(0) }
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     val filteredPosts = remember(posts, selectedAuthorIds) {
         if (selectedAuthorIds.isEmpty()) {
@@ -58,8 +65,9 @@ fun EngagementPage(
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
+            LargeTopAppBar(
                 title = { Text("Community") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
@@ -70,7 +78,15 @@ fun EngagementPage(
                     IconButton(onClick = { onMakePost() }) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Post")
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    navigationIconContentColor = Color.Unspecified,
+                    titleContentColor = Color.Unspecified,
+                    actionIconContentColor = Color.Unspecified
+                )
             )
         }
     ) { paddingValues ->
@@ -95,32 +111,41 @@ fun EngagementPage(
                 when (tabs[selectedTab]) {
                     "Trending" -> {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
-
-                            items(filteredPosts) { post ->
-                                PostCard(
-                                    viewModel = viewModel,
-                                    post = post,
-                                    onCommentClick = { onCommentClick(post.id) },
-                                    onAuthorClick = { userId ->
-                                        viewModel.handleNavigation(Screen.Profile.createRoute(userId))
-                                    },
-                                    onShareClick = {
-                                        viewModel.setSharedContent(
-                                            SharedContent(
-                                                id = it.id,
-                                                type = ShareType.POST,
-                                                title = it.title ?: "Post by ${it.authorName}",
-                                                previewText = it.content.take(50)
+                            if (isLoading) {
+                                items(5) {
+                                    PostCardShimmer()
+                                    HorizontalDivider(
+                                        thickness = 1.dp,
+                                        color = MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                }
+                            } else {
+                                items(filteredPosts) { post ->
+                                    PostCard(
+                                        viewModel = viewModel,
+                                        post = post,
+                                        onCommentClick = { onCommentClick(post.id) },
+                                        onAuthorClick = { userId ->
+                                            viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                        },
+                                        onShareClick = {
+                                            viewModel.setSharedContent(
+                                                SharedContent(
+                                                    id = it.id,
+                                                    type = ShareType.POST,
+                                                    title = it.title ?: "Post by ${it.authorName}",
+                                                    previewText = it.content.take(50)
+                                                )
                                             )
-                                        )
-                                        viewModel.showShareDialog(true)
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                HorizontalDivider(
-                                    thickness = 1.dp,
-                                    color = MaterialTheme.colorScheme.surfaceVariant
-                                )
+                                            viewModel.showShareDialog(true)
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                    HorizontalDivider(
+                                        thickness = 1.dp,
+                                        color = MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                }
                             }
 
                             item {

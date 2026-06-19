@@ -3,12 +3,9 @@ package toro.sources.pages
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.NotificationsNone
@@ -19,12 +16,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
-import toro.sources.components.BillboardCarousel
-import toro.sources.components.ComicCarousel
+import toro.sources.components.*
 import com.toro.models.Comic
+import toro.sources.Screen
+import com.toro.models.ShareType
+import com.toro.models.SharedContent
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,6 +38,12 @@ fun HomePage(
 ) {
     val libraryList by viewModel.myLibrary.collectAsState()
     val catalog by viewModel.catalog.collectAsState()
+    val recentlyRead by viewModel.recentlyReadComics.collectAsState()
+    val communityPosts by viewModel.communityPosts.collectAsState()
+    val followedAuthors by viewModel.subscribedAuthors.collectAsState()
+    val followedAuthorIds = followedAuthors.map { it.id }.toSet()
+
+    val isLoading by viewModel.isLoading.collectAsState()
     val notifications by viewModel.notifications.collectAsState()
     val unreadCount = notifications.count { !it.isRead }
 
@@ -52,18 +60,19 @@ fun HomePage(
         }
     }
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = { Text("Explore") },
+            LargeTopAppBar(
+                title = { Text("") },
                 actions = {
                     IconButton(onClick = { onNotificationsClick() }) {
                         BadgedBox(
                             badge = {
                                 if (unreadCount > 0) {
-                                    Badge {
-                                        Text(unreadCount.toString())
-                                    }
+                                    Badge { Text(unreadCount.toString()) }
                                 }
                             }
                         ) {
@@ -76,7 +85,16 @@ fun HomePage(
                     IconButton(onClick = { onAccountClick() }) {
                         Icon(Icons.Default.Person, contentDescription = "Profile")
                     }
-                }
+                },
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    navigationIconContentColor = Color.Unspecified,
+                    titleContentColor = Color.Unspecified,
+                    actionIconContentColor = Color.Unspecified
+                ),
+                windowInsets = WindowInsets(top = 10.dp)
             )
         }
     ) { paddingValues ->
@@ -98,49 +116,129 @@ fun HomePage(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(paddingValues)
+                    .padding(paddingValues),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-
-                item {
-                    BillboardCarousel(
-                        comics = catalog.take(5),
-                        onComicClick = onComicClick,
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
-                }
-
-                // My Library Section
-                if (libraryList.isNotEmpty()) {
+                if (isLoading) {
+                    item { BillboardCarouselShimmer() }
+                    item { ComicCarouselShimmer(title = "Continue Reading") }
+                    item { ComicCarouselShimmer(title = "New Releases") }
+                    item { ComicCarouselShimmer(title = "Top Stories") }
+                } else {
                     item {
-                        Spacer(modifier = Modifier.height(32.dp))
+                        BillboardCarousel(
+                            comics = catalog.take(5),
+                            onComicClick = onComicClick,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+
+                    if (recentlyRead.isNotEmpty()) {
+                        item {
+                            ContinueReadingCarousel(
+                                comics = recentlyRead,
+                                onComicClick = onComicClick
+                            )
+                        }
+                    }
+
+                    item {
                         ComicCarousel(
-                            title = "My Library",
-                            comics = libraryList,
+                            title = "New Releases",
+                            comics = catalog.shuffled().take(6),
                             viewModel = viewModel,
                             onComicClick = onComicClick
                         )
                     }
-                }
-                // Top Stories Section
-                item {
-                    Spacer(modifier = Modifier.height(32.dp))
-                    ComicCarousel(
-                        title = "Top Stories",
-                        comics = catalog.shuffled().take(8),
-                        viewModel = viewModel,
-                        onComicClick = onComicClick
-                    )
-                }
 
-                // For You Section
-                item {
-                    Spacer(modifier = Modifier.height(32.dp))
-                    ComicCarousel(
-                        title = "For You",
-                        comics = catalog.shuffled().take(8),
-                        viewModel = viewModel,
-                        onComicClick = onComicClick
-                    )
+                    val followedPosts = communityPosts.filter { followedAuthorIds.contains(it.authorId) }
+                    if (followedPosts.isNotEmpty()) {
+                        item {
+                            SectionHeader(title = "Creator Feed", modifier = Modifier.padding(horizontal = 16.dp))
+                        }
+                        items(followedPosts.take(3)) { post ->
+                            PostCard(
+                                viewModel = viewModel,
+                                post = post,
+                                onCommentClick = { onNotificationsClick() },
+                                onAuthorClick = { userId ->
+                                    viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                },
+                                onShareClick = {
+                                    viewModel.setSharedContent(
+                                        SharedContent(
+                                            id = it.id,
+                                            type = ShareType.POST,
+                                            title = it.title ?: "Post by ${it.authorName}",
+                                            previewText = it.content.take(50)
+                                        )
+                                    )
+                                    viewModel.showShareDialog(true)
+                                },
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .fillMaxWidth()
+                            )
+                        }
+                    }
+
+                    item {
+                        ComicCarousel(
+                            title = "Top Stories",
+                            comics = catalog.shuffled().take(8),
+                            viewModel = viewModel,
+                            onComicClick = onComicClick
+                        )
+                    }
+
+                    val announcements = communityPosts.filter { it.authorId == "toro_creator" }
+                    if (announcements.isNotEmpty()) {
+                        item {
+                            SectionHeader(title = "Announcements", modifier = Modifier.padding(horizontal = 16.dp))
+                        }
+                        items(announcements.take(2)) { post ->
+                            PostCard(
+                                viewModel = viewModel,
+                                post = post,
+                                onCommentClick = { onNotificationsClick() },
+                                onAuthorClick = { userId ->
+                                    viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                },
+                                onShareClick = {
+                                    viewModel.setSharedContent(
+                                        SharedContent(
+                                            id = it.id,
+                                            type = ShareType.POST,
+                                            title = it.title ?: "Announcement: ${null}",
+                                            previewText = it.content.take(50)
+                                        )
+                                    )
+                                    viewModel.showShareDialog(true)
+                                },
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .fillMaxWidth()
+                            )
+                        }
+                    } else {
+                        item {
+                            ComicCarousel(
+                                title = "Announcements",
+                                comics = catalog.shuffled().take(4),
+                                viewModel = viewModel,
+                                onComicClick = onComicClick
+                            )
+                        }
+                    }
+
+                    item {
+                        ComicCarousel(
+                            title = "For You",
+                            comics = catalog.shuffled().take(8),
+                            viewModel = viewModel,
+                            onComicClick = onComicClick
+                        )
+                    }
                 }
 
                 item {
