@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.IconButton
@@ -46,6 +47,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.mutableStateListOf
 import com.toro.models.Genre
 import com.toro.models.PgRating
+import com.toro.models.ScrollDirection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,17 +57,20 @@ fun NewSeriesForm(
 ) {
     var title by remember { mutableStateOf("") }
     var ratingExpanded by remember { mutableStateOf(false) }
+    var directionExpanded by remember { mutableStateOf(false) }
     var genreExpanded by remember { mutableStateOf(false) }
     val author by viewModel.currentUser.collectAsState()
     var description by remember { mutableStateOf("") }
     var selectedChapterUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var selectedCoverUri by remember { mutableStateOf<Uri?>(null) }
     var selectedComicRating by remember { mutableStateOf(PgRating.ALL) }
+    var selectedScrollDirection by remember { mutableStateOf(ScrollDirection.VERTICAL) }
     val selectedComicGenres = remember { mutableStateListOf<Genre>() }
     val context = LocalContext.current
     val isUploading by viewModel.isUploading.collectAsState()
     val ratingOptions = PgRating.entries
     val genreOptions = Genre.entries
+    val scrollDirectionOptions = ScrollDirection.entries
 
     val displayText = if (selectedComicGenres.isEmpty()) {
         "Select Genres"
@@ -97,6 +102,7 @@ fun NewSeriesForm(
                         selectedChapterUris = emptyList()
                         selectedCoverUri = null
                         selectedComicRating = PgRating.ALL
+                        selectedScrollDirection = ScrollDirection.VERTICAL
                         selectedComicGenres.clear()
                     }) {
                         Icon(Filled.Close, contentDescription = "Post")
@@ -132,7 +138,7 @@ fun NewSeriesForm(
                     label = { Text("Select Series Rating") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = ratingExpanded) },
                     modifier = Modifier
-                        .menuAnchor()
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
                         .fillMaxWidth()
                 )
 
@@ -153,6 +159,37 @@ fun NewSeriesForm(
             }
 
             ExposedDropdownMenuBox(
+                expanded = directionExpanded,
+                onExpandedChange = { directionExpanded = !directionExpanded }
+            ) {
+                OutlinedTextField(
+                    value = selectedScrollDirection.name,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Select Reading direction") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = directionExpanded) },
+                    modifier = Modifier
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
+                        .fillMaxWidth()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = directionExpanded,
+                    onDismissRequest = { directionExpanded = false }
+                ) {
+                    scrollDirectionOptions.forEach { direction ->
+                        DropdownMenuItem(
+                            text = { Text(direction.name) },
+                            onClick = {
+                                selectedScrollDirection = direction
+                                directionExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            ExposedDropdownMenuBox(
                 expanded = genreExpanded,
                 onExpandedChange = { genreExpanded = it }
             ) {
@@ -163,7 +200,7 @@ fun NewSeriesForm(
                     label = { Text("Select Series Genres") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = genreExpanded) },
                     modifier = Modifier
-                        .menuAnchor()
+                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
                         .fillMaxWidth()
                 )
 
@@ -227,6 +264,7 @@ fun NewSeriesForm(
                         context = context,
                         title = title,
                         author = author.username,
+                        scrollDirection = selectedScrollDirection,
                         pgRating = selectedComicRating,
                         description = description,
                         chapterUris = selectedChapterUris,

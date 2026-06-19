@@ -29,7 +29,7 @@ fun ChapterRow(
     ) {
         Column {
             Text(
-                text = chapter.chapterTitle,
+                text = "${chapter.chapterNumber} ${chapter.chapterTitle}",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold
             )

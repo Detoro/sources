@@ -11,6 +11,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -77,6 +78,7 @@ import toro.sources.pages.WelcomePage
 import toro.sources.ui.theme.SourcesTheme
 import toro.sources.components.ShareDialog
 import toro.sources.pages.InterestsPage
+import toro.sources.pages.SuccessfulTaskPage
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -85,6 +87,9 @@ sealed class Screen(val route: String) {
     object Interests : Screen("interest")
     object Home : Screen("home/{userId}")
     object Upload : Screen("upload")
+    object Success : Screen("success/{successMessage}") {
+        fun createRoute(message: String) = "success/$message"
+    }
     object Inbox : Screen("inbox")
     object Search : Screen("search")
     object Reader : Screen("reader/{chapterId}") {
@@ -203,9 +208,11 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             val viewModel: AppViewModel = viewModel(factory = factory)
-            val isDarkTheme by viewModel.isDarkTheme.collectAsState()
 
-            SourcesTheme(darkTheme = isDarkTheme) {
+            SourcesTheme(
+                darkTheme = isSystemInDarkTheme(),
+                dynamicColor = true
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -608,6 +615,17 @@ fun AppNavigation(viewModel: AppViewModel) {
                         navController.navigate(Screen.AddChapter.route)
                     },
                     onUploadComplete = {
+                        navController.navigate(Screen.Success.createRoute("Upload Successful!")) {
+                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable(Screen.Success.route) { backStackEntry ->
+                val successMessage = backStackEntry.arguments?.getString("successMessage") ?: return@composable
+                SuccessfulTaskPage(
+                    successMessage,
+                    onTimeElapsed = {
                         navController.navigate("home/${currentUser.username}") {
                             popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                         }
@@ -645,7 +663,8 @@ fun AppNavigation(viewModel: AppViewModel) {
                                 launchSingleTop = true
                             }
                         })
-                    }
+                    },
+                    onBackClick = { navController.popBackStack() }
                 )
             }
             composable(Screen.Inbox.route) {

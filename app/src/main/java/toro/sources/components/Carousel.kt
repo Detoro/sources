@@ -19,21 +19,39 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
+
+@Composable
+fun SectionHeader(
+    title: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp)
+    )
+}
 
 @Composable
 fun BillboardCarousel(
@@ -66,14 +84,14 @@ fun BillboardCarousel(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                val pageOffset = (
-                        (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                        ).absoluteValue
+                    val pageOffset = (
+                            (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                            ).absoluteValue
 
-                val scale = 1f - (pageOffset * 0.15f).coerceIn(0f, 1f)
-                scaleX = scale
-                scaleY = scale
-                alpha = 1f - (pageOffset * 0.5f).coerceIn(0f, 1f)
+                    val scale = 1f - (pageOffset * 0.15f).coerceIn(0f, 1f)
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = 1f - (pageOffset * 0.5f).coerceIn(0f, 1f)
                 }
                 .clickable { onComicClick(comic) },
             shape = RoundedCornerShape(16.dp),
@@ -120,6 +138,50 @@ fun BillboardCarousel(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+fun ContinueReadingCarousel(
+    comics: List<Comic>,
+    onComicClick: (Comic) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (comics.isEmpty()) return
+
+    Column(modifier = modifier) {
+        SectionHeader(title = "Continue Reading")
+
+        HorizontalUncontainedCarousel(
+            state = rememberCarouselState { comics.size },
+            modifier = Modifier.fillMaxWidth(),
+            itemWidth = 80.dp,
+            itemSpacing = 12.dp,
+            contentPadding = PaddingValues(horizontal = 16.dp)
+        ) { index ->
+            val comic = comics[index]
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.clickable { onComicClick(comic) }
+            ) {
+                AsyncImage(
+                    model = comic.coverImageUrl,
+                    contentDescription = comic.title,
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+                Text(
+                    text = comic.title,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun ComicCarousel(
     title: String,
     comics: List<Comic>,
@@ -130,17 +192,13 @@ fun ComicCarousel(
     if (comics.isEmpty()) return
 
     Column(modifier = modifier) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp)
-        )
+        SectionHeader(title = title)
 
         HorizontalUncontainedCarousel(
             state = rememberCarouselState { comics.size },
             modifier = Modifier.fillMaxWidth(),
-            itemWidth = 100.dp,
-            itemSpacing = 8.dp,
+            itemWidth = 120.dp,
+            itemSpacing = 12.dp,
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) { index ->
             val comic = comics[index]
