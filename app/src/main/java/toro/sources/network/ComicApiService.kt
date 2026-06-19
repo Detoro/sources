@@ -196,9 +196,6 @@ interface ComicApiService {
     @POST("api/users/{userId}/profile/username")
     suspend fun updateUsername(@Path("userId") userId: String, @Body request: UpdateUsernameRequest): ServerResponse
 
-    @POST("api/users/{userId}/profile/interests")
-    suspend fun updateInterests(@Path("userId") userId: String, @Body request: UpdateInterestsRequest): ServerResponse
-
     @GET("api/users/{userId}/posts")
     suspend fun getUserPosts(@Path("userId") userId: String): List<Post>
 
@@ -207,6 +204,9 @@ interface ComicApiService {
 
     @POST("api/users/{userId}/profile/privacy")
     suspend fun toggleProfilePrivacy(@Path("userId") userId: String): ServerResponse
+
+    @POST("api/users/interests")
+    suspend fun updateInterests(@Path("userId") userId: String, @Body request: UpdateInterestsRequest): ServerResponse
 
     @POST("api/users/fcm-token")
     suspend fun registerFcmToken(@Body request: FcmTokenRequest): ServerResponse
