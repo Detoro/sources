@@ -96,7 +96,7 @@ fun HomePage(
                     titleContentColor = Color.Unspecified,
                     actionIconContentColor = Color.Unspecified
                 ),
-                windowInsets = WindowInsets(top = 10.dp)
+                windowInsets = WindowInsets(top = 3.dp)
             )
         }
     ) { paddingValues ->

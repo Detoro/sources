@@ -86,7 +86,8 @@ fun EngagementPage(
                     navigationIconContentColor = Color.Unspecified,
                     titleContentColor = Color.Unspecified,
                     actionIconContentColor = Color.Unspecified
-                )
+                ),
+                windowInsets = WindowInsets(top = 3.dp)
             )
         }
     ) { paddingValues ->

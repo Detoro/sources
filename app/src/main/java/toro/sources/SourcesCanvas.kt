@@ -34,6 +34,7 @@ class SourcesCanvas : Application() {
             comicDao = database.comicDao(),
             chapterDao = database.chapterDao(),
             conversationDao = database.conversationDao(),
+            notificationDao = database.notificationDao(),
             cbzParser = cbzParser,
             apiService = apiService
         )

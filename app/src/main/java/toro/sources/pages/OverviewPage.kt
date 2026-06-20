@@ -26,6 +26,7 @@ import toro.sources.AppViewModel
 import toro.sources.components.*
 import com.toro.models.ShareType
 import Chapter
+import com.toro.models.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,7 +89,8 @@ fun OverviewPage(
                     containerColor = Color.Transparent,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
-                scrollBehavior = scrollBehavior
+                scrollBehavior = scrollBehavior,
+                windowInsets = WindowInsets(top = 3.dp)
             )
         }
     ) { paddingValues ->
@@ -98,6 +100,13 @@ fun OverviewPage(
             }
         } else {
             val safeComic = comic!!
+            val writers = safeComic.creditsMap["writer"]?.joinToString(", ") ?: "Unknown Writer"
+            val artists = safeComic.creditsMap["artist"]?.joinToString(", ")
+
+
+            if (artists != null) {
+                Text(text = "Art by $artists")
+            }
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -149,7 +158,7 @@ fun OverviewPage(
 
                             TextButton(onClick = onAuthorClick) {
                                 Text(
-                                    text = safeComic.authorName,
+                                    text = "Written by $writers",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -234,7 +243,6 @@ fun OverviewPage(
     }
     if (showActionSheet) {
         ComicActionBottomSheet(
-            comic = comic!!,
             onDismiss = { showActionSheet = false },
             onShare = { showShareDialog = true },
             onRemove = {

@@ -9,6 +9,7 @@ import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
 import java.util.UUID
 import com.toro.models.Comic
+import com.toro.models.Creator
 import Chapter
 
 class CbzParser(private val context: Context) {
@@ -49,8 +50,7 @@ class CbzParser(private val context: Context) {
             val comic = Comic(
                 id = comicId,
                 title = givenTitle,
-                authorId = authorId,
-                authorName = author,
+                authors = listOf(Creator(id = authorId, name = author, role = "author")),
                 description = description,
                 coverImageUrl = coverPath,
                 isLocalSideload = true,

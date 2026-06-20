@@ -44,6 +44,7 @@ import toro.sources.components.CommentsSection
 import toro.sources.components.MuteToggleButton
 import toro.sources.components.ReaderNavigationBar
 import toro.sources.components.SmartContentPage
+import toro.sources.components.ChapterBgmPlayer // Import the new player
 import com.toro.models.Comic
 import com.toro.models.ScrollDirection
 
@@ -65,9 +66,16 @@ fun ReaderPage(
     if (pageCount == 0) return
 
     val chapters by viewModel.chapters.collectAsState()
-    val isLiked = remember(chapters, chapterId) {
-        chapters.find { it.id == chapterId }?.isLiked ?: false
+
+    // 1. Isolate the current chapter to check for its specific audioUrl
+    val currentChapter = remember(chapters, chapterId) {
+        chapters.find { it.id == chapterId }
     }
+
+    val isLiked = currentChapter?.isLiked ?: false
+
+    // 2. Track the mute state for the music player
+    var isMuted by remember { mutableStateOf(false) }
 
     LaunchedEffect(comic.id) {
         viewModel.getChapterComments(chapterId)
@@ -133,6 +141,11 @@ fun ReaderPage(
             .fillMaxSize()
             .imePadding()
     ) {
+        ChapterBgmPlayer(
+            audioUrl = currentChapter?.audioUrl,
+            isMuted = isMuted
+        )
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -220,9 +233,10 @@ fun ReaderPage(
                 }
             }
         }
-
-        if (comic.hasMusic) {
+        if (!currentChapter?.audioUrl.isNullOrBlank()) {
             MuteToggleButton(
+                isMuted = isMuted,
+                onToggle = { isMuted = !isMuted },
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(16.dp)

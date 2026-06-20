@@ -42,7 +42,6 @@ fun CommentsPage(
         }
     }
 
-    // Process comments into top-level only (we show replies in thread page now)
     val topLevelComments = remember(comments) {
         comments.filter { it.parentId == "" }
     }
@@ -58,7 +57,8 @@ fun CommentsPage(
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                windowInsets = WindowInsets(top = 3.dp)
             )
         },
         bottomBar = {
@@ -86,25 +86,22 @@ fun CommentsPage(
                         }
                     }
                 }
-                val sharedContent by viewModel.sharedContent.collectAsState()
                 SmartInput(
-                    onSend = { _, text, mentions, _, _ ->
+                    onSend = { _, text, mentions, _, _, isSpoiler ->
                         when (commentLocation) {
                             CommentLocation.ON_CHAPTER -> viewModel.addChapterComment(
                                 targetId, 
                                 text, 
+                                isSpoiler,
                                 mentions, 
                                 replyingTo?.id,
-                                sharedId = sharedContent?.id,
-                                sharedType = sharedContent?.type
                             )
                             CommentLocation.ON_POST -> viewModel.addPostComment(
                                 targetId, 
                                 text, 
+                                isSpoiler,
                                 mentions, 
                                 replyingTo?.id,
-                                sharedId = sharedContent?.id,
-                                sharedType = sharedContent?.type
                             )
                         }
                         replyingTo = null

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -81,7 +82,6 @@ fun SettingsPage(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            // 2. The PixelPlayer Style Large App Bar
             LargeTopAppBar(
                 title = { Text("Settings") },
                 navigationIcon = {
@@ -96,7 +96,8 @@ fun SettingsPage(
                     navigationIconContentColor = Color.Unspecified,
                     titleContentColor = Color.Unspecified,
                     actionIconContentColor = Color.Unspecified
-                )
+                ),
+                windowInsets = WindowInsets(top = 3.dp)
             )
         }
     ) { paddingValues ->

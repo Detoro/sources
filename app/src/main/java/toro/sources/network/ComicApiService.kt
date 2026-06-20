@@ -27,6 +27,7 @@ import com.toro.models.UpdateInterestsRequest
 import com.toro.models.FcmTokenRequest
 import RegisterChaptersRequest
 import RegisterComicRequest
+import com.toro.models.ReportRequest
 import retrofit2.http.DELETE
 
 interface ComicApiService {
@@ -222,4 +223,8 @@ interface ComicApiService {
 
     @POST("api/users/avatar")
     suspend fun updateAvatar(@Body avatar: String): ServerResponse
+
+    // miscellaneous
+    @POST("api/reports/submit")
+    suspend fun submitReport(@Body request: ReportRequest): ServerResponse
 }

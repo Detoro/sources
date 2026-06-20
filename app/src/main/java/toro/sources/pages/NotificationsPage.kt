@@ -34,7 +34,8 @@ fun NotificationsPage(
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                windowInsets = WindowInsets(top = 3.dp)
             )
         }
     ) { paddingValues ->

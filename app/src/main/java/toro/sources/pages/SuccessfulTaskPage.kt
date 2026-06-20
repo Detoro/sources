@@ -24,7 +24,7 @@ fun SuccessfulTaskPage(
     onTimeElapsed: () -> Unit
 ) {
     LaunchedEffect(Unit) {
-        delay(1000L)
+        delay(3000L)
         onTimeElapsed()
     }
 

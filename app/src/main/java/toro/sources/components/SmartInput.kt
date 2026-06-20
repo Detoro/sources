@@ -27,7 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import toro.sources.AppViewModel
-import com.toro.models.ShareType
+import com.toro.models.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +35,7 @@ fun SmartInput(
     title: String? = null,
     onTitleChange: ((String) -> Unit)? = null,
     supportTitle: Boolean = false,
-    onSend: (title: String?, text: String, mentions: List<String>, sharedComicIds: List<String>, attachment: Uri?) -> Unit,
+    onSend: (title: String?, text: String, mentions: List<String>, sharedComicIds: List<String>, attachment: Uri?, isSpoiler: Boolean) -> Unit,
     initialText: String = "",
     placeholder: String = "Type a message...",
     supportUpload: Boolean = false,
@@ -180,7 +180,12 @@ fun SmartInput(
                                     Text(comic!!.authorName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             } else {
-                                SharedContentPlaceholder(type = sharedContent!!.type, onClick = { }, modifier = Modifier.weight(1f))
+                                SharedContentPlaceholder(
+                                    type = sharedContent!!.type,
+                                    title = "Nothing",
+                                    previewText = "Next to nothing",
+                                    onClick = { },
+                                    modifier = Modifier.weight(1f))
                             }
                             IconButton(onClick = { viewModel.setSharedContent(null) }) {
                                 Icon(Icons.Default.Close, contentDescription = "Remove")
@@ -260,7 +265,7 @@ fun SmartInput(
                     IconButton(
                         onClick = {
                             if (canSend) {
-                                onSend(if (supportTitle) titleText else null, inputText, mentionedUserIds.toList(), sharedComicIds.toList(), selectedUri)
+                                onSend(if (supportTitle) titleText else null, inputText, mentionedUserIds.toList(), sharedComicIds.toList(), selectedUri, isSpoiler)
                                 inputText = ""
                                 titleText = ""
                                 selectedUri = null

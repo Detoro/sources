@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.toro.models.Comic
+import com.toro.models.*
 import toro.sources.AppViewModel
 import toro.sources.Screen
 
@@ -75,83 +76,34 @@ fun ComicInfoBottomSheet(
             // Creators
             InfoSectionHeader("Creators")
             
-            // Authors
-            Text(
-                text = "Written by:",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            if (comic.authors.isNotEmpty()) {
+            comic.creditsMap.forEach { (role, creators) ->
+                Text(
+                    text = "${role.replaceFirstChar { it.uppercase() }}:",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
                 FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    comic.authors.forEach { author ->
+                    creators.forEach { creator ->
                         TextButton(
-                            onClick = { viewModel.handleNavigation(Screen.Profile.createRoute(author.id)) },
+                            onClick = { viewModel.handleNavigation(Screen.Profile.createRoute(creator.id)) },
                             contentPadding = PaddingValues(0.dp),
                             modifier = Modifier.height(32.dp)
                         ) {
                             Text(
-                                text = author.name,
+                                text = creator.name,
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.secondary
                             )
                         }
                     }
                 }
-            } else {
-                TextButton(
-                    onClick = { viewModel.handleNavigation(Screen.Profile.createRoute(comic.authorId)) }
-                ) {
-                    Text(
-                        text = comic.writtenBy.ifEmpty { comic.authorName },
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
+                Spacer(modifier = Modifier.height(8.dp))
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Artists
-            Text(
-                text = "Art by:",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            if (comic.artists.isNotEmpty()) {
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    comic.artists.forEach { artist ->
-                        TextButton(
-                            onClick = { viewModel.handleNavigation(Screen.Profile.createRoute(artist.id)) },
-                            contentPadding = PaddingValues(0.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Text(
-                                text = artist.name,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                        }
-                    }
-                }
-            } else {
-                TextButton(
-                    onClick = { }
-                ) {
-                    Text(
-                        text = comic.artBy.ifEmpty { "Unknown" },
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             
             Text(
                 text = comic.description,

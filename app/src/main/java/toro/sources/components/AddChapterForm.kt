@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons.Filled
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,7 +48,8 @@ import toro.sources.AppViewModel
 @Composable
 fun AddChapterForm(
     viewModel: AppViewModel,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    onUploadComplete: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selectedChapterUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
@@ -56,9 +58,22 @@ fun AddChapterForm(
     var selectedComicId by remember { mutableStateOf<String?>(null) }
     var selectedComicTitle by remember { mutableStateOf("") }
     val isUploading by viewModel.isUploading.collectAsState()
+    val uploadSuccess by viewModel.uploadSuccess.collectAsState()
+    var selectedAudioUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+
+    val audioPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris -> selectedAudioUris = uris }
 
     LaunchedEffect(Unit) {
         viewModel.getUserWorks(viewModel.currentUser.value.userId)
+    }
+
+    LaunchedEffect(uploadSuccess) {
+        if (uploadSuccess) {
+            onUploadComplete()
+            viewModel.resetUploadState()
+        }
     }
 
     val chapterPickerLauncher = rememberLauncherForActivityResult(
@@ -138,13 +153,24 @@ fun AddChapterForm(
                 Text(if (selectedChapterUris.isNotEmpty()) "${selectedChapterUris.size} Chapters Selected" else "Select .cbz Files")
             }
 
+            OutlinedButton(
+                onClick = { audioPickerLauncher.launch("audio/*") },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = selectedComicId != null
+            ) {
+                Icon(Icons.Default.LibraryMusic, "Upload Audio")
+                Spacer(Modifier.width(8.dp))
+                Text(if (selectedAudioUris.isNotEmpty()) "${selectedAudioUris.size} Songs Selected" else "Select Background Music (Optional)")
+            }
+
             val isValid = selectedComicId != null && selectedChapterUris.isNotEmpty() && !isUploading
             Button(
                 onClick = {
                     viewModel.uploadNewChapters(
                         context = context,
                         comicId = selectedComicId,
-                        chapterUris = selectedChapterUris
+                        chapterUris = selectedChapterUris,
+                        audioUris = selectedAudioUris
                     )
                 },
                 modifier = Modifier

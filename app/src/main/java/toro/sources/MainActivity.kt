@@ -78,6 +78,8 @@ import toro.sources.pages.WelcomePage
 import toro.sources.ui.theme.SourcesTheme
 import toro.sources.components.ShareDialog
 import toro.sources.pages.InterestsPage
+import toro.sources.pages.ReportPage
+import toro.sources.pages.ReportTargetType
 import toro.sources.pages.SuccessfulTaskPage
 
 sealed class Screen(val route: String) {
@@ -105,6 +107,9 @@ sealed class Screen(val route: String) {
     object Settings : Screen("settings")
     object FriendRequest : Screen("friend_request")
     object ReadingList : Screen("reading_list")
+    object Report : Screen("report/{targetType}/{targetId}") {
+        fun createRoute(targetType: String, targetId: String = "none") = "report/$targetType/$targetId"
+    }
     object Notifications : Screen("notifications")
     object Chat : Screen("chat_page/{conversationId}") {
         fun createRoute(conversationId: String) = "chat_page/$conversationId"
@@ -635,13 +640,25 @@ fun AppNavigation(viewModel: AppViewModel) {
             composable(Screen.AddComic.route) {
                 NewSeriesForm(
                     viewModel = viewModel,
-                    onCancel = { navController.popBackStack() }
+                    onCancel = { navController.popBackStack() },
+                    onUploadComplete = {
+                        navController.navigate(Screen.Success.createRoute("Upload Successful!")) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                inclusive = true
+                            }
+                        }
+                    }
                 )
             }
             composable(Screen.AddChapter.route) {
                 AddChapterForm(
                     viewModel = viewModel,
-                    onCancel = { navController.popBackStack() }
+                    onCancel = { navController.popBackStack() },
+                    onUploadComplete = {
+                        navController.navigate(Screen.Success.createRoute("Upload Successful!")) {
+                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                        }
+                    }
                 )
             }
             composable(Screen.Search.route) {
@@ -713,6 +730,23 @@ fun AppNavigation(viewModel: AppViewModel) {
                         navController.navigate(Screen.Settings.route)
                     },
                     onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Report.route) { backStackEntry ->
+                val typeString = backStackEntry.arguments?.getString("targetType") ?: "APP"
+                val targetId = backStackEntry.arguments?.getString("targetId")?.takeIf { it != "none" }
+
+                val targetType = ReportTargetType.valueOf(typeString)
+
+                ReportPage(
+                    viewModel = viewModel,
+                    targetType = targetType,
+                    targetId = targetId,
+                    onBackClick = { navController.popBackStack() },
+                    onSubmitSuccess = {
+                        navController.popBackStack()
+                        Toast.makeText(context, "Successfully sent", Toast.LENGTH_SHORT).show()
+                    }
                 )
             }
         }

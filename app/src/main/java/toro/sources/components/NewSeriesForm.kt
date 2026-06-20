@@ -8,6 +8,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
@@ -53,7 +55,8 @@ import com.toro.models.ScrollDirection
 @Composable
 fun NewSeriesForm(
     viewModel: AppViewModel,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    onUploadComplete: () -> Unit
 ) {
     var title by remember { mutableStateOf("") }
     var ratingExpanded by remember { mutableStateOf(false) }
@@ -62,15 +65,24 @@ fun NewSeriesForm(
     val author by viewModel.currentUser.collectAsState()
     var description by remember { mutableStateOf("") }
     var selectedChapterUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var selectedAudioUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var selectedCoverUri by remember { mutableStateOf<Uri?>(null) }
     var selectedComicRating by remember { mutableStateOf(PgRating.ALL) }
     var selectedScrollDirection by remember { mutableStateOf(ScrollDirection.VERTICAL) }
     val selectedComicGenres = remember { mutableStateListOf<Genre>() }
     val context = LocalContext.current
     val isUploading by viewModel.isUploading.collectAsState()
+    val uploadSuccess by viewModel.uploadSuccess.collectAsState()
     val ratingOptions = PgRating.entries
     val genreOptions = Genre.entries
     val scrollDirectionOptions = ScrollDirection.entries
+
+    LaunchedEffect(uploadSuccess) {
+        if (uploadSuccess) {
+            onUploadComplete()
+            viewModel.resetUploadState()
+        }
+    }
 
     val displayText = if (selectedComicGenres.isEmpty()) {
         "Select Genres"
@@ -81,6 +93,10 @@ fun NewSeriesForm(
     val chapterPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris -> selectedChapterUris = uris }
+
+    val audioPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris -> selectedAudioUris = uris }
 
     val coverPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -248,6 +264,15 @@ fun NewSeriesForm(
             }
 
             OutlinedButton(
+                onClick = { audioPickerLauncher.launch("audio/*") },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Default.LibraryMusic, "Upload Audio")
+                Spacer(Modifier.width(8.dp))
+                Text(if (selectedAudioUris.isNotEmpty()) "${selectedAudioUris.size} Songs Selected" else "Select Background Music (Optional)")
+            }
+
+            OutlinedButton(
                 onClick = { chapterPickerLauncher.launch("application/*") },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -268,7 +293,8 @@ fun NewSeriesForm(
                         pgRating = selectedComicRating,
                         description = description,
                         chapterUris = selectedChapterUris,
-                        selectedCover = selectedCoverUri
+                        selectedCover = selectedCoverUri,
+                        audioUris = selectedAudioUris
                     )
                 },
                 modifier = Modifier

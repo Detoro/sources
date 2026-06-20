@@ -1,37 +1,30 @@
 package toro.sources.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import toro.sources.Screen
 import toro.sources.AppViewModel
 import toro.sources.convertTimestamp
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.toro.models.Comment
 import com.toro.models.ShareType
 
@@ -49,20 +42,28 @@ fun CommentItem(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showComment by remember { mutableStateOf(!comment.isSpoiler) }
-    
+    var isExpanded by remember { mutableStateOf(false) }
+
+    val backgroundColor = if (isThreadHeader) MaterialTheme.colorScheme.surfaceContainerLow else Color.Transparent
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .background(backgroundColor)
             .then(if (!isThreadHeader) Modifier.clickable { onCommentClick(comment) } else Modifier)
-            .padding(vertical = 8.dp)
+            .padding(vertical = 12.dp, horizontal = if (isThreadHeader) 16.dp else 0.dp)
     ) {
         Row(modifier = Modifier.fillMaxWidth()) {
             DefaultAvatar(
                 avatarUrl = comment.authorAvatarUrl,
                 size = if (isThreadHeader) 44 else 36,
-                modifier = Modifier.clickable { onAuthorClick(comment.authorId) }
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .clickable { onAuthorClick(comment.authorId) }
             )
+
             Spacer(modifier = Modifier.width(12.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -74,13 +75,14 @@ fun CommentItem(
                             Text(
                                 text = comment.authorName,
                                 fontWeight = FontWeight.Bold,
-                                style = if (isThreadHeader) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                style = if (isThreadHeader) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleSmall,
                                 modifier = Modifier.clickable { onAuthorClick(comment.authorId) }
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = convertTimestamp(comment.timestamp),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -93,37 +95,45 @@ fun CommentItem(
                             Icon(
                                 Icons.Default.MoreVert,
                                 contentDescription = "More options",
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         DropdownMenu(
                             expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
+                            onDismissRequest = { showMenu = false },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest)
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Report") },
-                                onClick = { showMenu = false }
-                            )
-                            DropdownMenuItem(
                                 text = { Text("Share") },
-                                onClick = { 
+                                onClick = {
                                     showMenu = false
                                     onShareClick(comment)
                                 }
                             )
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
                             DropdownMenuItem(
-                                text = { Text("Cancel") },
-                                onClick = { showMenu = false }
+                                text = { Text("Report", color = MaterialTheme.colorScheme.error) },
+                                onClick = { showMenu = false
+                                    viewModel?.handleNavigation(Screen.Report.createRoute("COMMENT", comment.id))
+                                }
                             )
                         }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
                 val sharedId = comment.sharedId
                 val sharedType = comment.sharedType
 
                 if (sharedId != null && sharedType != null) {
                     SharedContentPlaceholder(
                         type = sharedType,
+                        title = "Shared ${sharedType.name.lowercase()}",
+                        previewText = "Tap to view details",
+                        imageUrl = comment.authorAvatarUrl,
+                        modifier = Modifier.padding(bottom = 8.dp),
                         onClick = {
                             if (viewModel != null) {
                                 when (sharedType) {
@@ -135,36 +145,70 @@ fun CommentItem(
                             }
                         }
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
                 }
-                var isExpanded by remember { mutableStateOf(false) }
-                
-                Column(
-                    modifier = Modifier
-                        .padding(top = 2.dp)
-                        .clickable {
-                            if (comment.isSpoiler) {
-                                showComment = !showComment
-                            } else {
-                                isExpanded = !isExpanded
+
+                AnimatedContent(
+                    targetState = showComment,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label = "SpoilerToggle"
+                ) { isVisible ->
+                    if (!isVisible) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showComment = true }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.VisibilityOff,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Spoiler Content • Tap to reveal",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
-                ) {
-                    Text(
-                        text = if (showComment) comment.content else "This is a spoiler",
-                        style = if (isThreadHeader) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
-                        maxLines = if (isExpanded) Int.MAX_VALUE else 4,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (showComment && comment.content.length > 200) {
-                        Text(
-                            text = if (isExpanded) "Show Less" else "Read More",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
+                    } else {
+                        Column(
+                            modifier = Modifier
+                                .animateContentSize()
+                        ) {
+                            SpoilerText(
+                                text = comment.content,
+                                isSpoiler = comment.isSpoiler,
+                                style = if (isThreadHeader) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = if (isExpanded) Int.MAX_VALUE else 4,
+                                overflow = TextOverflow.Ellipsis,
+                                onClick = {
+                                    if (comment.content.length > 200) isExpanded = !isExpanded
+                                }
+                            )
+                            if (comment.content.length > 200) {
+                                Text(
+                                    text = if (isExpanded) "Show Less" else "Read More",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                            }
+                        }
                     }
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 CommentActions(
                     comment = comment,

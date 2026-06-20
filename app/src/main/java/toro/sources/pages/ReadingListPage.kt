@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.sp
 import toro.sources.AppViewModel
 import toro.sources.R
 import toro.sources.components.ComicRow
-import com.toro.models.Comic
+import com.toro.models.*
 
 @Composable
 fun ReadingListPage(
@@ -60,7 +60,11 @@ fun ReadingListContent(
     val currentList = if (selectedTabIndex == 0) recentlyReadComics else subscribedComics
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.reading_list)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.reading_list)) },
+                windowInsets = WindowInsets(top = 3.dp)
+            ) },
         floatingActionButton = {
             FloatingActionButton(onClick = { onAddComic() }) {
                 Icon(Icons.Filled.Add, contentDescription = "Find a comic to subscribe to")
@@ -118,6 +122,7 @@ fun ReadingListContent(
                             onClick = {
                                 expanded = false
                                 dropDownSelection = "Recently Updated"
+                                currentList.sortedByDescending { it.lastUpdateTimestamp }
                             }
                         )
                         DropdownMenuItem(
@@ -125,6 +130,7 @@ fun ReadingListContent(
                             onClick = {
                                 expanded = false
                                 dropDownSelection = "Recently Subscribed"
+                                currentList.sortedByDescending { it.subscribeTimestamp }
                             }
                         )
                     }
@@ -144,7 +150,7 @@ fun ReadingListContent(
                     } else {
                         ListItem(
                             headlineContent = { Text(comic.title) },
-                            supportingContent = { Text(comic.authorName) }
+                            supportingContent = { Text(comic.writtenBy) }
                         )
                         HorizontalDivider()
                     }

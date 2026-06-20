@@ -1,6 +1,7 @@
 package toro.sources.pages
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -108,7 +109,8 @@ fun ChatInboxPage(
                             Icon(Icons.Default.Search, contentDescription = "Search Inbox")
                         }
                     }
-                }
+                },
+                windowInsets = WindowInsets(top = 3.dp)
             )
         },
         floatingActionButton = {

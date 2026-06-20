@@ -55,7 +55,8 @@ fun CommentThreadPage(
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                windowInsets = WindowInsets(top = 3.dp)
             )
         },
         bottomBar = {
@@ -83,26 +84,23 @@ fun CommentThreadPage(
                         }
                     }
                 }
-                val sharedContent by viewModel.sharedContent.collectAsState()
                 SmartInput(
-                    onSend = { _, text, mentions, _, _ ->
+                    onSend = { _, text, mentions, _, _, isSpoiler ->
                         val targetParentId = replyingTo?.id ?: commentId
                         when (commentLocation) {
                             CommentLocation.ON_CHAPTER -> viewModel.addChapterComment(
                                 targetId, 
                                 text, 
+                                isSpoiler,
                                 mentions, 
                                 targetParentId,
-                                sharedId = sharedContent?.id,
-                                sharedType = sharedContent?.type
                             )
                             CommentLocation.ON_POST -> viewModel.addPostComment(
                                 targetId, 
                                 text, 
+                                isSpoiler,
                                 mentions, 
                                 targetParentId,
-                                sharedId = sharedContent?.id,
-                                sharedType = sharedContent?.type
                             )
                         }
 
