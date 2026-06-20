@@ -40,7 +40,8 @@ fun PostPage(
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                windowInsets = WindowInsets(top = 3.dp)
             )
         },
         bottomBar = {
@@ -48,12 +49,12 @@ fun PostPage(
                 supportTitle = true,
                 supportUpload = true,
                 viewModel = viewModel,
-                onSend = { title, text, _, _, _ ->
+                onSend = { title, text, mentions, _, _, isSpoiler ->
                     viewModel.makePost(
-                        title, 
-                        text, 
-                        sharedId = sharedContent?.id, 
-                        sharedType = sharedContent?.type
+                        title = title,
+                        isSpoiler = isSpoiler,
+                        postContent = text,
+                        tags = emptyList()
                     )
                 },
                 onTitleChange = { postTitle = it },
@@ -119,6 +120,8 @@ fun PostPage(
                     if (sharedContent != null) {
                         SharedContentPlaceholder(
                             type = sharedContent!!.type,
+                            title = "Nothing",
+                            previewText = "Next to nothing",
                             onClick = { /* No-op in post preview */ }
                         )
                         Spacer(modifier = Modifier.height(8.dp))

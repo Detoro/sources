@@ -24,34 +24,42 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
         scope.launch {
             try {
                 RetrofitClient.comicApiService.registerFcmToken(FcmTokenRequest(token))
+                Log.i("FCM", "New token registered successfully")
             } catch (e: Exception) {
-                Log.e("Bad token", "${e.message}")
+                Log.e("FCM", "Failed to register new token: ${e.message}")
             }
         }
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        Log.i("FCM", "Message received from: ${remoteMessage.from}")
-
-        val title = remoteMessage.notification?.title ?: remoteMessage.data["title"] ?: "New Notification"
-        val message = remoteMessage.notification?.body ?: remoteMessage.data["message"] ?: ""
         val data = remoteMessage.data
-        val messageId = data["id"] ?: ""
+        val eventType = data["type"] ?: remoteMessage.notification?.title ?: data["title"] ?: "SYSTEM"
 
-        Log.i("FCM", "Title: $title, Message: $message, Data: $data")
+        Log.i("FCM", "Received Event Type: $eventType | Data Payload: $data")
 
-        if (messageId.isNotEmpty()) {
-            when(title) {
-                "DELIVERY_RECEIPT" -> {
-                    handleDeliveryReceipt(messageId)
-                }
-                "MESSAGE_DELETED" -> {
-                    handleMessageDelete(messageId)
-                }
+        when (eventType) {
+            "DELIVERY_RECEIPT" -> {
+                val msgId = data["messageId"] ?: remoteMessage.notification?.body ?: ""
+                if (msgId.isNotEmpty()) handleDeliveryReceipt(msgId)
+                return
             }
-            return
+            "MESSAGE_DELETED" -> {
+                val msgId = data["messageId"] ?: remoteMessage.notification?.body ?: ""
+                if (msgId.isNotEmpty()) handleMessageDelete(msgId)
+                return
+            }
+            "MESSAGE_EDITED" -> {
+                val msgId = data["messageId"] ?: data["id"] ?: ""
+                val newContent = data["content"] ?: remoteMessage.notification?.body ?: ""
+                if (msgId.isNotEmpty() && newContent.isNotEmpty()) handleMessageEdit(msgId, newContent)
+                return
+            }
         }
+
+        val title = remoteMessage.notification?.title ?: data["title"] ?: "New Notification"
+        val message = remoteMessage.notification?.body ?: data["message"] ?: ""
+        val targetId = data["id"] ?: data["conversationId"] ?: data["commentId"] ?: ""
 
         val helper = NotificationHelper(applicationContext)
         helper.showNotification(title, message, data)
@@ -59,19 +67,21 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
         val notification = Notification(
             id = UUID.randomUUID().toString(),
             userId = "",
-            type = NotificationType.fromString(title) ?: NotificationType.SYSTEM,
+            type = NotificationType.fromString(eventType) ?: NotificationType.SYSTEM,
             message = message,
             timestamp = System.currentTimeMillis(),
             isRead = false,
-            relatedId = messageId
+            relatedId = targetId
         )
+
         scope.launch {
             NotificationEventBus.postNotification(notification)
-            if (notification.type == NotificationType.CHAT && messageId.isNotEmpty()) {
+
+            if (notification.type == NotificationType.CHAT && targetId.isNotEmpty()) {
                 try {
-                    RetrofitClient.comicApiService.markMessageAsDelivered(messageId)
+                    RetrofitClient.comicApiService.markMessageAsDelivered(targetId)
                 } catch (e: Exception) {
-                    Log.e("FCM", "Failed to send delivery receipt for $messageId ${e.message}")
+                    Log.e("FCM", "Failed to send delivery receipt for $targetId: ${e.message}")
                 }
             }
         }
@@ -82,21 +92,39 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
             try {
                 val db = CanvasDatabase.getDatabase(applicationContext)
                 db.conversationDao().updateMessageDeliveryStatus(messageId, true)
-                Log.i("FCM", "Updated delivery status for message $messageId")
+                Log.i("FCM", "Successfully updated delivery status for message $messageId")
             } catch (e: Exception) {
                 Log.e("FCM", "Error updating delivery status", e)
             }
         }
     }
+
     private fun handleMessageDelete(messageId: String) {
         scope.launch {
             try {
                 val db = CanvasDatabase.getDatabase(applicationContext)
                 db.conversationDao().deleteMessageById(messageId)
-                Log.i("FCM", "Message deleted $messageId")
+                Log.i("FCM", "Successfully deleted message $messageId via remote sync")
             } catch (e: Exception) {
                 Log.e("FCM", "Error deleting message", e)
             }
         }
+    }
+
+    private fun handleMessageEdit(messageId: String, newContent: String) {
+        scope.launch {
+            try {
+                val db = CanvasDatabase.getDatabase(applicationContext)
+                db.conversationDao().updateMessageContent(messageId, newContent)
+                Log.i("FCM", "Successfully updated content for message $messageId via remote sync")
+            } catch (e: Exception) {
+                Log.e("FCM", "Error editing message content", e)
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        job.cancel()
     }
 }
