@@ -12,30 +12,25 @@ Built entirely in Kotlin, it's a monorepo architecture sharing data models betwe
 * **Hybrid Recommendation Engine:** A dual-layer algorithm utilizing vector space cosine similarity (Content-Based Filtering via Genre axes) blended with audience overlap analysis (Item-Item Collaborative Filtering) to provide highly personalized comic feeds.
 * **Push Notifications:** Integrated Firebase Cloud Messaging (FCM) for likes, follows, comments, and direct messages.
 
-## 🛠 Tech Stack
+## 🛠️ Tech Stack
 
-**Frontend (Android)**
+| Category | Technology |
+|----------|------------|
+| **Language** | [Kotlin](https://kotlinlang.org/) 100% |
+| **UI Framework** | [Jetpack Compose](https://developer.android.com/jetpack/compose) |
+| **Design System** | [Material Design 3](https://m3.material.io/) |
+| **Audio Engine** | [Media3 ExoPlayer](https://developer.android.com/guide/topics/media/media3) + FFmpeg |
+| **Architecture** | MVVM with StateFlow/SharedFlow |
+| **DI** | [Hilt](https://dagger.dev/hilt/) |
+| **Database** | [Room](https://developer.android.com/training/data-storage/room) |
+| **Networking** | [Retrofit](https://square.github.io/retrofit/) + OkHttp |
+| **Image Loading** | [Coil](https://coil-kt.github.io/coil/) |
+| **Async** | Kotlin Coroutines & Flow |
+| **Background Tasks** | WorkManager |
+| **Notifications** | Firebase Cloud Messaging (FCM) |
+| **Media Storage** | [Cloudinary]([https://developer.android.com/jetpack/compose/glance](https://console.cloudinary.com/app/c-65a873f198d37728cb3399541e13f0/assets/media_library/search?q=&view_mode=mosaic)) |
 
-* **UI:** Jetpack Compose (Material 3)
-* **Architecture:** MVVM (Model-View-ViewModel) with Kotlin Coroutines and StateFlow
-* **Navigation:** Jetpack Compose Navigation
-* **Image Loading:** Coil
-
-**Backend (Ktor)**
-
-* **Framework:** Ktor Server (Netty)
-* **Database:** PostgreSQL with Jetbrains Exposed ORM
-* **Authentication:** JWT (JSON Web Tokens) with BCrypt password hashing
-* **Architecture:** Feature-Based Routing
-
-**Shared Module**
-
-* Pure Kotlin module containing centralized data classes (`Comic`, `Post`, `ChatMessage`, `SharedContent`, etc.) and `kotlinx-serialization` to ensure absolute parity between frontend and backend.
-
-**Third-Party Services**
-
-* **Media Storage:** Cloudinary (for avatars, comic covers, and extracted chapter pages)
-* **Notifications:** Firebase Cloud Messaging (FCM)
+---
 
 ## 📁 Project Structure
 
