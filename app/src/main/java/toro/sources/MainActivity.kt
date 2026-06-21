@@ -250,7 +250,6 @@ fun AppNavigation(viewModel: AppViewModel) {
     val context = LocalContext.current
     val currentUser by viewModel.currentUser.collectAsState()
     val pendingNav by viewModel.pendingNavigation.collectAsState()
-    val error by viewModel.errorMessage.collectAsState()
     val showShareDialog by viewModel.showShareDialog.collectAsState()
     val sharedContent by viewModel.sharedContent.collectAsState()
 
@@ -264,13 +263,6 @@ fun AppNavigation(viewModel: AppViewModel) {
             sharedTargetId = sharedContent!!.targetId,
             onDismiss = { viewModel.showShareDialog(false) }
         )
-    }
-
-    LaunchedEffect(error) {
-        error?.let {
-            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-            viewModel.clearError()
-        }
     }
 
     val startDestination = remember {
