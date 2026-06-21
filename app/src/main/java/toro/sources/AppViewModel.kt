@@ -615,7 +615,6 @@ class AppViewModel(
                 _catalog.value = withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.getCatalog()
                 }
-                Log.i("comics", "${_catalog.value}")
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to load catalog: ${e.message}"
             } finally {
@@ -1302,7 +1301,6 @@ class AppViewModel(
         } else {
             current + authorId
         }
-        Log.i("AuthorFilter", "Selected authors: ${_selectedAuthorIds.value}")
     }
 
     fun getUserWorks(userId: String) {
@@ -1422,7 +1420,6 @@ class AppViewModel(
     }
 
     fun setSharedContent(content: SharedContent?) {
-        Log.i("Shared content", "$content")
         _sharedContent.value = content
     }
 
