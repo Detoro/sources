@@ -39,10 +39,10 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "BASE_API_URL","http://192.168.1.172:8080")
+            buildConfigField("String", "BASE_API_URL","\"http://192.168.1.172:8080\"")
         }
         release {
-            buildConfigField("String", "BASE_API_URL","https://sources-comic-server.onrender.com")
+            buildConfigField("String", "BASE_API_URL","\"https://sources-comic-server.onrender.com\"")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
