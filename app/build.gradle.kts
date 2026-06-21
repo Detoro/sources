@@ -33,14 +33,16 @@ android {
             }
         }
 
-        val baseApiUrl = localProperties.getProperty("BASE_API_URL") ?: "\"\""
         val cloudinaryPreset = localProperties.getProperty("CLOUDINARY_UPLOAD_PRESET") ?: "\"\""
-        buildConfigField("String", "BASE_API_URL", "\"$baseApiUrl\"")
         buildConfigField("String", "CLOUDINARY_PRESET", "\"$cloudinaryPreset\"")
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "BASE_API_URL","http://192.168.1.172:8080")
+        }
         release {
+            buildConfigField("String", "BASE_API_URL","https://sources-comic-server.onrender.com")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
