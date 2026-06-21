@@ -13,7 +13,7 @@ import com.toro.models.Notification
 
 @Database(
     entities = [Comic::class, Chapter::class, Conversation::class, ChatMessage::class, Notification::class],
-    version = 19,
+    version = 20,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

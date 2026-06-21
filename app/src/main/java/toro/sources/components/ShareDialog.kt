@@ -4,21 +4,26 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.Comment
+import androidx.compose.material.icons.automirrored.filled.Comment
+import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.PostAdd
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.Screen
 import com.toro.models.ShareType
 import com.toro.models.SharedContent
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShareDialog(
     viewModel: AppViewModel,
@@ -30,13 +35,31 @@ fun ShareDialog(
     onDismiss: () -> Unit
 ) {
     var showChatPicker by remember { mutableStateOf(false) }
-    val inbox by viewModel.inbox.collectAsState()
+    val inbox by viewModel.filteredInbox.collectAsState()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    if (showChatPicker) {
-        AlertDialog(
-            onDismissRequest = { showChatPicker = false },
-            title = { Text("Select Chat") },
-            text = {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = { BottomSheetDefaults.DragHandle() }
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 32.dp)
+        ) {
+            Text(
+                text = if (showChatPicker) "Send to..." else "Share to...",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            if (showChatPicker) {
                 LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
                     items(inbox) { conversation ->
                         Row(
@@ -44,38 +67,33 @@ fun ShareDialog(
                                 .fillMaxWidth()
                                 .clickable {
                                     viewModel.setSharedContent(
-                                        SharedContent(
-                                            sharedId,
-                                            sharedType,
-                                            sharedTitle,
-                                            sharedPreview,
-                                            sharedTargetId
-                                        )
+                                        SharedContent(sharedId, sharedType, sharedTitle, sharedPreview, sharedTargetId)
                                     )
                                     viewModel.handleNavigation(Screen.Chat.createRoute(conversation.conversationId))
                                     onDismiss()
                                 }
-                                .padding(16.dp),
+                                .padding(horizontal = 24.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            DefaultAvatar(modifier = Modifier.size(40.dp))
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(conversation.otherUserName)
+                            DefaultAvatar(
+                                avatarUrl = conversation.otherUserAvatarUrl,
+                                size = 48
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                text = conversation.otherUserName,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                 }
-            },
-            confirmButton = {}
-        )
-    } else {
-        AlertDialog(
-            onDismissRequest = onDismiss,
-            title = { Text("Share to...") },
-            text = {
-                Column {
+            } else {
+                Column(modifier = Modifier.padding(horizontal = 8.dp)) {
                     ShareOption(
-                        icon = Icons.Default.Chat,
-                        label = "Chat",
+                        icon = Icons.Default.ChatBubble,
+                        label = "Direct Message",
+                        description = "Send directly to a friend",
                         onClick = {
                             viewModel.getInbox()
                             showChatPicker = true
@@ -83,44 +101,31 @@ fun ShareDialog(
                     )
                     ShareOption(
                         icon = Icons.Default.PostAdd,
-                        label = "Post",
+                        label = "Community Post",
+                        description = "Share to the main feed",
                         onClick = {
                             viewModel.setSharedContent(
-                                SharedContent(
-                                    sharedId,
-                                    sharedType,
-                                    sharedTitle,
-                                    sharedPreview,
-                                    sharedTargetId
-                                )
+                                SharedContent(sharedId, sharedType, sharedTitle, sharedPreview, sharedTargetId)
                             )
                             viewModel.handleNavigation(Screen.Post.route)
                             onDismiss()
                         }
                     )
                     ShareOption(
-                        icon = Icons.Default.Comment,
-                        label = "Comment",
+                        icon = Icons.AutoMirrored.Filled.Comment,
+                        label = "Engagement Thread",
+                        description = "Drop into a comment section",
                         onClick = {
                             viewModel.setSharedContent(
-                                SharedContent(
-                                    sharedId,
-                                    sharedType,
-                                    sharedTitle,
-                                    sharedPreview,
-                                    sharedTargetId
-                                )
+                                SharedContent(sharedId, sharedType, sharedTitle, sharedPreview, sharedTargetId)
                             )
                             viewModel.handleNavigation(Screen.Engagement.route)
                             onDismiss()
                         }
                     )
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = onDismiss) { Text("Cancel") }
             }
-        )
+        }
     }
 }
 
@@ -128,17 +133,33 @@ fun ShareDialog(
 private fun ShareOption(
     icon: ImageVector,
     label: String,
+    description: String,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(48.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(12.dp)
+            )
+        }
         Spacer(modifier = Modifier.width(16.dp))
-        Text(label, style = MaterialTheme.typography.bodyLarge)
+        Column {
+            Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }

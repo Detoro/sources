@@ -47,6 +47,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.mutableStateListOf
+import com.toro.models.Creator
 import com.toro.models.Genre
 import com.toro.models.PgRating
 import com.toro.models.ScrollDirection
@@ -285,10 +286,15 @@ fun NewSeriesForm(
                 title.isNotBlank() && selectedChapterUris.isNotEmpty() && !isUploading
             Button(
                 onClick = {
+                    val defaultCreator = Creator(
+                        id = author.userId,
+                        name = author.username,
+                        role = "Creator"
+                    )
                     viewModel.uploadNewChapters(
                         context = context,
                         title = title,
-                        author = author.username,
+                        authors = listOf(defaultCreator),
                         scrollDirection = selectedScrollDirection,
                         pgRating = selectedComicRating,
                         description = description,

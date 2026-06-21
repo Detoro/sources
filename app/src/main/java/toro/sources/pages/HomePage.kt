@@ -211,43 +211,32 @@ fun HomePage(
                     }
 
                     val announcements = communityPosts.filter { it.authorId == "toro_creator" }
-                    if (announcements.isNotEmpty()) {
-                        item {
-                            SectionHeader(title = "Announcements", modifier = Modifier.padding(horizontal = 16.dp))
-                        }
-                        items(announcements.take(2)) { post ->
-                            PostCard(
-                                viewModel = viewModel,
-                                post = post,
-                                onCommentClick = { onNotificationsClick() },
-                                onAuthorClick = { userId ->
-                                    viewModel.handleNavigation(Screen.Profile.createRoute(userId))
-                                },
-                                onShareClick = {
-                                    viewModel.setSharedContent(
-                                        SharedContent(
-                                            id = it.id,
-                                            type = ShareType.POST,
-                                            title = it.title ?: "Announcement: ${null}",
-                                            previewText = it.content.take(50)
-                                        )
+                    item {
+                        SectionHeader(title = "Announcements", modifier = Modifier.padding(horizontal = 16.dp))
+                    }
+                    items(announcements.take(2)) { post ->
+                        PostCard(
+                            viewModel = viewModel,
+                            post = post,
+                            onCommentClick = { onNotificationsClick() },
+                            onAuthorClick = { userId ->
+                                viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                            },
+                            onShareClick = {
+                                viewModel.setSharedContent(
+                                    SharedContent(
+                                        id = it.id,
+                                        type = ShareType.POST,
+                                        title = it.title ?: "Announcement: ${null}",
+                                        previewText = it.content.take(50)
                                     )
-                                    viewModel.showShareDialog(true)
-                                },
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .fillMaxWidth()
-                            )
-                        }
-                    } else {
-                        item {
-                            ComicCarousel(
-                                title = "Announcements",
-                                comics = catalog.shuffled().take(4),
-                                viewModel = viewModel,
-                                onComicClick = onComicClick
-                            )
-                        }
+                                )
+                                viewModel.showShareDialog(true)
+                            },
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .fillMaxWidth()
+                        )
                     }
 
                     item {
