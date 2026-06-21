@@ -296,7 +296,7 @@ class AppViewModel(
             repository.syncSubscriptions()
             getUserProfile(userId)
             fetchAndRegisterFcmToken()
-            getCatalog()
+            getRecommendation()
             getChatRequests()
             getSubscribedAuthors()
             getInbox()
@@ -592,12 +592,12 @@ class AppViewModel(
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
     }
-    fun getCatalog() {
+    fun getRecommendation() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
                 _catalog.value = withContext(Dispatchers.IO) {
-                    RetrofitClient.comicApiService.getCatalog()
+                    RetrofitClient.comicApiService.getRecommendation()
                 }
             } catch (e: Exception) {
                 Log.e("Failed to load catalog:", "${e.message}")
