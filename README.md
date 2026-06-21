@@ -39,3 +39,15 @@ Built entirely in Kotlin, it's a monorepo architecture sharing data models betwe
 * PostgreSQL running locally or remotely
 * A Cloudinary Account
 * A Firebase Project (with `google-services.json` and `google-account.json` configured)
+
+---
+
+## ⬇️ Download
+
+<p align="center">
+  <a href="https://github.com/SourcesProject/sources/edit/master/README.md">
+    <img src="https://raw.githubusercontent.com/Kunzisoft/Github-badge/main/get-it-on-github.png" alt="Get it on GitHub" height="60">
+  </a>
+</p>
+
+---
