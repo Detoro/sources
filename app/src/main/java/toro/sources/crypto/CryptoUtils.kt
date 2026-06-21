@@ -3,7 +3,6 @@ package toro.sources.crypto
 import android.util.Base64
 import java.security.SecureRandom
 import javax.crypto.Cipher
-import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -14,7 +13,7 @@ object CryptoUtils {
     private const val IV_LENGTH_BYTE = 12
 
     // obv this is temporary
-    private const val FIXED_KEY = "01234567890123456789012345678901" // 32 bytes for 256-bit key
+    private const val FIXED_KEY = "01234567890123456789012345678901"
 
     private val secretKey: SecretKey by lazy {
         SecretKeySpec(FIXED_KEY.toByteArray(), "AES")
