@@ -250,40 +250,10 @@ class AppViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        getCatalog()
-        getChatRequests()
-        getSubscribedAuthors()
-
-        viewModelScope.launch {
-            if (RetrofitClient.preferenceManager.getTokenSync() != null) {
-                repository.syncSubscriptions()
-            }
-        }
-
-        val userData = RetrofitClient.preferenceManager.getUserDataSync()
-        if (userData.userId != null && userData.username != null) {
-            _currentUser.value = AuthResponse(
-                userId = userData.userId,
-                username = userData.username,
-                avatarUrl = userData.avatarUrl
-            )
-            _userProfile.value = UserProfile(
-                id = userData.userId,
-                username = userData.username,
-                avatarUrl = userData.avatarUrl,
-                bio = userData.bio
-            )
-            getUserProfile(userData.userId)
-        }
-
         viewModelScope.launch {
             RetrofitClient.preferenceManager.isDarkTheme.collect { enabled ->
                 _isDarkTheme.value = enabled
             }
-        }
-
-        if (RetrofitClient.preferenceManager.getTokenSync() != null) {
-            fetchAndRegisterFcmToken()
         }
 
         viewModelScope.launch {
@@ -301,8 +271,38 @@ class AppViewModel(
                 .debounce(500L)
                 .filter { it.first.isNotBlank() && it.second == SearchSource.ONLINE }
                 .collectLatest { (readyQuery, _) ->
-                    searchComics(readyQuery)
+                    if (_currentUser.value.userId.isNotEmpty()) {
+                        searchComics(readyQuery)
+                    }
                 }
+        }
+
+        val userData = RetrofitClient.preferenceManager.getUserDataSync()
+        if (userData.userId != null && userData.username != null && RetrofitClient.preferenceManager.getTokenSync() != null) {
+            _currentUser.value = AuthResponse(
+                userId = userData.userId,
+                username = userData.username,
+                avatarUrl = userData.avatarUrl
+            )
+            _userProfile.value = UserProfile(
+                id = userData.userId,
+                username = userData.username,
+                avatarUrl = userData.avatarUrl,
+                bio = userData.bio
+            )
+            onUserAuthenticated(userData.userId)
+        }
+    }
+
+    private fun onUserAuthenticated(userId: String) {
+        viewModelScope.launch {
+            repository.syncSubscriptions()
+            getUserProfile(userId)
+            fetchAndRegisterFcmToken()
+            getCatalog()
+            getChatRequests()
+            getSubscribedAuthors()
+            getInbox()
         }
     }
 
@@ -428,9 +428,7 @@ class AppViewModel(
                     res
                 }
                 _currentUser.value = response
-                getUserProfile(response.userId)
-                fetchAndRegisterFcmToken()
-                repository.syncSubscriptions()
+                onUserAuthenticated(response.userId)
                 _currentComic.value = null
                 onSuccess()
                 Log.i("Success", "Logged in successfully as ${response.username}!")
@@ -467,8 +465,7 @@ class AppViewModel(
                     res
                 }
                 _currentUser.value = response
-                getUserProfile(response.userId)
-                fetchAndRegisterFcmToken()
+                onUserAuthenticated(response.userId)
                 onSuccess()
                 Log.i("Success", "Sign up successfully as ${response.username}!")
             } catch (e: Exception) {
