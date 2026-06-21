@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -17,16 +19,30 @@ android {
     defaultConfig {
         applicationId = "toro.sources"
         minSdk = 26
+        //noinspection OldTargetApi
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val localProperties = Properties().apply {
+            val propFile = rootProject.file("local.properties")
+            if (propFile.exists()) {
+                propFile.inputStream().use { load(it) }
+            }
+        }
+
+        val baseApiUrl = localProperties.getProperty("BASE_API_URL") ?: "\"\""
+        val cloudinaryPreset = localProperties.getProperty("CLOUDINARY_UPLOAD_PRESET") ?: "\"\""
+        buildConfigField("String", "BASE_API_URL", "\"$baseApiUrl\"")
+        buildConfigField("String", "CLOUDINARY_PRESET", "\"$cloudinaryPreset\"")
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

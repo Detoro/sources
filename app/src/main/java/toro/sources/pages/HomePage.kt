@@ -162,7 +162,8 @@ fun HomePage(
                         )
                     }
 
-                    val followedPosts = communityPosts.filter { followedAuthorIds.contains(it.authorId) }
+                    val followedPosts =
+                        communityPosts.filter { followedAuthorIds.contains(it.authorId) }
                     if (followedPosts.isNotEmpty()) {
                         item {
                             SectionHeader(
@@ -211,32 +212,37 @@ fun HomePage(
                     }
 
                     val announcements = communityPosts.filter { it.authorId == "toro_creator" }
-                    item {
-                        SectionHeader(title = "Announcements", modifier = Modifier.padding(horizontal = 16.dp))
-                    }
-                    items(announcements.take(2)) { post ->
-                        PostCard(
-                            viewModel = viewModel,
-                            post = post,
-                            onCommentClick = { onNotificationsClick() },
-                            onAuthorClick = { userId ->
-                                viewModel.handleNavigation(Screen.Profile.createRoute(userId))
-                            },
-                            onShareClick = {
-                                viewModel.setSharedContent(
-                                    SharedContent(
-                                        id = it.id,
-                                        type = ShareType.POST,
-                                        title = it.title ?: "Announcement: ${null}",
-                                        previewText = it.content.take(50)
+                    if (announcements.isNotEmpty()) {
+                        item {
+                            SectionHeader(
+                                title = "Announcements",
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                        }
+                        items(announcements.take(2)) { post ->
+                            PostCard(
+                                viewModel = viewModel,
+                                post = post,
+                                onCommentClick = { onNotificationsClick() },
+                                onAuthorClick = { userId ->
+                                    viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                },
+                                onShareClick = {
+                                    viewModel.setSharedContent(
+                                        SharedContent(
+                                            id = it.id,
+                                            type = ShareType.POST,
+                                            title = it.title ?: "Announcement: ${null}",
+                                            previewText = it.content.take(50)
+                                        )
                                     )
-                                )
-                                viewModel.showShareDialog(true)
-                            },
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                .fillMaxWidth()
-                        )
+                                    viewModel.showShareDialog(true)
+                                },
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .fillMaxWidth()
+                            )
+                        }
                     }
 
                     item {

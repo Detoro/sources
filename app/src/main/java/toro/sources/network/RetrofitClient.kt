@@ -7,9 +7,9 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.Interceptor
-import toro.sources.dataModels.PreferenceManager
-
-const val url: String = "http://192.168.1.141:8080"
+import toro.sources.PreferenceManager
+import toro.sources.BuildConfig
+import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
     private val networkJson = Json { ignoreUnknownKeys = true }
@@ -33,10 +33,13 @@ object RetrofitClient {
 
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
         .build()
     private val retrofit by lazy {
         Retrofit.Builder()
-            .baseUrl(url)
+            .baseUrl(BuildConfig.BASE_API_URL)
             .client(okHttpClient)
             .addConverterFactory(networkJson.asConverterFactory("application/json".toMediaType()))
             .build()

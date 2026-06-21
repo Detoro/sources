@@ -66,11 +66,11 @@ fun OverviewPage(
                     }
                 },
                 actions = {
-                    comic?.let {
+                    comic?.let { currentComic ->
                         IconButton(
                             onClick = {
                                 showInfoSheet = true
-                                viewModel.getUserWorks(comic!!.authorId)
+                                viewModel.getUserWorks(currentComic.authorId)
                             },
                             modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), shape = RoundedCornerShape(50))
                         ) {
@@ -239,34 +239,35 @@ fun OverviewPage(
                     }
                 }
             }
-        }
-    }
-    if (showActionSheet) {
-        ComicActionBottomSheet(
-            onDismiss = { showActionSheet = false },
-            onShare = { showShareDialog = true },
-            onRemove = {
-                viewModel.removeComicFromLibrary(comic!!.id, onRemoved = onBackClick)
+
+            if (showActionSheet) {
+                ComicActionBottomSheet(
+                    onDismiss = { showActionSheet = false },
+                    onShare = { showShareDialog = true },
+                    onRemove = {
+                        viewModel.removeComicFromLibrary(safeComic.id, onRemoved = onBackClick)
+                    }
+                )
             }
-        )
-    }
 
-    if (showInfoSheet) {
-        ComicInfoBottomSheet(
-            comic = comic!!,
-            viewModel,
-            onDismiss = { showInfoSheet = false }
-        )
-    }
+            if (showInfoSheet) {
+                ComicInfoBottomSheet(
+                    comic = safeComic,
+                    viewModel = viewModel,
+                    onDismiss = { showInfoSheet = false }
+                )
+            }
 
-    if (showShareDialog) {
-        ShareDialog(
-            viewModel = viewModel,
-            sharedId = comic!!.id,
-            sharedType = ShareType.COMIC,
-            sharedTitle = comic!!.title,
-            sharedPreview = comic!!.description.take(50),
-            onDismiss = { showShareDialog = false }
-        )
+            if (showShareDialog) {
+                ShareDialog(
+                    viewModel = viewModel,
+                    sharedId = safeComic.id,
+                    sharedType = ShareType.COMIC,
+                    sharedTitle = safeComic.title,
+                    sharedPreview = safeComic.description.take(50),
+                    onDismiss = { showShareDialog = false }
+                )
+            }
+        }
     }
 }

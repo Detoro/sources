@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
@@ -34,8 +35,8 @@ fun ComicActionBottomSheet(
                 icon = Icons.Default.Share,
                 label = "Share Comic",
                 onClick = {
-                    onShare()
                     onDismiss()
+                    onShare()
                 }
             )
 
@@ -45,8 +46,8 @@ fun ComicActionBottomSheet(
                 labelColor = MaterialTheme.colorScheme.error,
                 iconTint = MaterialTheme.colorScheme.error,
                 onClick = {
-                    onRemove()
                     onDismiss()
+                    onRemove()
                 }
             )
         }
@@ -58,8 +59,8 @@ private fun ActionItem(
     icon: ImageVector,
     label: String,
     onClick: () -> Unit,
-    labelColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
-    iconTint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary
+    labelColor: Color = MaterialTheme.colorScheme.onSurface,
+    iconTint: Color = MaterialTheme.colorScheme.primary
 ) {
     Row(
         modifier = Modifier

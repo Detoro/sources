@@ -4,14 +4,16 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import toro.sources.CbzParser
 import toro.sources.network.ComicApiService
-import com.toro.models.Chapter
+import Chapter
 import com.toro.models.Comic
 import com.toro.models.Conversation
 import com.toro.models.ChatMessage
+import com.toro.models.Notification
 import com.toro.models.Page
 import java.io.File
 
@@ -20,10 +22,10 @@ class ComicRepository(
     private val comicDao: ComicDao,
     private val chapterDao: ChapterDao,
     private val conversationDao: ConversationDao,
+    private val notificationDao: NotificationDao,
     private val cbzParser: CbzParser,
     private val apiService: ComicApiService
 ) {
-
     // new novels
     fun getMyLibrary(): Flow<List<Comic>> {
         return comicDao.getAllComics()
@@ -155,30 +157,49 @@ class ComicRepository(
                 lower.endsWith(".png") || lower.endsWith(".webp")
     }
 
-    suspend fun syncRemoteChaptersForComic(comic: Comic) {
-        try {
-            if (comic.id.isBlank()) {
-                Log.e("Sync", "Cannot sync chapters for comic with blank ID")
-                return
-            }
-            comicDao.insertComic(comic)
+    suspend fun syncRemoteChaptersForComic(comic: Comic, maxRetries: Int = 3) {
+        if (comic.id.isBlank()) {
+            Log.e("Sync", "Cannot sync chapters for comic with blank ID")
+            return
+        }
+        comicDao.insertComic(comic)
 
-            val remoteChapters = apiService.getChaptersForComic(comic.id)
-            val sanitizedChapters = remoteChapters.map { it.copy(comicId = comic.id) }
-            
-            chapterDao.insertChapters(sanitizedChapters)
-        } catch (e: Exception) {
-            Log.e("Network Error", "Failed to fetch chapters for ${comic.title}: ${e.message}")
+        var currentRetry = 0
+        while (currentRetry < maxRetries) {
+            try {
+                val remoteChapters = apiService.getChaptersForComic(comic.id)
+                val sanitizedChapters = remoteChapters.map { it.copy(comicId = comic.id) }
+                chapterDao.insertChapters(sanitizedChapters)
+                return
+            } catch (e: Exception) {
+                currentRetry++
+                if (currentRetry >= maxRetries) {
+                    Log.e("Network Error", "Failed to fetch chapters for ${comic.title} after $maxRetries retries: ${e.message}")
+                } else {
+                    Log.w("Sync", "Fetch chapters failed for ${comic.title}, retrying ($currentRetry/$maxRetries)...")
+                    delay(2000L * currentRetry)
+                }
+            }
         }
     }
 
-    suspend fun syncSubscriptions() {
-        try {
-            val remoteSubs = apiService.getSubscribedComics()
-            val syncedComics = remoteSubs.map { it.copy(isSubscribed = true) }
-            insertComics(syncedComics)
-        } catch (e: Exception) {
-            Log.e("Sync", "Failed to sync subscriptions", e)
+    suspend fun syncSubscriptions(maxRetries: Int = 3) {
+        var currentRetry = 0
+        while (currentRetry < maxRetries) {
+            try {
+                val remoteSubs = apiService.getSubscribedComics()
+                val syncedComics = remoteSubs.map { it.copy(isSubscribed = true) }
+                insertComics(syncedComics)
+                return
+            } catch (e: Exception) {
+                currentRetry++
+                if (currentRetry >= maxRetries) {
+                    Log.e("Sync", "Failed to sync subscriptions after $maxRetries retries", e)
+                } else {
+                    Log.w("Sync", "Sync failed, retrying ($currentRetry/$maxRetries)...", e)
+                    delay(2000L * currentRetry)
+                }
+            }
         }
     }
 
@@ -216,5 +237,29 @@ class ComicRepository(
 
     suspend fun deleteConversationById(conversationId: String) {
         conversationDao.deleteConversationById(conversationId)
+    }
+
+    suspend fun updateMessageReadStatus(messageId: String, read: Boolean) {
+        conversationDao.updateMessageReadStatus(messageId, read)
+    }
+
+    suspend fun updateMessageContent(messageId: String, content: String) {
+        conversationDao.updateMessageContent(messageId, content)
+    }
+
+    fun getNotifications(): Flow<List<Notification>> {
+        return notificationDao.getAllNotifications()
+    }
+
+    suspend fun saveNotification(notification: Notification) {
+        notificationDao.insert(notification)
+    }
+
+    suspend fun deleteNotificationById(notificationId: String) {
+        notificationDao.deleteById(notificationId)
+    }
+
+    suspend fun clearNotifications() {
+        notificationDao.deleteAll()
     }
 }

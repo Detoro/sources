@@ -261,6 +261,12 @@ fun ChatThreadPage(
             itemsIndexed(filteredMessages, key = { _, msg -> msg.id }) { index, msg ->
                 val isFromMe = msg.senderId == me.userId
 
+                LaunchedEffect(msg.id) {
+                    if (!isFromMe && !msg.isRead) {
+                        viewModel.markMessageAsRead(msg.id)
+                    }
+                }
+
                 ChatBubble(
                     message = msg,
                     isFromMe = isFromMe,

@@ -88,7 +88,10 @@ fun ComicInfoBottomSheet(
                 ) {
                     creators.forEach { creator ->
                         TextButton(
-                            onClick = { viewModel.handleNavigation(Screen.Profile.createRoute(creator.id)) },
+                            onClick = {
+                                onDismiss()
+                                viewModel.handleNavigation(Screen.Profile.createRoute(creator.id))
+                                      },
                             contentPadding = PaddingValues(0.dp),
                             modifier = Modifier.height(32.dp)
                         ) {

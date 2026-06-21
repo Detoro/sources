@@ -6,11 +6,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -33,6 +33,13 @@ fun NotificationsPage(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (notifications.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.clearNotifications() }) {
+                            Icon(Icons.Default.DeleteSweep, contentDescription = "Clear All")
+                        }
                     }
                 },
                 windowInsets = WindowInsets(top = 3.dp)
@@ -59,23 +66,42 @@ fun NotificationsPage(
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(paddingValues)
             ) {
-                items(notifications) { notification ->
-                    ListItem(
-                        headlineContent = { Text(notification.message) },
-                        supportingContent = {
-                            Text(text = convertTimestamp(notification.timestamp))
-                        },
-                        leadingContent = {
-                            Icon(
-                                Icons.Default.Notifications,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        },
-                        modifier = Modifier.clickable {
-                            viewModel.handleNavigation(Screen.Chat.createRoute(notification.relatedId ?: ""))
-                        }
+                items(notifications, key = { it.id }) { notification ->
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        SwipeToDismissBoxValue.Settled,
+                        SwipeToDismissBoxDefaults.positionalThreshold
                     )
+
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        enableDismissFromStartToEnd = false,
+                        backgroundContent = {
+                            Box(
+                                Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Text("Don't do this to me")
+                            }
+                        },
+                        onDismiss = {viewModel.deleteNotification(notification.id)}
+                    ) {
+                        ListItem(
+                            headlineContent = { Text(notification.message) },
+                            supportingContent = {
+                                Text(text = convertTimestamp(notification.timestamp))
+                            },
+                            leadingContent = {
+                                Icon(
+                                    Icons.Default.Notifications,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                viewModel.handleNavigation(Screen.Chat.createRoute(notification.relatedId ?: ""))
+                            }
+                        )
+                    }
                     HorizontalDivider()
                 }
             }
