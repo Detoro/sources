@@ -27,6 +27,7 @@ import com.toro.models.UpdateInterestsRequest
 import com.toro.models.FcmTokenRequest
 import RegisterChaptersRequest
 import RegisterComicRequest
+import com.toro.models.RefreshTokenRequest
 import com.toro.models.ReportRequest
 import retrofit2.http.DELETE
 
@@ -103,6 +104,9 @@ interface ComicApiService {
 
     @POST("api/auth/login")
     suspend fun login(@Body request: AuthRequest): AuthResponse
+
+    @POST("api/auth/logout")
+    suspend fun logout(@Body request: RefreshTokenRequest): AuthResponse
 
     @POST("api/comics/{comicId}/chapters/{chapterId}/read")
     suspend fun markChapterAsRead(

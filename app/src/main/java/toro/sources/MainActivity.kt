@@ -248,7 +248,7 @@ fun AppNavigation(viewModel: AppViewModel) {
         Screen.ReadingList.route
     )
     val context = LocalContext.current
-    val currentUser by viewModel.currentUser.collectAsState()
+    val currentUser by viewModel.userProfile.collectAsState()
     val pendingNav by viewModel.pendingNavigation.collectAsState()
     val showShareDialog by viewModel.showShareDialog.collectAsState()
     val sharedContent by viewModel.sharedContent.collectAsState()
@@ -266,7 +266,7 @@ fun AppNavigation(viewModel: AppViewModel) {
     }
 
     val startDestination = remember {
-        if (RetrofitClient.preferenceManager.getTokenSync() != null) {
+        if (RetrofitClient.preferenceManager.getAccessTokenSync() != null) {
             Screen.Home.route
         } else {
             Screen.Login.route
@@ -289,7 +289,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                         label = { Text("Home") },
                         selected = currentRoute == Screen.Home.route,
                         onClick = {
-                            navController.navigate("home/${currentUser.username}") {
+                            navController.navigate("home/${currentUser?.username}") {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
@@ -375,7 +375,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                     onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
                     onLoginSubmit = { credentials ->
                         viewModel.loginUser(credentials, onSuccess = {
-                            navController.navigate("home/${currentUser.username}") {
+                            navController.navigate("home/${currentUser?.username}") {
                                 popUpTo(Screen.Login.route) { inclusive = true }
                             }
                         })
@@ -397,7 +397,7 @@ fun AppNavigation(viewModel: AppViewModel) {
             }
             composable(Screen.Welcome.route) {
                 WelcomePage(
-                    username = viewModel.currentUser.collectAsState().value.username,
+                    username = currentUser?.username ?: "User",
                     onComplete = { selectedUri ->
                         if (selectedUri != null) {
                             viewModel.uploadAvatar(selectedUri)
@@ -412,7 +412,7 @@ fun AppNavigation(viewModel: AppViewModel) {
             }
             composable(Screen.Interests.route) {
                 InterestsPage(
-                    username = viewModel.currentUser.collectAsState().value.username,
+                    username = currentUser?.username ?: "User",
                     onComplete = { selectedGenres ->
                         viewModel.updateInterests(selectedGenres.map { it.name })
                     },
@@ -430,7 +430,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                         navController.navigate(Screen.Overview.createRoute(comic.id))
                     },
                     onAccountClick = {
-                        navController.navigate(Screen.Profile.createRoute(currentUser.userId)) {
+                        navController.navigate(Screen.Profile.createRoute(currentUser?.id ?: "fallback-123")) {
                             launchSingleTop = true
                         }
                     },
@@ -623,7 +623,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                 SuccessfulTaskPage(
                     successMessage,
                     onTimeElapsed = {
-                        navController.navigate("home/${currentUser.username}") {
+                        navController.navigate("home/${currentUser?.username}") {
                             popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                         }
                     }

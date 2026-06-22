@@ -29,7 +29,7 @@ fun PostPage(
 ) {
     var postTitle by remember { mutableStateOf("") }
     var postText by remember { mutableStateOf("") }
-    val currentUser by viewModel.currentUser.collectAsState()
+    val currentUser by viewModel.userProfile.collectAsState()
     val sharedContent by viewModel.sharedContent.collectAsState()
 
     Scaffold(
@@ -98,11 +98,11 @@ fun PostPage(
                                 .background(Color.LightGray),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(currentUser.username.take(1).uppercase(), fontSize = 14.sp, color = Color.Black)
+                            Text(currentUser?.username?.take(1)?.uppercase() ?: "Default text", fontSize = 14.sp, color = Color.Black)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
-                            Text(text = currentUser.username, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
+                            Text(text = currentUser?.username ?: "Default text", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
                             Text(text = "Just now", color = Color.Gray, fontSize = 12.sp)
                         }
                     }

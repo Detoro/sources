@@ -39,7 +39,7 @@ fun ChatThreadPage(
     onProfileClick: (String) -> Unit
 ) {
     val messages by viewModel.chatMessages.collectAsState()
-    val me by viewModel.currentUser.collectAsState()
+    val me by viewModel.userProfile.collectAsState()
     val inbox by viewModel.filteredInbox.collectAsState()
 
     var expanded by remember { mutableStateOf(false) }
@@ -243,7 +243,7 @@ fun ChatThreadPage(
             }
         }
     ) { paddingValues ->
-        val lastUserMessageIndex = messages.indexOfFirst { it.senderId == me.userId }
+        val lastUserMessageIndex = messages.indexOfFirst { it.senderId == me?.id }
 
         LazyColumn(
             modifier = Modifier
@@ -259,7 +259,7 @@ fun ChatThreadPage(
             }
 
             itemsIndexed(filteredMessages, key = { _, msg -> msg.id }) { index, msg ->
-                val isFromMe = msg.senderId == me.userId
+                val isFromMe = msg.senderId == me?.id
 
                 LaunchedEffect(msg.id) {
                     if (!isFromMe && !msg.isRead) {

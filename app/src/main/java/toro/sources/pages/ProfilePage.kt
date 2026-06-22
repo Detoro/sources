@@ -44,9 +44,9 @@ fun ProfilePage(
     onSettingsClick: () -> Unit,
     onBackClick: (() -> Unit)? = null
 ) {
-    val me by viewModel.currentUser.collectAsState()
-    val targetUserId = userId ?: me.userId
-    val isMyProfile = targetUserId == me.userId
+    val me by viewModel.userProfile.collectAsState()
+    val targetUserId = userId ?: me?.id
+    val isMyProfile = targetUserId == me?.id
 
     val userProfile by (if (isMyProfile) viewModel.userProfile else viewModel.targetUserProfile).collectAsState()
     val userPosts by (if (isMyProfile) viewModel.userPosts else viewModel.targetUserPosts).collectAsState()
@@ -57,7 +57,7 @@ fun ProfilePage(
     var newBio by remember { mutableStateOf("") }
 
     LaunchedEffect(targetUserId) {
-        if (targetUserId.isNotEmpty()) {
+        if (targetUserId?.isNotEmpty() == true) {
             viewModel.getUserProfile(targetUserId)
         }
     }
@@ -191,7 +191,7 @@ fun ProfilePage(
                                     },
                                 contentAlignment = Alignment.Center
                             ) {
-                                val avatarUrl = if (isMyProfile) me.avatarUrl else profile.avatarUrl
+                                val avatarUrl = if (isMyProfile) me?.avatarUrl else profile.avatarUrl
                                 if (avatarUrl != null) {
                                     AsyncImage(
                                         model = avatarUrl,

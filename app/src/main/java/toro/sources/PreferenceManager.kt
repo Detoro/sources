@@ -15,7 +15,8 @@ private val Context.dataStore by preferencesDataStore(name = "user_prefs")
 class PreferenceManager(private val context: Context) {
 
     companion object {
-        private val JWT_KEY = stringPreferencesKey("jwt_token")
+        private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
+        private val REFRESH_TOKEN_KEY = stringPreferencesKey("refresh_token")
         private val DARK_THEME_KEY = booleanPreferencesKey("dark_theme")
         private val USER_ID_KEY = stringPreferencesKey("user_id")
         private val USERNAME_KEY = stringPreferencesKey("username")
@@ -23,10 +24,10 @@ class PreferenceManager(private val context: Context) {
         private val BIO_KEY = stringPreferencesKey("user_bio")
     }
 
-    // Auth Token
-    suspend fun saveToken(token: String) {
+    suspend fun saveTokens(accessToken: String, refreshToken: String) {
         context.dataStore.edit { preferences ->
-            preferences[JWT_KEY] = token
+            preferences[ACCESS_TOKEN_KEY] = accessToken
+            preferences[REFRESH_TOKEN_KEY] = refreshToken
         }
     }
 
@@ -58,9 +59,10 @@ class PreferenceManager(private val context: Context) {
         val bio: String?
     )
 
-    suspend fun clearToken() {
+    suspend fun clearTokens() {
         context.dataStore.edit { preferences ->
-            preferences.remove(JWT_KEY)
+            preferences.remove(ACCESS_TOKEN_KEY)
+            preferences.remove(REFRESH_TOKEN_KEY)
             preferences.remove(USER_ID_KEY)
             preferences.remove(USERNAME_KEY)
             preferences.remove(AVATAR_URL_KEY)
@@ -68,9 +70,15 @@ class PreferenceManager(private val context: Context) {
         }
     }
 
-    fun getTokenSync(): String? {
+    fun getAccessTokenSync(): String? {
         return runBlocking {
-            context.dataStore.data.first()[JWT_KEY]
+            context.dataStore.data.first()[ACCESS_TOKEN_KEY]
+        }
+    }
+
+    fun getRefreshTokenSync(): String? {
+        return runBlocking {
+            context.dataStore.data.first()[REFRESH_TOKEN_KEY]
         }
     }
 

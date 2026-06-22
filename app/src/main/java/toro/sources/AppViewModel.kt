@@ -62,9 +62,6 @@ class AppViewModel(
     private val repository: ComicRepository
 ) : ViewModel() {
 
-    private val _currentUser = MutableStateFlow(AuthResponse())
-    val currentUser: StateFlow<AuthResponse> = _currentUser.asStateFlow()
-
     val myLibrary: StateFlow<List<Comic>> = repository.getMyLibrary()
         .stateIn(
             scope = viewModelScope,
@@ -268,24 +265,21 @@ class AppViewModel(
                 .debounce(500L)
                 .filter { it.first.isNotBlank() && it.second == SearchSource.ONLINE }
                 .collectLatest { (readyQuery, _) ->
-                    if (_currentUser.value.userId.isNotEmpty()) {
+                    if (_userProfile.value?.id?.isNotEmpty() == true) {
                         searchComics(readyQuery)
                     }
                 }
         }
 
         val userData = RetrofitClient.preferenceManager.getUserDataSync()
-        if (userData.userId != null && userData.username != null && RetrofitClient.preferenceManager.getTokenSync() != null) {
-            _currentUser.value = AuthResponse(
-                userId = userData.userId,
-                username = userData.username,
-                avatarUrl = userData.avatarUrl
-            )
+        val hasTokens = RetrofitClient.preferenceManager.getAccessTokenSync() != null
+        if (userData.userId != null && userData.username != null && hasTokens) {
             _userProfile.value = UserProfile(
                 id = userData.userId,
                 username = userData.username,
                 avatarUrl = userData.avatarUrl,
-                bio = userData.bio
+                bio = userData.bio,
+                isPrivate = false
             )
             onUserAuthenticated(userData.userId)
         }
@@ -415,19 +409,15 @@ class AppViewModel(
                 val authRequest = AuthRequest(email = credentials.email, password = credentials.password)
                 val response = withContext(Dispatchers.IO) {
                     val res = RetrofitClient.comicApiService.login(authRequest)
-                    RetrofitClient.preferenceManager.saveToken(res.token)
-                    RetrofitClient.preferenceManager.saveUserData(
-                        res.userId,
-                        res.username,
-                        res.avatarUrl
-                    )
+                    RetrofitClient.preferenceManager.saveTokens(res.accessToken, res.refreshToken)
                     res
                 }
-                _currentUser.value = response
-                onUserAuthenticated(response.userId)
+                val userId = response.userId
+                getUserProfile(userId)
+                onUserAuthenticated(userId)
                 _currentComic.value = null
                 onSuccess()
-                Log.i("Success", "Logged in successfully as ${response.username}!")
+                Log.i("Success", "Logged in successfully")
             } catch (e: Exception) {
                 Log.e("Failure", "Login failed: ${e.message}")
             }
@@ -435,9 +425,9 @@ class AppViewModel(
     }
     fun logoutUser(onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
-            _currentUser.value = AuthResponse()
             withContext(Dispatchers.IO) {
-                RetrofitClient.preferenceManager.clearToken()
+                RetrofitClient.comicApiService.logout(RefreshTokenRequest(RetrofitClient.preferenceManager.getRefreshTokenSync()!!))
+                RetrofitClient.preferenceManager.clearTokens()
             }
             FirebaseMessaging.getInstance().deleteToken()
             clearProfileData()
@@ -451,18 +441,14 @@ class AppViewModel(
                 clearProfileData()
                 val response = withContext(Dispatchers.IO) {
                     val res = RetrofitClient.comicApiService.signUp(newUser)
-                    RetrofitClient.preferenceManager.saveToken(res.token)
-                    RetrofitClient.preferenceManager.saveUserData(
-                        res.userId,
-                        res.username,
-                        res.avatarUrl
-                    )
+                    RetrofitClient.preferenceManager.saveTokens(res.accessToken, res.refreshToken)
                     res
                 }
-                _currentUser.value = response
-                onUserAuthenticated(response.userId)
+                val userId = response.userId
+                getUserProfile(userId)
+                onUserAuthenticated(userId)
                 onSuccess()
-                Log.i("Success", "Sign up successfully as ${response.username}!")
+                Log.i("Success", "Signed up successfully")
             } catch (e: Exception) {
                 Log.e("Failure", "Signup failed: ${e.message}")
             }
@@ -481,21 +467,18 @@ class AppViewModel(
     fun updateBio(bio: String) {
         viewModelScope.launch {
             try {
-                val userId = _currentUser.value.userId
-                if (userId.isEmpty()) return@launch
-                val response = withContext(Dispatchers.IO) {
-                    val res = RetrofitClient.comicApiService.updateBio(userId, UpdateBioRequest(bio))
-                    RetrofitClient.preferenceManager.saveUserData(
-                        _currentUser.value.userId,
-                        _currentUser.value.username,
-                        _currentUser.value.avatarUrl,
-                        res.message
-                    )
-                    res
-                }
-                _userProfile.value = _userProfile.value?.copy(bio = response.message)
+                val userId = _userProfile.value?.id
+                if (userId != null) {
+                    if (userId.isEmpty()) return@launch
+                    val response = withContext(Dispatchers.IO) {
+                        val res =
+                            RetrofitClient.comicApiService.updateBio(userId, UpdateBioRequest(bio))
+                        res
+                    }
+                    _userProfile.value = _userProfile.value?.copy(bio = response.message)
 
-                Log.i("Success", "Bio updated successfully")
+                    Log.i("Success", "Bio updated successfully")
+                }
             } catch (e: Exception) {
                 Log.e("AppViewModel", "Failed to update bio: ${e.message}")
             }
@@ -505,39 +488,52 @@ class AppViewModel(
     fun updateUsername(newUsername: String) {
         viewModelScope.launch {
             try {
-                val userId = _currentUser.value.userId
-                if (userId.isEmpty()) return@launch
+                val userId = _userProfile.value?.id
+                if (userId?.isEmpty() == true) return@launch
 
-                val response = withContext(Dispatchers.IO) {
-                    val res = RetrofitClient.comicApiService.updateUsername(userId, UpdateUsernameRequest(newUsername))
-                    RetrofitClient.preferenceManager.saveUserData(
-                        _currentUser.value.userId,
-                        res.message,
-                        _currentUser.value.avatarUrl
-                    )
-                    res
+                if (userId != null) {
+                    val response = withContext(Dispatchers.IO) {
+                        val res = RetrofitClient.comicApiService.updateUsername(
+                            userId,
+                            UpdateUsernameRequest(newUsername)
+                        )
+                        res
+                    }
+                    _userProfile.value?.username = response.message
+                    _userProfile.value = _userProfile.value?.copy(username = response.message)
+                    Log.i("Success", "Username updated successfully")
                 }
-                _userProfile.value?.username = response.message
-                _currentUser.value = _currentUser.value.copy(username = response.message)
-                Log.i("Success", "Username updated successfully")
             } catch (e: Exception) {
                 Log.e("AppViewModel", "Failed to update username: ${e.message}")
             }
         }
     }
-
     fun updateInterests(interests: List<String>) {
         viewModelScope.launch {
             try {
-                val userId = _currentUser.value.userId
-                if (userId.isEmpty()) return@launch
+                val userId = _userProfile.value?.id
+                if (userId?.isEmpty() == true) return@launch
 
-                withContext(Dispatchers.IO) {
-                    RetrofitClient.comicApiService.updateInterests(userId, UpdateInterestsRequest(interests))
+                if (userId != null) {
+                    withContext(Dispatchers.IO) {
+                        RetrofitClient.comicApiService.updateInterests(
+                            userId,
+                            UpdateInterestsRequest(interests)
+                        )
+                    }
                 }
                 Log.i("AppViewModel", "Interests updated successfully")
             } catch (e: Exception) {
                 Log.e("AppViewModel", "Failed to update interests: ${e.message}")
+            }
+        }
+    }
+    fun updateAvatar(avatarUrl: String) {
+        viewModelScope.launch {
+            try {
+                RetrofitClient.comicApiService.updateAvatar(avatarUrl)
+            } catch (e: Exception) {
+                Log.e("Avatar", "Failed to update Avatar ${e.message}")
             }
         }
     }
@@ -558,20 +554,14 @@ class AppViewModel(
                             Log.i("Cloudinary", "Upload success: $publicUrl")
 
                             viewModelScope.launch {
-                                _currentUser.value = _currentUser.value.copy(avatarUrl = publicUrl)
+                                _userProfile.value = _userProfile.value?.copy(avatarUrl = publicUrl)
 
                                 try {
                                     withContext(Dispatchers.IO) {
-                                        RetrofitClient.comicApiService.updateAvatar(publicUrl)
-                                        RetrofitClient.preferenceManager.saveUserData(
-                                            _currentUser.value.userId,
-                                            _currentUser.value.username,
-                                            publicUrl,
-                                            _userProfile.value?.bio
-                                        )
+                                        updateAvatar(publicUrl)
                                     }
 
-                                    Log.i("Cloudinary", "Avatar updated to $publicUrl")
+                                        Log.i("Cloudinary", "Avatar updated to $publicUrl")
                                 } catch (e: Exception) {
                                     Log.e("Cloudinary", "Failed to sync avatar with server", e)
                                 }
@@ -842,7 +832,7 @@ class AppViewModel(
                 val newMessage = ChatMessage(
                     id = "",
                     conversationId = conversationId,
-                    senderId = _currentUser.value.userId,
+                    senderId = _userProfile.value?.id ?: "",
                     content = encryptedContent,
                     timestamp = System.currentTimeMillis(),
                     isEncrypted = true,
@@ -1285,7 +1275,7 @@ class AppViewModel(
                 val works = withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.getUserWorks(userId)
                 }
-                val currentUserId = _currentUser.value.userId
+                val currentUserId = _userProfile.value?.id
                 if (userId == currentUserId) {
                     _userWorks.value = works
                 } else {
@@ -1308,7 +1298,7 @@ class AppViewModel(
                 }
                 getUserWorks(userId)
 
-                val currentUserId = _currentUser.value.userId.trim()
+                val currentUserId = _userProfile.value?.id?.trim()
                 if (userId.trim().equals(currentUserId, ignoreCase = true)) {
                     _userProfile.value = profile
                     _userPosts.value = posts
