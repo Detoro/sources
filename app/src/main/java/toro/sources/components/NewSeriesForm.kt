@@ -63,7 +63,7 @@ fun NewSeriesForm(
     var ratingExpanded by remember { mutableStateOf(false) }
     var directionExpanded by remember { mutableStateOf(false) }
     var genreExpanded by remember { mutableStateOf(false) }
-    val author by viewModel.currentUser.collectAsState()
+    val author by viewModel.userProfile.collectAsState()
     var description by remember { mutableStateOf("") }
     var selectedChapterUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var selectedAudioUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
@@ -287,8 +287,8 @@ fun NewSeriesForm(
             Button(
                 onClick = {
                     val defaultCreator = Creator(
-                        id = author.userId,
-                        name = author.username,
+                        id = author?.id ?: "fallback-123",
+                        name = author?.username ?: "User",
                         role = "Creator"
                     )
                     viewModel.uploadNewChapters(

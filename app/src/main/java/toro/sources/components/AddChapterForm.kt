@@ -41,7 +41,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
@@ -61,6 +60,7 @@ fun AddChapterForm(
     var selectedComicTitle by remember { mutableStateOf("") }
     val isUploading by viewModel.isUploading.collectAsState()
     val uploadSuccess by viewModel.uploadSuccess.collectAsState()
+    val currentUser by viewModel.userProfile.collectAsState()
     var selectedAudioUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
 
     val audioPickerLauncher = rememberLauncherForActivityResult(
@@ -68,7 +68,7 @@ fun AddChapterForm(
     ) { uris -> selectedAudioUris = uris }
 
     LaunchedEffect(Unit) {
-        viewModel.getUserWorks(viewModel.currentUser.value.userId)
+        viewModel.getUserWorks(currentUser?.id ?: "fallback-123")
     }
 
     LaunchedEffect(uploadSuccess) {
