@@ -40,6 +40,7 @@ fun HomePage(
 ) {
     val libraryList by viewModel.myLibrary.collectAsState()
     val catalog by viewModel.catalog.collectAsState()
+    val trending by viewModel.trending.collectAsState()
     val recentlyRead by viewModel.recentlyReadComics.collectAsState()
     val communityPosts by viewModel.communityPosts.collectAsState()
     val followedAuthors by viewModel.subscribedAuthors.collectAsState()
@@ -124,12 +125,10 @@ fun HomePage(
                 if (isLoading) {
                     item { BillboardCarouselShimmer() }
                     item { ComicCarouselShimmer(title = "Continue Reading") }
-                    item { ComicCarouselShimmer(title = "New Releases") }
-                    item { ComicCarouselShimmer(title = "Top Stories") }
                 } else {
                     item {
                         BillboardCarousel(
-                            comics = catalog.take(5),
+                            comics = trending,
                             onComicClick = onComicClick,
                             modifier = Modifier.padding(top = 8.dp)
                         )
@@ -142,24 +141,6 @@ fun HomePage(
                                 onComicClick = onComicClick
                             )
                         }
-                    }
-
-                    item {
-                        ComicCarousel(
-                            title = "New Releases",
-                            comics = catalog.shuffled().take(6),
-                            viewModel = viewModel,
-                            onComicClick = onComicClick
-                        )
-                    }
-
-                    item {
-                        ComicCarousel(
-                            title = "Top Stories",
-                            comics = catalog.shuffled().take(8),
-                            viewModel = viewModel,
-                            onComicClick = onComicClick
-                        )
                     }
 
                     val followedPosts =

@@ -82,6 +82,9 @@ class AppViewModel(
     private val _catalog = MutableStateFlow<List<Comic>>(emptyList())
     val catalog = _catalog.asStateFlow()
 
+    private val _trending = MutableStateFlow<List<Comic>>(emptyList())
+    val trending = _trending.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -291,6 +294,7 @@ class AppViewModel(
             getUserProfile(userId)
             fetchAndRegisterFcmToken()
             getRecommendation()
+            getTrending()
             getChatRequests()
             getSubscribedAuthors()
             getInbox()
@@ -588,6 +592,21 @@ class AppViewModel(
             try {
                 _catalog.value = withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.getRecommendation()
+                }
+            } catch (e: Exception) {
+                Log.e("Failed to load catalog:", "${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun getTrending() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                _trending.value = withContext(Dispatchers.IO) {
+                    RetrofitClient.comicApiService.getTrending()
                 }
             } catch (e: Exception) {
                 Log.e("Failed to load catalog:", "${e.message}")
