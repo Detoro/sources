@@ -33,9 +33,6 @@ import retrofit2.http.DELETE
 interface ComicApiService {
 
     // comics apis
-    @GET("api/comics/catalog")
-    suspend fun getCatalog(): List<Comic>
-
     @GET("api/comics/recommendation")
     suspend fun getRecommendation(): List<Comic>
 
