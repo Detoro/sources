@@ -63,12 +63,12 @@ fun HomePage(
         }
     }
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            TopAppBar(
                 title = { Text("") },
                 actions = {
                     IconButton(onClick = { onNotificationsClick() }) {
@@ -97,7 +97,7 @@ fun HomePage(
                     titleContentColor = Color.Unspecified,
                     actionIconContentColor = Color.Unspecified
                 ),
-                windowInsets = WindowInsets(top = 3.dp)
+                windowInsets = WindowInsets(top = 0.dp)
             )
         }
     ) { paddingValues ->
@@ -117,9 +117,8 @@ fun HomePage(
             }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = paddingValues,
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 if (isLoading) {
@@ -129,8 +128,7 @@ fun HomePage(
                     item {
                         BillboardCarousel(
                             comics = trending,
-                            onComicClick = onComicClick,
-                            modifier = Modifier.padding(top = 8.dp)
+                            onComicClick = onComicClick
                         )
                     }
 
