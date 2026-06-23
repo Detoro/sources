@@ -109,7 +109,7 @@ interface ComicApiService {
     suspend fun login(@Body request: AuthRequest): AuthResponse
 
     @POST("api/auth/logout")
-    suspend fun logout(@Body request: RefreshTokenRequest): AuthResponse
+    suspend fun logout(@Body request: RefreshTokenRequest): ServerResponse
 
     @POST("api/comics/{comicId}/chapters/{chapterId}/read")
     suspend fun markChapterAsRead(
@@ -135,13 +135,6 @@ interface ComicApiService {
 
     @GET("api/chat/{conversationId}/messages")
     suspend fun getChatMessages(@Path("conversationId") conversationId: String): List<ChatMessage>
-
-    @POST("api/chat/{conversationId}/messages")
-    suspend fun sendMessage(
-        @Path("conversationId") conversationId: String,
-        @Query("targetUserId") targetUserId: String,
-        @Body message: ChatMessage
-    ): ServerResponse
 
     @DELETE("api/chat/{conversationId}/messages/{messageId}")
     suspend fun deleteMessage(
@@ -231,4 +224,9 @@ interface ComicApiService {
     // miscellaneous
     @POST("api/reports/submit")
     suspend fun submitReport(@Body request: ReportRequest): ServerResponse
+
+    @POST("api/notifications/{notificationId}/read")
+    suspend fun markNotificationAsRead(
+        @Path("notificationId") notificationId: String
+    ): ServerResponse
 }

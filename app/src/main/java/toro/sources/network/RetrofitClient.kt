@@ -21,6 +21,8 @@ import com.toro.models.RefreshTokenRequest
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 import android.util.Log
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
 
 interface AuthApi {
     @POST("api/auth/refresh")
@@ -64,7 +66,6 @@ object RetrofitClient {
                 val currentAccessToken = preferenceManager.getAccessTokenSync()
                 val failedRequestToken = response.request.header("Authorization")?.removePrefix("Bearer ")
 
-                // Check if another thread already refreshed it while we were waiting
                 if (currentAccessToken != null && currentAccessToken != failedRequestToken) {
                     return response.request.newBuilder()
                         .header("Authorization", "Bearer $currentAccessToken")
@@ -118,5 +119,13 @@ object RetrofitClient {
 
     val comicApiService: ComicApiService by lazy {
         retrofit.create(ComicApiService::class.java)
+    }
+
+    fun createChatWebSocket(listener: WebSocketListener): WebSocket {
+        val request = Request.Builder()
+            .url("wss://sources-comic-server.onrender.com/api/chat/stream")
+            .build()
+
+        return okHttpClient.newWebSocket(request, listener)
     }
 }

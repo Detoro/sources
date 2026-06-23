@@ -47,11 +47,16 @@ import com.google.firebase.messaging.FirebaseMessaging
 import toro.sources.notifications.NotificationEventBus
 import toro.sources.crypto.CryptoUtils
 import com.toro.models.*
+import kotlinx.coroutines.flow.update
 import java.util.zip.ZipInputStream
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.Boolean
 import kotlin.collections.map
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
+import kotlinx.serialization.json.Json
+import okhttp3.Response
 
 enum class SearchSource {
     LOCAL, ONLINE
@@ -61,6 +66,9 @@ enum class SearchSource {
 class AppViewModel(
     private val repository: ComicRepository
 ) : ViewModel() {
+
+    private var chatWebSocket: WebSocket? = null
+    private val socketJson = Json { ignoreUnknownKeys = true }
 
     val myLibrary: StateFlow<List<Comic>> = repository.getMyLibrary()
         .stateIn(
@@ -276,10 +284,10 @@ class AppViewModel(
 
         val userData = RetrofitClient.preferenceManager.getUserDataSync()
         val hasTokens = RetrofitClient.preferenceManager.getAccessTokenSync() != null
-        if (userData.userId != null && userData.username != null && hasTokens) {
+        if (userData.userId != null && hasTokens) {
             _userProfile.value = UserProfile(
                 id = userData.userId,
-                username = userData.username,
+                username = userData.username ?: "User",
                 avatarUrl = userData.avatarUrl,
                 bio = userData.bio,
                 isPrivate = false
@@ -292,6 +300,7 @@ class AppViewModel(
         viewModelScope.launch {
             repository.syncSubscriptions()
             getUserProfile(userId)
+            connectChatSocket()
             fetchAndRegisterFcmToken()
             getRecommendation()
             getTrending()
@@ -417,7 +426,6 @@ class AppViewModel(
                     res
                 }
                 val userId = response.userId
-                getUserProfile(userId)
                 onUserAuthenticated(userId)
                 _currentComic.value = null
                 onSuccess()
@@ -429,14 +437,25 @@ class AppViewModel(
     }
     fun logoutUser(onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                RetrofitClient.comicApiService.logout(RefreshTokenRequest(RetrofitClient.preferenceManager.getRefreshTokenSync()!!))
-                RetrofitClient.preferenceManager.clearTokens()
+            try {
+                withContext(Dispatchers.IO) {
+                    val refreshToken = RetrofitClient.preferenceManager.getRefreshTokenSync()
+                    if (refreshToken != null) {
+                        RetrofitClient.comicApiService.logout(RefreshTokenRequest(refreshToken))
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("Logout", "Server logout failed: ${e.message}")
+            } finally {
+                withContext(Dispatchers.IO) {
+                    RetrofitClient.preferenceManager.clearTokens()
+                }
+                FirebaseMessaging.getInstance().deleteToken()
+                clearProfileData()
+                disconnectChatSocket()
+                _currentComic.value = null
+                onLogoutComplete()
             }
-            FirebaseMessaging.getInstance().deleteToken()
-            clearProfileData()
-            _currentComic.value = null
-            onLogoutComplete()
         }
     }
     fun registerNewUser(newUser: AuthRequest, onSuccess: () -> Unit) {
@@ -449,7 +468,6 @@ class AppViewModel(
                     res
                 }
                 val userId = response.userId
-                getUserProfile(userId)
                 onUserAuthenticated(userId)
                 onSuccess()
                 Log.i("Success", "Signed up successfully")
@@ -503,7 +521,9 @@ class AppViewModel(
                         )
                         res
                     }
-                    _userProfile.value?.username = response.message
+                    _userProfile.update { currentProfile ->
+                        currentProfile?.copy(username = response.message)
+                    }
                     _userProfile.value = _userProfile.value?.copy(username = response.message)
                     Log.i("Success", "Username updated successfully")
                 }
@@ -828,7 +848,6 @@ class AppViewModel(
     }
     fun sendMessage(
         conversationId: String,
-        targetUserId: String,
         content: String,
         isSpoiler: Boolean = false,
         sharedId: String? = null,
@@ -848,12 +867,13 @@ class AppViewModel(
                 }
 
                 val encryptedContent = encryptMessage(content)
+
                 val newMessage = ChatMessage(
                     id = "",
                     conversationId = conversationId,
-                    senderId = _userProfile.value?.id ?: "",
+                    senderId = userProfile.value?.id ?: "",
                     content = encryptedContent,
-                    timestamp = System.currentTimeMillis(),
+                    timestamp = 0L,
                     isEncrypted = true,
                     isSpoiler = isSpoiler,
                     sharedId = sharedId,
@@ -862,16 +882,14 @@ class AppViewModel(
                     videoUrl = if (mediaType == "VIDEO") mediaUrl else null,
                     mediaType = mediaType
                 )
-                withContext(Dispatchers.IO) {
-                    repository.saveMessage(newMessage)
-                    val serverResponse = RetrofitClient.comicApiService.sendMessage(conversationId, targetUserId, newMessage)
-                    Log.i("Message status", serverResponse.message)
-                    repository.deleteMessageById(newMessage.id)
-                }
-                getChatMessages(conversationId)
+
+                repository.saveMessage(newMessage)
+                val jsonMessage = socketJson.encodeToString(newMessage)
+                chatWebSocket?.send(jsonMessage)
+
                 _sharedContent.value = null
             } catch (e: Exception) {
-                Log.e("Message error: ", "Failed to send message: ${e.message}")
+                Log.e("Message error", "Failed to send message over socket: ${e.message}")
             }
         }
     }
@@ -1309,7 +1327,7 @@ class AppViewModel(
     fun getUserProfile(userId: String) {
         viewModelScope.launch {
             try {
-                Log.d("ProfileDebug", "Attempting to fetch profile for ID: '$userId'")
+                Log.d("ProfileDebug", "Attempting to fetch profile")
                 if (userId.isBlank()) {
                     Log.e("Profile error", "Cannot fetch profile: userId is empty!")
                     return@launch
@@ -1322,9 +1340,9 @@ class AppViewModel(
                 }
                 getUserWorks(userId)
 
-                val currentUserId = _userProfile.value?.id?.trim()
+                val currentUserId = _userProfile.value?.id?.trim() ?: userId.trim()
                 if (userId.trim().equals(currentUserId, ignoreCase = true)) {
-                    _userProfile.value = profile
+                    _userProfile.update { profile }
                     _userPosts.value = posts
 
                     withContext(Dispatchers.IO) {
@@ -1351,7 +1369,9 @@ class AppViewModel(
                 val response = withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.toggleProfilePrivacy(userId)
                 }
-                _userProfile.value = _userProfile.value?.copy(isPrivate = !_userProfile.value!!.isPrivate)
+                _userProfile.update { currentProfile ->
+                    currentProfile?.copy(isPrivate = !currentProfile.isPrivate)
+                }
                 Log.i("Profile", "Privacy toggled: ${response.message}")
             } catch (e: Exception) {
                 Log.e("Profile", "Failed to toggle privacy: ${e.message}")
@@ -1497,7 +1517,18 @@ class AppViewModel(
             }
         }
     }
-
+    fun markNotificationAsRead(notificationId: String) {
+        viewModelScope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    RetrofitClient.comicApiService.markNotificationAsRead(notificationId)
+                }
+                Log.d("Notification read", "Success ${response.message}")
+            } catch(e: Exception) {
+                Log.e("Notification error", "Failed to mark as read: ${e.message}")
+            }
+        }
+    }
     fun clearNotifications() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
@@ -1539,6 +1570,38 @@ class AppViewModel(
                 Log.e("Report error", "Failed to submit report: ${e.message}")
             }
         }
+    }
+    fun connectChatSocket() {
+        if (chatWebSocket != null) return
+
+        val listener = object : WebSocketListener() {
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                try {
+                    val incomingMessage = socketJson.decodeFromString<ChatMessage>(text)
+
+                    viewModelScope.launch(Dispatchers.IO) {
+                        repository.saveMessage(incomingMessage)
+
+                        // update the Conversation's lastMessage here
+
+                    }
+
+                } catch (e: Exception) {
+                    Log.e("WebSocket", "Failed to decode message: ${e.message}")
+                }
+            }
+
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                Log.e("WebSocket", "Connection failed: ${t.message}")
+            }
+        }
+
+        chatWebSocket = RetrofitClient.createChatWebSocket(listener)
+    }
+
+    fun disconnectChatSocket() {
+        chatWebSocket?.close(1000, "App backgrounded")
+        chatWebSocket = null
     }
 }
 fun convertTimestamp(timestamp: Long): String {
