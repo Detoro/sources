@@ -22,6 +22,7 @@ import toro.sources.Screen
 fun ComicInfoBottomSheet(
     comic: Comic,
     viewModel: AppViewModel,
+    onComicClick: (Comic) -> Unit,
     onDismiss: () -> Unit
 ) {
     val worksByAuthor by viewModel.targetUserWorks.collectAsState()
@@ -70,7 +71,6 @@ fun ComicInfoBottomSheet(
                     GenreTag(genre.value)
                 }
             }
-            HorizontalDivider()
             Spacer(modifier = Modifier.height(24.dp))
             
             // Creators
@@ -127,7 +127,7 @@ fun ComicInfoBottomSheet(
                 items(worksByAuthor) { comic ->
                     ComicCard(
                         comic,
-                        onClick = {}
+                        onClick = { onComicClick(comic) }
                     )
                 }
             }

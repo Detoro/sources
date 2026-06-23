@@ -34,6 +34,7 @@ fun OverviewPage(
     viewModel: AppViewModel,
     onBackClick: () -> Unit,
     onAuthorClick: () -> Unit,
+    onComicClick: (Comic) -> Unit,
     onChapterClick: (Chapter) -> Unit
 ) {
     val comic by viewModel.currentComic.collectAsState()
@@ -254,6 +255,7 @@ fun OverviewPage(
                 ComicInfoBottomSheet(
                     comic = safeComic,
                     viewModel = viewModel,
+                    onComicClick = onComicClick,
                     onDismiss = { showInfoSheet = false }
                 )
             }
