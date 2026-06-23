@@ -125,7 +125,7 @@ fun ComicInfoBottomSheet(
 
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(worksByAuthor) { comic ->
-                    SharedComicCard(
+                    ComicCard(
                         comic,
                         onClick = {}
                     )

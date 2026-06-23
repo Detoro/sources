@@ -19,7 +19,7 @@ import coil.compose.AsyncImage
 import com.toro.models.*
 
 @Composable
-fun SharedComicCard(
+fun ComicCard(
     comic: Comic,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null
