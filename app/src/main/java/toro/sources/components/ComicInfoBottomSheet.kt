@@ -157,7 +157,7 @@ fun InfoStat(label: String, value: String) {
 fun GenreTag(genre: String) {
     Surface(
         color = MaterialTheme.colorScheme.secondaryContainer,
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(6.dp)
     ) {
         Text(
             text = genre,
