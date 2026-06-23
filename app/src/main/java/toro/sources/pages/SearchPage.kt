@@ -54,7 +54,7 @@ fun SearchPage(
     var isGridView by remember { mutableStateOf(true) }
     val searchFilters = listOf("All", "Comics", "Authors", "Tags")
 
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -77,7 +77,7 @@ fun SearchPage(
                     titleContentColor = Color.Unspecified,
                     actionIconContentColor = Color.Unspecified
                 ),
-                windowInsets = WindowInsets(top = 3.dp)
+                windowInsets = WindowInsets(top = 0.dp)
             )
         }
     ) { paddingValues ->
