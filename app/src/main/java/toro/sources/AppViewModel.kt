@@ -160,6 +160,9 @@ class AppViewModel(
     private val _postComments = MutableStateFlow<List<Comment>>(emptyList())
     val postComments = _postComments.asStateFlow()
 
+    private val _replyingToMessage = MutableStateFlow<ChatMessage?>(null)
+    val replyingToMessage = _replyingToMessage.asStateFlow()
+
     private val _chapterComments = MutableStateFlow<List<Comment>>(emptyList())
     val chapterComments = _chapterComments.asStateFlow()
     private val _pageCount = MutableStateFlow(0)
@@ -318,6 +321,9 @@ class AppViewModel(
     }
     fun setEditingMessage(message: ChatMessage?) {
         _editingMessage.value = message
+    }
+    fun setReplyTarget(message: ChatMessage?) {
+        _replyingToMessage.value = message
     }
     fun updateSearchFilter(filter: String) {
         _searchFilter.value = filter
@@ -876,6 +882,7 @@ class AppViewModel(
                     timestamp = 0L,
                     isEncrypted = true,
                     isSpoiler = isSpoiler,
+                    replyToMessageId = _replyingToMessage.value?.id,
                     sharedId = sharedId,
                     sharedType = sharedType,
                     imageUrl = if (mediaType == "IMAGE") mediaUrl else null,
@@ -887,6 +894,7 @@ class AppViewModel(
                 val jsonMessage = socketJson.encodeToString(newMessage)
                 chatWebSocket?.send(jsonMessage)
 
+                _replyingToMessage.value = null
                 _sharedContent.value = null
             } catch (e: Exception) {
                 Log.e("Message error", "Failed to send message over socket: ${e.message}")
@@ -1309,6 +1317,9 @@ class AppViewModel(
     fun getUserWorks(userId: String) {
         viewModelScope.launch {
             try {
+                if (userId == "") {
+                    return@launch
+                }
                 val works = withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.getUserWorks(userId)
                 }

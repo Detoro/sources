@@ -2,8 +2,11 @@ package toro.sources.pages
 
 import androidx.compose.animation.AnimatedContent
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -21,11 +24,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.components.ChatBubble
@@ -42,6 +47,7 @@ fun ChatThreadPage(
     val messages by viewModel.chatMessages.collectAsState()
     val me by viewModel.userProfile.collectAsState()
     val inbox by viewModel.filteredInbox.collectAsState()
+    val replyingToMessage by viewModel.replyingToMessage.collectAsState(null)
 
     var expanded by remember { mutableStateOf(false) }
     var isSearching by remember { mutableStateOf(false) }
@@ -206,39 +212,92 @@ fun ChatThreadPage(
                     color = MaterialTheme.colorScheme.background,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    val sharedContent by viewModel.sharedContent.collectAsState()
-                    val editingMessage by viewModel.editingMessage.collectAsState()
+                    Column {
+                        AnimatedVisibility(
+                            visible = replyingToMessage != null,
+                            enter = expandVertically(),
+                            exit = shrinkVertically()
+                        ) {
+                            replyingToMessage?.let { replyTarget ->
+                                val replyText =
+                                    if (replyTarget.isEncrypted) viewModel.decryptMessage(
+                                        replyTarget.content
+                                    ) else replyTarget.content
 
-                    SmartInput(
-                        onSend = { _, text, _, _, attachment, isSpoiler ->
-                            val currentEditingMessage = editingMessage
-                            if (currentEditingMessage != null) {
-                                viewModel.editMessage(
-                                    currentEditingMessage.conversationId,
-                                    currentEditingMessage.id,
-                                    text
-                                )
-                                viewModel.setEditingMessage(null)
-                            } else if (targetUserId.isNotEmpty()) {
-                                viewModel.sendMessage(
-                                    conversationId,
-                                    text,
-                                    isSpoiler = isSpoiler,
-                                    sharedId = sharedContent?.id,
-                                    sharedType = sharedContent?.type,
-                                    attachment = attachment
-                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                        .padding(horizontal = 8.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(4.dp)
+                                            .height(40.dp)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(MaterialTheme.colorScheme.primary)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = if (replyTarget.senderId == me?.id) "You" else "${activeChat?.otherUserName}",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Text(
+                                            text = replyText,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+
+                                    IconButton(onClick = { viewModel.setReplyTarget(null) }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Cancel Reply",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                             }
-                        },
-                        initialText = remember(editingMessage) {
-                            editingMessage?.let { msg ->
-                                if (msg.isEncrypted) viewModel.decryptMessage(msg.content) else msg.content
-                            } ?: ""
-                        },
-                        placeholder = if (editingMessage != null) "Edit message..." else "Type a message...",
-                        supportUpload = editingMessage == null,
-                        viewModel = viewModel
-                    )
+                        }
+                        val sharedContent by viewModel.sharedContent.collectAsState()
+                        val editingMessage by viewModel.editingMessage.collectAsState()
+                        SmartInput(
+                            onSend = { _, text, _, _, attachment, isSpoiler ->
+                                val currentEditingMessage = editingMessage
+                                if (currentEditingMessage != null) {
+                                    viewModel.editMessage(
+                                        currentEditingMessage.conversationId,
+                                        currentEditingMessage.id,
+                                        text
+                                    )
+                                    viewModel.setEditingMessage(null)
+                                } else if (targetUserId.isNotEmpty()) {
+                                    viewModel.sendMessage(
+                                        conversationId,
+                                        text,
+                                        isSpoiler = isSpoiler,
+                                        sharedId = sharedContent?.id,
+                                        sharedType = sharedContent?.type,
+                                        attachment = attachment
+                                    )
+                                }
+                            },
+                            initialText = remember(editingMessage) {
+                                editingMessage?.let { msg ->
+                                    if (msg.isEncrypted) viewModel.decryptMessage(msg.content) else msg.content
+                                } ?: ""
+                            },
+                            placeholder = if (editingMessage != null) "Edit message..." else "Type a message...",
+                            supportUpload = editingMessage == null,
+                            viewModel = viewModel
+                        )
+                    }
                 }
             }
         }

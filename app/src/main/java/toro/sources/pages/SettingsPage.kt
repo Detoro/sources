@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.BubbleChart
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.DeleteOutline
@@ -58,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
 import toro.sources.AppViewModel
+import toro.sources.Screen
 
 @OptIn(ExperimentalCoilApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -183,6 +185,15 @@ fun SettingsPage(
                     headlineContent = { Text("Contribute") },
                     leadingContent = { Icon(Icons.Default.Code, contentDescription = null) },
                     modifier = Modifier.clickable { uriHandler.openUri(repoLink) },
+                    colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                )
+            }
+
+            SettingsGroup(title = "Help Improve Sources") {
+                ListItem(
+                    headlineContent = { Text("Report") },
+                    leadingContent = { Icon(Icons.Default.BugReport, contentDescription = null) },
+                    modifier = Modifier.clickable { viewModel.handleNavigation(Screen.Report.createRoute("USER", userProfile?.id ?: "")) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
             }
