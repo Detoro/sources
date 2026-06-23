@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.toro.models.ShareType
 import toro.sources.AppViewModel
 import toro.sources.components.ChatBubble
 import toro.sources.components.SmartInput
@@ -106,7 +107,10 @@ fun ChatThreadPage(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(end = 8.dp)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(50)),
+                                    .background(
+                                        MaterialTheme.colorScheme.surfaceVariant,
+                                        RoundedCornerShape(50)
+                                    ),
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent,
                                     unfocusedContainerColor = Color.Transparent,
@@ -216,17 +220,30 @@ fun ChatThreadPage(
                         AnimatedVisibility(
                             visible = replyingToMessage != null,
                             enter = expandVertically(),
-                            exit = shrinkVertically()
+                            exit = shrinkVertically(),
+                            modifier = Modifier.padding(start = 12.dp, end = 12.dp)
                         ) {
                             replyingToMessage?.let { replyTarget ->
-                                val replyText =
-                                    if (replyTarget.isEncrypted) viewModel.decryptMessage(
-                                        replyTarget.content
-                                    ) else replyTarget.content
+                                val rawDecrypted = if (replyTarget.isEncrypted) viewModel.decryptMessage(replyTarget.content) else replyTarget.content
+                                val cleanDecryptedText = rawDecrypted.replace("\u0000", "").trim()
+                                val repliedSharedType = if (replyTarget.sharedId != null) replyTarget.sharedType else if (replyTarget.sharedComicId != null) ShareType.COMIC else null
+                                val replyText = when {
+                                    replyTarget.isSpoiler -> "Spoiler detected"
+                                    cleanDecryptedText.isNotEmpty() && cleanDecryptedText != "null" -> cleanDecryptedText
+                                    replyTarget.imageUrl != null -> "Shared Image"
+                                    replyTarget.videoUrl != null -> "Shared Video"
+                                    repliedSharedType != null -> "Shared ${
+                                        repliedSharedType.name.lowercase()
+                                            .replaceFirstChar { it.uppercase() }
+                                    }"
+                                    replyTarget.sharedId != null -> "Shared Content"
+                                    else -> "Attachment"
+                                }
 
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
+                                        .clip(RoundedCornerShape(14.dp))
                                         .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                                         .padding(horizontal = 8.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
@@ -235,7 +252,6 @@ fun ChatThreadPage(
                                         modifier = Modifier
                                             .width(4.dp)
                                             .height(40.dp)
-                                            .clip(RoundedCornerShape(2.dp))
                                             .background(MaterialTheme.colorScheme.primary)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
