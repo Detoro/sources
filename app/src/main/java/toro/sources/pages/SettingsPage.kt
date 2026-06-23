@@ -72,7 +72,6 @@ fun SettingsPage(
     val uriHandler = LocalUriHandler.current
     val userProfile by viewModel.userProfile.collectAsState()
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
-    var showMotiveDialog by remember { mutableStateOf(false) }
     var showResetPasswordDialog by remember { mutableStateOf(false) }
     var showStorageDialog by remember { mutableStateOf(false) }
     var showUsernameDialog by remember { mutableStateOf(false) }
@@ -176,9 +175,9 @@ fun SettingsPage(
 
             SettingsGroup(title = "About") {
                 ListItem(
-                    headlineContent = { Text("Motive") },
+                    headlineContent = { Text("About") },
                     leadingContent = { Icon(Icons.Default.BubbleChart, contentDescription = null) },
-                    modifier = Modifier.clickable { showMotiveDialog = true },
+                    modifier = Modifier.clickable { viewModel.handleNavigation(Screen.About.route) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
                 ListItem(
@@ -212,87 +211,74 @@ fun SettingsPage(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
-    }
-
-    if (showMotiveDialog) {
-        AlertDialog(
-            onDismissRequest = { showMotiveDialog = false },
-            title = { Text("Motive") },
-            text = { Text("The goal of Toro Sources is to provide a seamless, community-driven platform for reading and sharing comics, focused on accessibility and user privacy.") },
-            confirmButton = {
-                TextButton(onClick = { showMotiveDialog = false }) { Text("Close") }
-            }
-        )
-    }
-
-    if (showResetPasswordDialog) {
-        AlertDialog(
-            onDismissRequest = { showResetPasswordDialog = false },
-            title = { Text("Reset Password") },
-            text = { Text("A password reset link has been sent to your registered email address.") },
-            confirmButton = {
-                TextButton(onClick = { showResetPasswordDialog = false }) { Text("OK") }
-            }
-        )
-    }
-
-    if (showStorageDialog) {
-        AlertDialog(
-            onDismissRequest = { showStorageDialog = false },
-            title = { Text("Storage Info") },
-            text = { Text("Local Comics: 124MB\nCached Data: 45MB\nTotal: 169MB") },
-            confirmButton = {
-                TextButton(onClick = { showStorageDialog = false }) { Text("OK") }
-            }
-        )
-    }
-
-    if (showUsernameDialog) {
-        AlertDialog(
-            onDismissRequest = { showUsernameDialog = false },
-            title = { Text("Change Username") },
-            text = {
-                TextField(
-                    value = newUsername,
-                    onValueChange = { newUsername = it },
-                    label = { Text("New Username") }
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = { 
-                    if (newUsername.isNotBlank()) {
-                        userProfile?.username = newUsername
-                        viewModel.updateUsername(newUsername)
-                    }
-                    showUsernameDialog = false
-                }) { Text("Save") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showUsernameDialog = false }) { Text("Cancel") }
-            }
-        )
-    }
-
-    if (showClearDbDialog) {
-        AlertDialog(
-            onDismissRequest = { showClearDbDialog = false },
-            title = { Text("Clear Local Database") },
-            text = { Text("This will permanently delete all local comics and reading progress. This action cannot be undone.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.clearLocalDatabase()
-                        showClearDbDialog = false
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                ) {
-                    Text("Clear Everything")
+        if (showResetPasswordDialog) {
+            AlertDialog(
+                onDismissRequest = { showResetPasswordDialog = false },
+                title = { Text("Reset Password") },
+                text = { Text("A password reset link has been sent to your registered email address.") },
+                confirmButton = {
+                    TextButton(onClick = { showResetPasswordDialog = false }) { Text("OK") }
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showClearDbDialog = false }) { Text("Cancel") }
-            }
-        )
+            )
+        }
+        if (showStorageDialog) {
+            AlertDialog(
+                onDismissRequest = { showStorageDialog = false },
+                title = { Text("Storage Info") },
+                text = { Text("Local Comics: 124MB\nCached Data: 45MB\nTotal: 169MB") },
+                confirmButton = {
+                    TextButton(onClick = { showStorageDialog = false }) { Text("OK") }
+                }
+            )
+        }
+
+        if (showUsernameDialog) {
+            AlertDialog(
+                onDismissRequest = { showUsernameDialog = false },
+                title = { Text("Change Username") },
+                text = {
+                    TextField(
+                        value = newUsername,
+                        onValueChange = { newUsername = it },
+                        label = { Text("New Username") }
+                    )
+                },
+                confirmButton = {
+                    TextButton(onClick = {
+                        if (newUsername.isNotBlank()) {
+                            userProfile?.username = newUsername
+                            viewModel.updateUsername(newUsername)
+                        }
+                        showUsernameDialog = false
+                    }) { Text("Save") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showUsernameDialog = false }) { Text("Cancel") }
+                }
+            )
+        }
+
+        if (showClearDbDialog) {
+            AlertDialog(
+                onDismissRequest = { showClearDbDialog = false },
+                title = { Text("Clear Local Database") },
+                text = { Text("This will permanently delete all local comics and reading progress. This action cannot be undone.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.clearLocalDatabase()
+                            showClearDbDialog = false
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Clear Everything")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showClearDbDialog = false }) { Text("Cancel") }
+                }
+            )
+        }
     }
 }
 

@@ -77,6 +77,7 @@ import toro.sources.pages.UploadPage
 import toro.sources.pages.WelcomePage
 import toro.sources.ui.theme.SourcesTheme
 import toro.sources.components.ShareDialog
+import toro.sources.pages.AboutPage
 import toro.sources.pages.InterestsPage
 import toro.sources.pages.ReportPage
 import toro.sources.pages.ReportTargetType
@@ -85,6 +86,7 @@ import toro.sources.pages.SuccessfulTaskPage
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object SignUp : Screen("signup")
+    object About : Screen("about")
     object Welcome : Screen("welcome")
     object Interests : Screen("interest")
     object Home : Screen("home/{userId}")
@@ -395,6 +397,11 @@ fun AppNavigation(viewModel: AppViewModel) {
                     }
                 )
             }
+            composable(Screen.About.route) {
+                AboutPage (
+                    onBackClick = { navController.popBackStack() },
+                )
+            }
             composable(Screen.Welcome.route) {
                 WelcomePage(
                     username = currentUser?.username ?: "User",
@@ -595,6 +602,9 @@ fun AppNavigation(viewModel: AppViewModel) {
                     onBackClick = { navController.popBackStack() },
                     onAuthorClick = {
                         navController.navigate(Screen.Engagement.route)
+                    },
+                    onComicClick = {
+                        navController.navigate(Screen.Overview.createRoute(comicId))
                     },
                     onChapterClick = { chapter ->
                         navController.navigate(Screen.Reader.createRoute(chapter.id))
