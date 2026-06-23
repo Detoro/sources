@@ -1,6 +1,7 @@
 package toro.sources.pages
 
 import androidx.compose.animation.AnimatedContent
+import android.util.Log
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -221,7 +222,6 @@ fun ChatThreadPage(
                             } else if (targetUserId.isNotEmpty()) {
                                 viewModel.sendMessage(
                                     conversationId,
-                                    targetUserId,
                                     text,
                                     isSpoiler = isSpoiler,
                                     sharedId = sharedContent?.id,
@@ -257,9 +257,14 @@ fun ChatThreadPage(
             item {
                 Spacer(modifier = Modifier.height(8.dp))
             }
-
             itemsIndexed(filteredMessages, key = { _, msg -> msg.id }) { index, msg ->
-                val isFromMe = msg.senderId == me?.id
+                val isFromMe = remember(msg.senderId, me?.id) {
+                    msg.senderId.isNotBlank() && msg.senderId.equals(me?.id, ignoreCase = true)
+                }
+
+                if (me == null) {
+                    Log.w("ChatThread", "My profile 'me' is null, cannot determine isFromMe correctly")
+                }
 
                 LaunchedEffect(msg.id) {
                     if (!isFromMe && !msg.isRead) {
