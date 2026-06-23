@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Reply
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material3.*
@@ -39,6 +38,8 @@ import com.toro.models.ShareType
 import kotlinx.coroutines.launch
 import toro.sources.AppViewModel
 import toro.sources.Screen
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun ChatBubble(
@@ -76,21 +77,7 @@ fun ChatBubble(
                 }
             }
         },
-        backgroundContent = {
-            val iconAlpha = (dismissState.progress * 2).coerceIn(0f, 1f)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = 24.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Reply,
-                    contentDescription = "Reply",
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = iconAlpha)
-                )
-            }
-        }
+        backgroundContent = {}
     ){
         Row(
             modifier = Modifier
@@ -144,6 +131,72 @@ fun ChatBubble(
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Column {
+                        if (message.replyToMessageId != null) {
+                            val repliedMessage = viewModel.chatMessages.collectAsState().value.find { it.id == message.replyToMessageId }
+
+                            if (repliedMessage != null) {
+                                val rawDecrypted = if (repliedMessage.isEncrypted) viewModel.decryptMessage(repliedMessage.content) else repliedMessage.content
+                                val cleanDecryptedText = rawDecrypted.replace("\u0000", "").trim()
+
+                                val repliedSharedType = if (repliedMessage.sharedId != null) repliedMessage.sharedType else if (repliedMessage.sharedComicId != null) ShareType.COMIC else null
+
+                                val replyDisplay = when {
+                                    repliedMessage.isSpoiler -> "Spoiler detected"
+                                    cleanDecryptedText.isNotEmpty() && cleanDecryptedText != "null" -> cleanDecryptedText
+                                    repliedMessage.imageUrl != null -> "Shared Image"
+                                    repliedMessage.videoUrl != null -> "Shared Video"
+                                    repliedSharedType != null -> "Shared ${repliedSharedType.name.lowercase().replaceFirstChar { it.uppercase() }}"
+                                    repliedMessage.sharedId != null || repliedMessage.sharedComicId != null -> "Shared Content"
+                                    else -> "Attachment"
+                                }
+
+                                val myUserId = viewModel.userProfile.collectAsState().value?.id
+                                val isReplyToMe = repliedMessage.senderId == myUserId
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 8.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+                                        .padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .width(3.dp)
+                                            .height(30.dp)
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary)
+                                    )
+
+                                    Spacer(modifier = Modifier.width(8.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = if (isReplyToMe) "You" else "Replied Message",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = replyDisplay,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = if (isFromMe) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                }
+                            } else {
+                                Text(
+                                    text = "Message deleted",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                            }
+                        }
                         if (actualSharedType != null && actualSharedId != null) {
                             SharedContentPlaceholder(
                                 type = actualSharedType,
