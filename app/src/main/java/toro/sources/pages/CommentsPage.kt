@@ -43,7 +43,7 @@ fun CommentsPage(
     }
 
     val topLevelComments = remember(comments) {
-        comments.filter { it.parentId == "" }
+        comments.filter { it.parentId.isNullOrEmpty() }
     }
 
     var initialText by remember { mutableStateOf("") }
