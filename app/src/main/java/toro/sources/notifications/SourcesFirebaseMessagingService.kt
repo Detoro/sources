@@ -60,6 +60,11 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
                 if (msgId.isNotEmpty()) handleReadReceipt(msgId)
                 return
             }
+            "NOTIFICATION_READ" -> {
+                val msgId = data["messageId"] ?: ""
+                if (msgId.isNotEmpty()) handleNotificationRead(msgId)
+                return
+            }
         }
 
         val title = remoteMessage.notification?.title ?: data["title"] ?: "New Notification"
@@ -112,6 +117,18 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
                 Log.i("FCM", "Successfully updated read status for message $messageId via remote sync")
             } catch (e: Exception) {
                 Log.e("FCM", "Error updating read status", e)
+            }
+        }
+    }
+
+    private fun handleNotificationRead(notificationId: String) {
+        scope.launch {
+            try {
+                val db = CanvasDatabase.getDatabase(applicationContext)
+                db.notificationDao().updateReadStatus(notificationId, true)
+                Log.i("FCM", "Successfully updated read status for notification $notificationId")
+            } catch (e: Exception) {
+                Log.e("FCM", "Error updating notification read status", e)
             }
         }
     }
