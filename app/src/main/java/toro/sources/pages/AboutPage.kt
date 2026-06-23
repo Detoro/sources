@@ -266,7 +266,7 @@ private fun AboutHeroCard(
                     subtitle = "Source Code",
                     iconVector = Icons.Rounded.Code,
                     contentDescription = "Open GitHub Repository",
-                    onClick = { openUrl(context, "https://github.com/your-repo") },
+                    onClick = { openUrl(context, "https://github.com/Detoro/sources") },
                     modifier = Modifier.weight(1f),
                 )
                 SocialChip(
