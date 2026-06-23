@@ -13,6 +13,7 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.Screen
@@ -97,8 +98,11 @@ fun NotificationsPage(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             },
-                            modifier = Modifier.clickable {
-                                viewModel.handleNavigation(Screen.Chat.createRoute(notification.relatedId ?: ""))
+                            modifier = Modifier
+                                .graphicsLayer(alpha = if (notification.isRead) 0.5f else 1.0f)
+                                .clickable {
+                                    viewModel.markNotificationAsRead(notification.id)
+                                    viewModel.handleNavigation(Screen.Chat.createRoute(notification.relatedId ?: ""))
                             }
                         )
                     }
