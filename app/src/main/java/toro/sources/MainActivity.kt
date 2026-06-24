@@ -254,6 +254,7 @@ fun AppNavigation(viewModel: AppViewModel) {
     val pendingNav by viewModel.pendingNavigation.collectAsState()
     val showShareDialog by viewModel.showShareDialog.collectAsState()
     val sharedContent by viewModel.sharedContent.collectAsState()
+    val error by viewModel.errorMessage.collectAsState()
 
     if (showShareDialog && sharedContent != null) {
         ShareDialog(
@@ -382,7 +383,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                             }
                         })
                     },
-                    loginError = null
+                    loginError = error
                 )
             }
             composable(Screen.SignUp.route) {
@@ -394,7 +395,8 @@ fun AppNavigation(viewModel: AppViewModel) {
                                 popUpTo(Screen.Login.route) { inclusive = true }
                             }
                         })
-                    }
+                    },
+                    signError = error
                 )
             }
             composable(Screen.About.route) {
