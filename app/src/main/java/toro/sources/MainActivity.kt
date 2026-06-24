@@ -69,7 +69,7 @@ import toro.sources.pages.OverviewPage
 import toro.sources.pages.PostPage
 import toro.sources.pages.ProfilePage
 import toro.sources.pages.ReaderPage
-import toro.sources.pages.ReadingListPage
+import toro.sources.pages.ActivityPage
 import toro.sources.pages.SearchPage
 import toro.sources.pages.SettingsPage
 import toro.sources.pages.SignUpPage
@@ -108,7 +108,7 @@ sealed class Screen(val route: String) {
     object Engagement : Screen("engagement")
     object Settings : Screen("settings")
     object FriendRequest : Screen("friend_request")
-    object ReadingList : Screen("reading_list")
+    object Activity : Screen("activity")
     object Report : Screen("report/{targetType}/{targetId}") {
         fun createRoute(targetType: String, targetId: String = "none") = "report/$targetType/$targetId"
     }
@@ -247,7 +247,7 @@ fun AppNavigation(viewModel: AppViewModel) {
         Screen.Search.route,
         Screen.Upload.route,
         Screen.Inbox.route,
-        Screen.ReadingList.route
+        Screen.Activity.route
     )
     val context = LocalContext.current
     val currentUser by viewModel.userProfile.collectAsState()
@@ -342,10 +342,10 @@ fun AppNavigation(viewModel: AppViewModel) {
                     )
                     NavigationBarItem(
                         icon = { Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = "Reading List") },
-                        label = { Text("Reading") },
-                        selected = currentRoute == Screen.ReadingList.route,
+                        label = { Text("Activity") },
+                        selected = currentRoute == Screen.Activity.route,
                         onClick = {
-                            navController.navigate(Screen.ReadingList.route) {
+                            navController.navigate(Screen.Activity.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
@@ -363,8 +363,8 @@ fun AppNavigation(viewModel: AppViewModel) {
             startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.ReadingList.route) {
-                ReadingListPage(
+            composable(Screen.Activity.route) {
+                ActivityPage(
                     viewModel = viewModel,
                     onComicClick = { comic ->
                         navController.navigate(Screen.Overview.createRoute(comic.id))
