@@ -19,13 +19,20 @@ import java.io.File
 
 class ComicRepository(
     private val context: Context,
-    private val comicDao: ComicDao,
-    private val chapterDao: ChapterDao,
-    private val conversationDao: ConversationDao,
-    private val notificationDao: NotificationDao,
+    private var comicDao: ComicDao,
+    private var chapterDao: ChapterDao,
+    private var conversationDao: ConversationDao,
+    private var notificationDao: NotificationDao,
     private val cbzParser: CbzParser,
     private val apiService: ComicApiService
 ) {
+    fun refreshDAOs() {
+        val db = CanvasDatabase.getDatabase(context)
+        comicDao = db.comicDao()
+        chapterDao = db.chapterDao()
+        conversationDao = db.conversationDao()
+        notificationDao = db.notificationDao()
+    }
     // new novels
     fun getMyLibrary(): Flow<List<Comic>> {
         return comicDao.getAllComics()
