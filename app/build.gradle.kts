@@ -34,7 +34,9 @@ android {
         }
 
         val cloudinaryPreset = localProperties.getProperty("CLOUDINARY_UPLOAD_PRESET") ?: "\"\""
+        val cloudName = localProperties.getProperty("CLOUD_NAME") ?: "\"\""
         buildConfigField("String", "CLOUDINARY_PRESET", "\"$cloudinaryPreset\"")
+        buildConfigField("String", "CLOUD_NAME", "\"$cloudName\"")
     }
 
     buildTypes {

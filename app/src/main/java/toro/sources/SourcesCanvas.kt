@@ -16,7 +16,7 @@ class SourcesCanvas : Application() {
 
     private fun initCloudinary() {
         val config = mapOf(
-            "cloud_name" to "de6bxtqcu",
+            "cloud_name" to BuildConfig.CLOUD_NAME,
             "secure" to true
         )
         MediaManager.init(this, config)
@@ -35,6 +35,8 @@ class SourcesCanvas : Application() {
             chapterDao = database.chapterDao(),
             conversationDao = database.conversationDao(),
             notificationDao = database.notificationDao(),
+            commentDao = database.commentDao(),
+            postDao = database.postDao(),
             cbzParser = cbzParser,
             apiService = apiService
         )
