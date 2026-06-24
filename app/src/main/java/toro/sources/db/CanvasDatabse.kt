@@ -10,11 +10,13 @@ import Chapter
 import com.toro.models.Conversation
 import com.toro.models.ChatMessage
 import com.toro.models.Notification
+import com.toro.models.Comment
+import com.toro.models.Post
 import toro.sources.PreferenceManager
 
 @Database(
-    entities = [Comic::class, Chapter::class, Conversation::class, ChatMessage::class, Notification::class],
-    version = 21,
+    entities = [Comic::class, Chapter::class, Conversation::class, ChatMessage::class, Notification::class, Comment::class, Post::class],
+    version = 23,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -24,6 +26,8 @@ abstract class CanvasDatabase : RoomDatabase() {
     abstract fun chapterDao(): ChapterDao
     abstract fun conversationDao(): ConversationDao
     abstract fun notificationDao(): NotificationDao
+    abstract fun commentDao(): CommentDao
+    abstract fun postDao(): PostDao
 
     companion object {
         @Volatile

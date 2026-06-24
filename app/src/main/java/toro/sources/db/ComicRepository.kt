@@ -13,8 +13,10 @@ import Chapter
 import com.toro.models.Comic
 import com.toro.models.Conversation
 import com.toro.models.ChatMessage
+import com.toro.models.Comment
 import com.toro.models.Notification
 import com.toro.models.Page
+import com.toro.models.Post
 import java.io.File
 
 class ComicRepository(
@@ -23,6 +25,8 @@ class ComicRepository(
     private var chapterDao: ChapterDao,
     private var conversationDao: ConversationDao,
     private var notificationDao: NotificationDao,
+    private var commentDao: CommentDao,
+    private var postDao: PostDao,
     private val cbzParser: CbzParser,
     private val apiService: ComicApiService
 ) {
@@ -32,6 +36,8 @@ class ComicRepository(
         chapterDao = db.chapterDao()
         conversationDao = db.conversationDao()
         notificationDao = db.notificationDao()
+        commentDao = db.commentDao()
+        postDao = db.postDao()
     }
     // new novels
     fun getMyLibrary(): Flow<List<Comic>> {
@@ -268,5 +274,37 @@ class ComicRepository(
 
     suspend fun clearNotifications() {
         notificationDao.deleteAll()
+    }
+
+    fun getComments(): Flow<List<Comment>> {
+        return commentDao.getUserComments()
+    }
+
+    suspend fun saveComment(comment: Comment) {
+        commentDao.insert(comment)
+    }
+
+    suspend fun deleteCommentById(commentId: String) {
+        commentDao.deleteById(commentId)
+    }
+
+    suspend fun clearComments() {
+        commentDao.deleteAll()
+    }
+
+    fun getPosts(): Flow<List<Post>> {
+        return postDao.getUserPosts()
+    }
+
+    suspend fun savePost(post: Post) {
+        postDao.insert(post)
+    }
+
+    suspend fun deletePostById(commentId: String) {
+        postDao.deleteById(commentId)
+    }
+
+    suspend fun clearPosts() {
+        postDao.deleteAll()
     }
 }
