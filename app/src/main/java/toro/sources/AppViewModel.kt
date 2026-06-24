@@ -58,6 +58,7 @@ import okhttp3.WebSocketListener
 import kotlinx.serialization.json.Json
 import okhttp3.Response
 import toro.sources.db.CanvasDatabase
+import java.util.UUID
 
 enum class SearchSource {
     LOCAL, ONLINE
@@ -273,6 +274,11 @@ class AppViewModel(
                 withContext(Dispatchers.IO) {
                     repository.saveNotification(newNotification)
                 }
+            }
+        }
+        viewModelScope.launch {
+            NotificationEventBus.friendRequests.collect {
+                getChatRequests()
             }
         }
 
@@ -931,9 +937,10 @@ class AppViewModel(
                 }
 
                 val encryptedContent = encryptMessage(content)
+                val tempMessageId = UUID.randomUUID().toString()
 
                 val newMessage = ChatMessage(
-                    id = "",
+                    id = tempMessageId,
                     conversationId = conversationId,
                     senderId = userProfile.value?.id ?: "",
                     content = encryptedContent,
@@ -951,6 +958,7 @@ class AppViewModel(
                 repository.saveMessage(newMessage)
                 val jsonMessage = socketJson.encodeToString(newMessage)
                 chatWebSocket?.send(jsonMessage)
+                repository.deleteMessageById(tempMessageId)
 
                 _replyingToMessage.value = null
                 _sharedContent.value = null
