@@ -10,6 +10,7 @@ import Chapter
 import com.toro.models.Conversation
 import com.toro.models.ChatMessage
 import com.toro.models.Notification
+import toro.sources.PreferenceManager
 
 @Database(
     entities = [Comic::class, Chapter::class, Conversation::class, ChatMessage::class, Notification::class],
@@ -30,16 +31,27 @@ abstract class CanvasDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): CanvasDatabase {
             return INSTANCE ?: synchronized(this) {
+                val prefs = PreferenceManager(context)
+                val userId = prefs.getUserDataSync().userId
+                val dbName = if (userId != null) "graphic_novel_database_$userId" else "graphic_novel_database"
+
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     CanvasDatabase::class.java,
-                    "graphic_novel_database"
+                    dbName
                 )
                     .fallbackToDestructiveMigration(true)
                     .build()
 
                 INSTANCE = instance
                 instance
+            }
+        }
+
+        fun resetDatabase() {
+            synchronized(this) {
+                INSTANCE?.close()
+                INSTANCE = null
             }
         }
     }

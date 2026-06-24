@@ -57,6 +57,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import kotlinx.serialization.json.Json
 import okhttp3.Response
+import toro.sources.db.CanvasDatabase
 
 enum class SearchSource {
     LOCAL, ONLINE
@@ -431,6 +432,9 @@ class AppViewModel(
                     RetrofitClient.preferenceManager.saveTokens(res.accessToken, res.refreshToken)
                     res
                 }
+
+                resetDatabaseAndRepository()
+
                 val userId = response.userId
                 onUserAuthenticated(userId)
                 _currentComic.value = null
@@ -455,6 +459,7 @@ class AppViewModel(
             } finally {
                 withContext(Dispatchers.IO) {
                     RetrofitClient.preferenceManager.clearTokens()
+                    resetDatabaseAndRepository()
                 }
                 FirebaseMessaging.getInstance().deleteToken()
                 clearProfileData()
@@ -473,6 +478,9 @@ class AppViewModel(
                     RetrofitClient.preferenceManager.saveTokens(res.accessToken, res.refreshToken)
                     res
                 }
+
+                resetDatabaseAndRepository()
+
                 val userId = response.userId
                 onUserAuthenticated(userId)
                 onSuccess()
@@ -490,6 +498,13 @@ class AppViewModel(
         _targetUserProfile.value = null
         _targetUserPosts.value = emptyList()
         _targetUserWorks.value = emptyList()
+    }
+
+    private suspend fun resetDatabaseAndRepository() {
+        withContext(Dispatchers.IO) {
+            CanvasDatabase.resetDatabase()
+            repository.refreshDAOs()
+        }
     }
 
     fun updateBio(bio: String) {
