@@ -91,6 +91,9 @@ class AppViewModel(
     private val _catalog = MutableStateFlow<List<Comic>>(emptyList())
     val catalog = _catalog.asStateFlow()
 
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage = _errorMessage.asStateFlow()
+
     private val _trending = MutableStateFlow<List<Comic>>(emptyList())
     val trending = _trending.asStateFlow()
 
@@ -350,7 +353,9 @@ class AppViewModel(
                 _catalog.value = _catalog.value.filter { it.id != comicId }
                 onRemoved()
             } catch (e: Exception) {
-                Log.e("Comic error", "Failed to remove comic: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Comic error", "Failed to remove comic: $error")
             }
         }
     }
@@ -376,7 +381,9 @@ class AppViewModel(
                         }
                 }
             } catch (e: Exception) {
-                Log.e("Subscription", "Failed to toggle: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Subscription", "Failed to toggle: $error")
             }
         }
     }
@@ -388,7 +395,9 @@ class AppViewModel(
                 }
                 getSubscribedAuthors()
             } catch (e: Exception) {
-                Log.e("Subscription", "Failed to subscribe to author: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Subscription", "Failed to subscribe to author: $error")
             }
         }
     }
@@ -405,7 +414,9 @@ class AppViewModel(
                 chapterPages = pages
                 _pageCount.value = pages.size
             } catch (e: Exception) {
-                Log.e("Reader", "Failed to load chapter:", e)
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Reader", "Failed to load chapter: $error")
             }
         }
     }
@@ -441,7 +452,9 @@ class AppViewModel(
                 onSuccess()
                 Log.i("Success", "Logged in successfully")
             } catch (e: Exception) {
-                Log.e("Failure", "Login failed: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Failure", "Login failed: $error")
             }
         }
     }
@@ -455,7 +468,9 @@ class AppViewModel(
                     }
                 }
             } catch (e: Exception) {
-                Log.e("Logout", "Server logout failed: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Logout", "Server logout failed: $error")
             } finally {
                 withContext(Dispatchers.IO) {
                     RetrofitClient.preferenceManager.clearTokens()
@@ -486,7 +501,9 @@ class AppViewModel(
                 onSuccess()
                 Log.i("Success", "Signed up successfully")
             } catch (e: Exception) {
-                Log.e("Failure", "Signup failed: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Failure", "Signup failed: $error")
             }
         }
     }
@@ -523,7 +540,9 @@ class AppViewModel(
                     Log.i("Success", "Bio updated successfully")
                 }
             } catch (e: Exception) {
-                Log.e("AppViewModel", "Failed to update bio: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("AppViewModel", "Failed to update bio: $error")
             }
         }
     }
@@ -549,7 +568,9 @@ class AppViewModel(
                     Log.i("Success", "Username updated successfully")
                 }
             } catch (e: Exception) {
-                Log.e("AppViewModel", "Failed to update username: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("AppViewModel", "Failed to update username: $error")
             }
         }
     }
@@ -569,7 +590,9 @@ class AppViewModel(
                 }
                 Log.i("AppViewModel", "Interests updated successfully")
             } catch (e: Exception) {
-                Log.e("AppViewModel", "Failed to update interests: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("AppViewModel", "Failed to update interests: $error")
             }
         }
     }
@@ -578,7 +601,9 @@ class AppViewModel(
             try {
                 RetrofitClient.comicApiService.updateAvatar(avatarUrl)
             } catch (e: Exception) {
-                Log.e("Avatar", "Failed to update Avatar ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Avatar", "Failed to update Avatar $error")
             }
         }
     }
@@ -608,19 +633,25 @@ class AppViewModel(
 
                                         Log.i("Cloudinary", "Avatar updated to $publicUrl")
                                 } catch (e: Exception) {
-                                    Log.e("Cloudinary", "Failed to sync avatar with server", e)
+                                    val error = e.message
+                                    _errorMessage.value = error
+                                    Log.e("Cloudinary", "Failed to sync avatar with server $error")
                                 }
                             }
                         }
                         override fun onError(requestId: String, error: ErrorInfo) {
-                            Log.e("Cloudinary", "Upload error: ${error.description}")
+                            val err = error.description
+                            _errorMessage.value = err
+                            Log.e("Cloudinary", "Upload error: $err")
                         }
                         override fun onReschedule(requestId: String, error: ErrorInfo) {
                         }
                     }).dispatch()
 
             } catch (e: Exception) {
-                Log.e("AvatarUpload", "Failed to upload avatar: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("AvatarUpload", "Failed to upload avatar: $error")
             }
         }
     }
@@ -635,7 +666,9 @@ class AppViewModel(
                     RetrofitClient.comicApiService.getRecommendation()
                 }
             } catch (e: Exception) {
-                Log.e("Comic error", "Failed to load catalog: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Comic error", "Failed to load catalog: $error")
             } finally {
                 _isLoading.value = false
             }
@@ -650,7 +683,9 @@ class AppViewModel(
                     RetrofitClient.comicApiService.getTrending()
                 }
             } catch (e: Exception) {
-                Log.e("Trending Comic", " Failed to load trending comic: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Trending Comic", " Failed to load trending comic: $error")
             } finally {
                 _isLoading.value = false
             }
@@ -664,7 +699,9 @@ class AppViewModel(
                     RetrofitClient.comicApiService.getComicById(comicId)
                 }
             } catch (e: Exception) {
-                Log.e("Comic error", "Failed to get Comic: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Comic error", "Failed to get Comic: $error")
             }
         }
     }
@@ -740,6 +777,8 @@ class AppViewModel(
                 }
                 _uploadSuccess.value = true
             } catch (e: Exception) {
+                val error = e.message
+                _errorMessage.value = error
                 Log.e("Upload Error", "Upload failed", e)
             } finally {
                 _isUploading.value = false
@@ -833,7 +872,9 @@ class AppViewModel(
                 }
                 Log.d("Chapter like", "Success ${response.message}")
             } catch (e: Exception) {
-                Log.e("Chapter like", "Failed to like Chapter ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Chapter like", "Failed to like Chapter $error")
             }
         }
     }
@@ -851,7 +892,9 @@ class AppViewModel(
                     repository.saveMessages(messages.map { it.copy(conversationId = conversationId) })
                 }
             } catch (e: Exception) {
-                Log.e("Chat", "Failed to fetch messages: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Chat", "Failed to fetch messages: $error")
             }
         }
     }
@@ -912,7 +955,9 @@ class AppViewModel(
                 _replyingToMessage.value = null
                 _sharedContent.value = null
             } catch (e: Exception) {
-                Log.e("Message error", "Failed to send message over socket: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Message error", "Failed to send message over socket: $error")
             }
         }
     }
@@ -932,7 +977,9 @@ class AppViewModel(
                     RetrofitClient.comicApiService.deleteMessage(conversationId, messageId)
                 }
             } catch (e: Exception) {
-                Log.e("Message error", "Failed to delete message: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Message error", "Failed to delete message: $error")
             }
         }
     }
@@ -944,14 +991,15 @@ class AppViewModel(
         viewModelScope.launch {
             try {
                 val encryptedContent = encryptMessage(content)
-                // Update local DB immediately for better UX
                 withContext(Dispatchers.IO) {
                     repository.updateMessageContent(messageId, content)
                     val updatedMessage = ChatMessage(id = messageId, content = encryptedContent, isEncrypted = true)
                     RetrofitClient.comicApiService.updateMessage(conversationId, messageId, updatedMessage)
                 }
             } catch (e: Exception) {
-                Log.e("Message error", "Failed to edit message: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Message error", "Failed to edit message: $error")
             }
         }
     }
@@ -971,7 +1019,9 @@ class AppViewModel(
                     RetrofitClient.comicApiService.getChatRequests()
                 }
             } catch (e: Exception) {
-                Log.e("Request error", "Failed to load requests: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Request error", "Failed to load requests: $error")
             }
         }
     }
@@ -984,7 +1034,9 @@ class AppViewModel(
                 _chatRequests.value = _chatRequests.value.filter { it.id != requestId }
                 getInbox()
             } catch (e: Exception) {
-                Log.e("Request error", "Failed to accept request: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Request error", "Failed to accept request: $error")
             }
         }
     }
@@ -996,7 +1048,9 @@ class AppViewModel(
                 }
                 _chatRequests.value = _chatRequests.value.filter { it.id != requestId }
             } catch (e: Exception) {
-                Log.e("Request error", "Failed to decline request: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Request error", "Failed to decline request: $error")
             }
         }
     }
@@ -1012,6 +1066,8 @@ class AppViewModel(
                 }
                 resetChatState()
             } catch (e: Exception) {
+                val error = e.message
+                _errorMessage.value = error
                 Log.e("ChatInbox", "Error unfriending", e)
             }
         }
@@ -1024,6 +1080,8 @@ class AppViewModel(
                     repository.saveConversations(conversations)
                 }
             } catch (e: Exception) {
+                val error = e.message
+                _errorMessage.value = error
                 Log.e("ChatInbox", "Error loading conversations", e)
             }
         }
@@ -1035,7 +1093,9 @@ class AppViewModel(
                     RetrofitClient.comicApiService.searchComics(query)
                 }
             } catch (e: Exception) {
-                Log.e("Search failed: ", "${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Search failed: ", "$error")
             }
         }
     }
@@ -1047,7 +1107,9 @@ class AppViewModel(
                     _chapters.value = localChapters
                 }
             } catch (e: Exception) {
-                Log.e("Chapter error", "Failed to load chapters: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Chapter error", "Failed to load chapters: $error")
             }
         }
 
@@ -1067,7 +1129,9 @@ class AppViewModel(
                     RetrofitClient.comicApiService.getCommunityPosts()
                 }
             } catch (e: Exception) {
-                Log.e("Post error", "Failed to load community posts: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Post error", "Failed to load community posts: $error")
             } finally {
                 _isLoading.value = false
             }
@@ -1080,7 +1144,9 @@ class AppViewModel(
                     RetrofitClient.comicApiService.getPostComments(postId)
                 }
             } catch (e: Exception) {
-                Log.e("Comment error", "Failed to load comments: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Comment error", "Failed to load comments: $error")
             }
         }
     }
@@ -1091,7 +1157,9 @@ class AppViewModel(
                     RetrofitClient.comicApiService.getChapterComments(chapterId)
                 }
             } catch (e: Exception) {
-                Log.e("Comment error", "Failed to load comic comments: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Comment error", "Failed to load comic comments: $error")
             }
         }
     }
@@ -1112,7 +1180,9 @@ class AppViewModel(
                 }
             } catch (e: Exception) {
                 _communityPosts.value = currentPosts
-                Log.e("Post error", "Failed to sync like: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Post error", "Failed to sync like: $error")
             }
         }
     }
@@ -1135,7 +1205,9 @@ class AppViewModel(
                         }
                     } catch (e: Exception) {
                         _chapterComments.value = currentComments
-                        Log.e("Comment error", "Failed to like comment on chapter: ${e.message}")
+                        val error = e.message
+                        _errorMessage.value = error
+                        Log.e("Comment error", "Failed to like comment on chapter: $error")
                     }
                 }
             }
@@ -1156,7 +1228,9 @@ class AppViewModel(
                         }
                     } catch (e: Exception) {
                         _postComments.value = currentComments
-                        Log.e("Comment error", "Failed to like comment on post: ${e.message}")
+                        val error = e.message
+                        _errorMessage.value = error
+                        Log.e("Comment error", "Failed to like comment on post: $error")
                     }
                 }
             }
@@ -1178,7 +1252,9 @@ class AppViewModel(
                 }
             } catch (e: Exception) {
                 _communityPosts.value = currentPosts
-                Log.e("Post error", "Failed to bookmark post: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Post error", "Failed to bookmark post: $error")
             }
         }
     }
@@ -1212,7 +1288,9 @@ class AppViewModel(
                 getCommunityPosts()
                 _sharedContent.value = null
             } catch (e: Exception) {
-                Log.e("Post error", "Failed to make post: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Post error", "Failed to make post: $error")
             }
         }
     }
@@ -1244,7 +1322,9 @@ class AppViewModel(
                 getPostComments(postId)
                 _sharedContent.value = null
             } catch (e: Exception) {
-                Log.e("Comment error", "Failed to post comment: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Comment error", "Failed to post comment: $error")
             }
         }
     }
@@ -1276,7 +1356,9 @@ class AppViewModel(
                 getChapterComments(chapterId)
                 _sharedContent.value = null
             } catch (e: Exception) {
-                Log.e("Comment error", "Failed to post comic comment: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Comment error", "Failed to post comic comment: $error")
             }
         }
     }
@@ -1287,7 +1369,9 @@ class AppViewModel(
                     RetrofitClient.comicApiService.searchUsers(query)
                 }
             } catch (e: Exception) {
-                Log.e("SearchUsers", "Failed: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("SearchUsers", "Failed: $error")
             }
         }
     }
@@ -1300,7 +1384,9 @@ class AppViewModel(
                 Log.i("FriendRequest", "Request sent: ${response.message}")
                 onSuccess()
             } catch (e: Exception) {
-                Log.e("FriendRequest", "Failed to send request: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("FriendRequest", "Failed to send request: $error")
             }
         }
     }
@@ -1315,7 +1401,9 @@ class AppViewModel(
                     RetrofitClient.comicApiService.getSubscribedAuthors()
                 }
             } catch (e: Exception) {
-                Log.e("SubscribedAuthors", "Failed: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("SubscribedAuthors", "Failed: $error")
             }
         }
     }
@@ -1345,7 +1433,9 @@ class AppViewModel(
                     _targetUserWorks.value = works
                 }
             } catch (e: Exception) {
-                Log.e("AppViewModel", "Failed to get user works: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("AppViewModel", "Failed to get user works: $error")
             }
         }
     }
@@ -1384,7 +1474,9 @@ class AppViewModel(
                     _targetUserPosts.value = posts
                 }
             } catch (e: Exception) {
-                Log.e("Profile error: ", "${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Profile error: ", "$error")
             }
         }
     }
@@ -1400,7 +1492,9 @@ class AppViewModel(
                 }
                 Log.i("Profile", "Privacy toggled: ${response.message}")
             } catch (e: Exception) {
-                Log.e("Profile", "Failed to toggle privacy: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Profile", "Failed to toggle privacy: $error")
             }
         }
     }
@@ -1413,7 +1507,9 @@ class AppViewModel(
                 }
                 Log.i("FCM", "Token registered successfully")
             } catch (e: Exception) {
-                Log.e("FCM", "Failed to register token: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("FCM", "Failed to register token: $error")
             }
         }
     }
@@ -1473,7 +1569,9 @@ class AppViewModel(
                     getComicById(comicId)
                     handleNavigation(Screen.Overview.createRoute(comicId))
                 } catch (e: Exception) {
-                    Log.e("Navigation", "Error fetching comic $comicId: ${e.message}")
+                    val error = e.message
+                    _errorMessage.value = error
+                    Log.e("Navigation", "Error fetching comic $comicId: $error")
                 }
             }
         }
@@ -1505,6 +1603,8 @@ class AppViewModel(
                     onFound(it.id)
                 }
             } catch (e: Exception) {
+                val error = e.message
+                _errorMessage.value = error
                 Log.e("AppViewModel", "User not found", e)
             }
         }
@@ -1518,7 +1618,9 @@ class AppViewModel(
                 }
                 _userRating.value = rating
             } catch (e: Exception) {
-                Log.e("Comic error", "Failed to submit rating: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Comic error", "Failed to submit rating: $error")
             }
         }
     }
@@ -1539,7 +1641,9 @@ class AppViewModel(
                 }
                 Log.d("Chapter read", "Success ${response.message}")
             } catch(e: Exception) {
-                Log.e("Chapter error", "Failed to mark as read: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Chapter error", "Failed to mark as read: $error")
             }
         }
     }
@@ -1551,7 +1655,9 @@ class AppViewModel(
                 }
                 Log.d("Notification read", "Success ${response.message}")
             } catch(e: Exception) {
-                Log.e("Notification error", "Failed to mark as read: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Notification error", "Failed to mark as read: $error")
             }
         }
     }
@@ -1593,7 +1699,9 @@ class AppViewModel(
                 Log.i("Report", "Successfully reported $targetType: $reason response: $response")
                 onSuccess()
             } catch (e: Exception) {
-                Log.e("Report error", "Failed to submit report: ${e.message}")
+                val error = e.message
+                _errorMessage.value = error
+                Log.e("Report error", "Failed to submit report: $error")
             }
         }
     }
@@ -1613,12 +1721,16 @@ class AppViewModel(
                     }
 
                 } catch (e: Exception) {
-                    Log.e("WebSocket", "Failed to decode message: ${e.message}")
+                    val error = e.message
+                    _errorMessage.value = error
+                    Log.e("WebSocket", "Failed to decode message: $error")
                 }
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.e("WebSocket", "Connection failed: ${t.message}")
+                val error = t.message
+                _errorMessage.value = error
+                Log.e("WebSocket", "Connection failed: $error")
             }
         }
 
