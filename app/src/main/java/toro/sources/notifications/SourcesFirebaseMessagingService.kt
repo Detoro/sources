@@ -39,37 +39,42 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
         Log.i("FCM", "Received Event Type: $eventType | Data Payload: $data")
 
         when (eventType) {
-            "DELIVERY_RECEIPT" -> {
+            NotificationType.DELIVERY_RECEIPT.name -> {
                 val msgId = data["messageId"] ?: remoteMessage.notification?.body ?: ""
                 if (msgId.isNotEmpty()) handleDeliveryReceipt(msgId)
                 return
             }
-            "MESSAGE_DELETED" -> {
+            NotificationType.MESSAGE_DELETED.name -> {
                 val msgId = data["messageId"] ?: remoteMessage.notification?.body ?: ""
                 if (msgId.isNotEmpty()) handleMessageDelete(msgId)
                 return
             }
-            "MESSAGE_EDITED" -> {
+            NotificationType.MESSAGE_EDITED.name -> {
                 val msgId = data["messageId"] ?: data["id"] ?: ""
                 val newContent = data["content"] ?: remoteMessage.notification?.body ?: ""
                 if (msgId.isNotEmpty() && newContent.isNotEmpty()) handleMessageEdit(msgId, newContent)
                 return
             }
-            "READ_RECEIPT" -> {
+            NotificationType.READ_RECEIPT.name -> {
                 val msgId = data["messageId"] ?: ""
                 if (msgId.isNotEmpty()) handleReadReceipt(msgId)
                 return
             }
-            "NOTIFICATION_READ" -> {
+            NotificationType.NOTIFICATION_READ.name -> {
                 val msgId = data["messageId"] ?: ""
                 if (msgId.isNotEmpty()) handleNotificationRead(msgId)
+                return
+            }
+            NotificationType.FRIEND_REQUEST.name -> {
+                val requestId = data["requestId"] ?: data["id"] ?: ""
+                if (requestId.isNotEmpty()) handleFriendRequest(requestId)
                 return
             }
         }
 
         val title = remoteMessage.notification?.title ?: data["title"] ?: "New Notification"
         val message = remoteMessage.notification?.body ?: data["message"] ?: ""
-        val targetId = data["id"] ?: data["conversationId"] ?: data["commentId"] ?: ""
+        val targetId = data["id"] ?: data["conversationId"] ?: data["commentId"] ?: data["senderId"] ?: ""
 
         val helper = NotificationHelper(applicationContext)
         helper.showNotification(title, message, data)
@@ -84,8 +89,11 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
             relatedId = targetId
         )
 
+        val friendRequest = Int.MAX_VALUE
+
         scope.launch {
             NotificationEventBus.postNotification(notification)
+            NotificationEventBus.postFriendRequest(friendRequest)
 
             if (notification.type == NotificationType.CHAT && targetId.isNotEmpty()) {
                 try {
@@ -153,6 +161,16 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
                 Log.i("FCM", "Successfully updated content for message $messageId via remote sync")
             } catch (e: Exception) {
                 Log.e("FCM", "Error editing message content", e)
+            }
+        }
+    }
+
+    private fun handleFriendRequest(requestId: String) {
+        scope.launch {
+            try {
+                Log.i("FCM", "Processed new friend request: $requestId")
+            } catch (e: Exception) {
+                Log.e("FCM", "Error handling friend request", e)
             }
         }
     }
