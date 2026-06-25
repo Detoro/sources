@@ -22,3 +22,12 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Keep WorkManager classes and their constructors intact
+-keep class androidx.work.** { *; }
+-keep public class * extends androidx.work.Worker {
+    public <init>(...);
+}
+-keep public class * extends androidx.work.InputMerger {
+    public <init>(...);
+}
