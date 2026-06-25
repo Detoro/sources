@@ -11,6 +11,7 @@ import java.util.UUID
 import com.toro.models.Comic
 import com.toro.models.Creator
 import Chapter
+import com.toro.models.Role
 
 class CbzParser(private val context: Context) {
 
@@ -50,7 +51,7 @@ class CbzParser(private val context: Context) {
             val comic = Comic(
                 id = comicId,
                 title = givenTitle,
-                authors = listOf(Creator(id = authorId, name = author, role = "author")),
+                authors = listOf(Creator(id = authorId, name = author, role = Role.WRITER)),
                 description = description,
                 coverImageUrl = coverPath,
                 isLocalSideload = true,
