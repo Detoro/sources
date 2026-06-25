@@ -106,8 +106,9 @@ fun FriendRequestPage(
                             UserSuggestionItem(
                                 username = user.username,
                                 onSendRequest = {
-                                    viewModel.sendFriendRequest(user.id) {
-                                        onDismiss()
+                                    onDismiss()
+                                    viewModel.sendChatRequest(user.id) {
+                                        viewModel.getInbox()
                                     }
                                 }
                             )
