@@ -102,7 +102,6 @@ dependencies {
     implementation(libs.firebase.messaging)
     implementation(libs.cloudinary.android)
     implementation(libs.glide)
-    implementation("org.mindrot:jbcrypt:0.4")
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
