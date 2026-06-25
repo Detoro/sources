@@ -50,7 +50,11 @@ fun ProfilePage(
 
     val userProfile by (if (isMyProfile) viewModel.userProfile else viewModel.targetUserProfile).collectAsState()
     val userPosts by (if (isMyProfile) viewModel.userPosts else viewModel.targetUserPosts).collectAsState()
+    val userPostsCount = userPosts.size
     val userWorks by (if (isMyProfile) viewModel.userWorks else viewModel.targetUserWorks).collectAsState()
+    val userWorksCount = userWorks.size
+    val userFriends by viewModel.inbox.collectAsState()
+    val userFriendsCount = userFriends.size
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var showBioDialog by remember { mutableStateOf(false) }
@@ -273,7 +277,33 @@ fun ProfilePage(
                             Tab(
                                 selected = selectedTab == index,
                                 onClick = { selectedTab = index },
-                                text = { Text(title, fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal) }
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Text(
+                                            title,
+                                            fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                        Spacer(Modifier.width(10.dp))
+                                        val count = when (index) {
+                                            0 -> userPostsCount
+                                            1 -> userFriendsCount
+                                            2 -> userWorksCount
+                                            else -> 0
+                                        }
+
+                                        if (count > 0) {
+                                            Badge(
+                                                contentColor = Color.DarkGray
+                                            ) {
+                                                Text(count.toString())
+
+                                            }
+                                        }
+                                    }
+                                }
                             )
                         }
                     }
@@ -331,7 +361,7 @@ fun ProfilePage(
                             }
 
                             "Friends" -> {
-                                EmptyState("No Friends to see.")
+                                EmptyState("No Friends to see")
                             }
                         }
                     }
