@@ -20,9 +20,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import toro.sources.AppViewModel
 import toro.sources.R
 import toro.sources.components.ComicRow
@@ -85,7 +85,6 @@ fun ActivityContent(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // The Tabs
             SecondaryScrollableTabRow(
                 selectedTabIndex = pagerState.currentPage,
                 edgePadding = 16.dp
@@ -98,32 +97,33 @@ fun ActivityContent(
                                 pagerState.animateScrollToPage(index)
                             }
                         },
-                        text = { Text(title) }
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(title)
+                                val count = when (index) {
+                                    0 -> recentlyReadComics.size
+                                    1 -> subscribedComics.size
+                                    2 -> comments.size
+                                    3 -> subscribedAuthors.size
+                                    else -> 0
+                                }
+                                if (count > 0) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Badge(contentColor = Color.DarkGray) { Text(count.toString()) }
+                                }
+                            }
+                        }
                     )
                 }
             }
 
-            Row(
-                modifier = Modifier.padding(horizontal = 5.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val currentSize = when (pagerState.currentPage) {
-                    0 -> recentlyReadComics.size
-                    1 -> subscribedComics.size
-                    2 -> comments.size
-                    3 -> subscribedAuthors.size
-                    else -> 0
-                }
+            if (pagerState.currentPage < 2) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Spacer(modifier = Modifier.weight(1f))
 
-                Text(
-                    text = currentSize.toString(),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontSize = 17.sp
-                )
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                if (pagerState.currentPage < 2) {
                     Box {
                         TextButton(
                             onClick = { expanded = true }
