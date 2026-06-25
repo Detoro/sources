@@ -263,6 +263,7 @@ class AppViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        clearErrorMessage()
         viewModelScope.launch {
             RetrofitClient.preferenceManager.isDarkTheme.collect { enabled ->
                 _isDarkTheme.value = enabled
@@ -454,6 +455,7 @@ class AppViewModel(
 
                 val userId = response.userId
                 onUserAuthenticated(userId)
+                _userProfile.first { it != null }
                 _currentComic.value = null
                 onSuccess()
                 Log.i("Success", "Logged in successfully")
@@ -504,6 +506,7 @@ class AppViewModel(
 
                 val userId = response.userId
                 onUserAuthenticated(userId)
+                _userProfile.first { it != null }
                 onSuccess()
                 Log.i("Success", "Signed up successfully")
             } catch (e: Exception) {
@@ -958,7 +961,6 @@ class AppViewModel(
                 repository.saveMessage(newMessage)
                 val jsonMessage = socketJson.encodeToString(newMessage)
                 chatWebSocket?.send(jsonMessage)
-                repository.deleteMessageById(tempMessageId)
 
                 _replyingToMessage.value = null
                 _sharedContent.value = null
@@ -1383,18 +1385,18 @@ class AppViewModel(
             }
         }
     }
-    fun sendFriendRequest(receiverId: String, onSuccess: () -> Unit = {}) {
+    fun sendChatRequest(receiverId: String, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             try {
                 val response = withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.sendChatRequest(receiverId)
                 }
-                Log.i("FriendRequest", "Request sent: ${response.message}")
+                Log.i("ChatRequest", "Request sent: ${response.message}")
                 onSuccess()
             } catch (e: Exception) {
                 val error = e.message
                 _errorMessage.value = error
-                Log.e("FriendRequest", "Failed to send request: $error")
+                Log.e("ChatRequest", "Failed to send request: $error")
             }
         }
     }
@@ -1748,6 +1750,10 @@ class AppViewModel(
     fun disconnectChatSocket() {
         chatWebSocket?.close(1000, "App backgrounded")
         chatWebSocket = null
+    }
+
+    fun clearErrorMessage() {
+        _errorMessage.value = null
     }
 }
 fun convertTimestamp(timestamp: Long): String {
