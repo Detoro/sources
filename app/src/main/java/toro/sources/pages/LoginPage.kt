@@ -157,7 +157,7 @@ fun LoginPage(
 
                 Button(
                     onClick = {
-                        if (email.isBlank() || password.isBlank() || loginError == null) {
+                        if (email.isBlank() || password.isBlank()) {
                             isError = true
                         } else {
                             val credentials = LoginCredentials(
