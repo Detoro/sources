@@ -48,8 +48,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.toro.models.AuthRequest
-import org.mindrot.jbcrypt.BCrypt.gensalt
-import org.mindrot.jbcrypt.BCrypt.hashpw
 import toro.sources.R
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -244,14 +242,13 @@ fun SignUpPage(
 
                 Button(
                     onClick = {
-                        val hashedPass = hashpw(password, gensalt())
                         val newUser = AuthRequest(
                             username = username,
                             email = email,
-                            password = hashedPass,
+                            password = password,
                             avatarUrl = null
                         )
-                        if (password == confirmPassword && signError == null) {
+                        if (password.isNotEmpty() && password == confirmPassword && username.isNotEmpty()) {
                             isError = false
                             onSignUpSuccess(newUser)
                         } else {

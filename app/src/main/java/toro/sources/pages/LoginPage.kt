@@ -39,8 +39,6 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.toro.models.LoginCredentials
-import org.mindrot.jbcrypt.BCrypt.gensalt
-import org.mindrot.jbcrypt.BCrypt.hashpw
 import toro.sources.R
 
 @Composable
@@ -159,13 +157,12 @@ fun LoginPage(
 
                 Button(
                     onClick = {
-                        if (email.isBlank() || password.isBlank() || loginError != null) {
+                        if (email.isBlank() || password.isBlank() || loginError == null) {
                             isError = true
                         } else {
-                            val hashedPass = hashpw(password, gensalt())
                             val credentials = LoginCredentials(
                                 email = email.trim(),
-                                password = hashedPass
+                                password = password
                             )
                             onLoginSubmit(credentials)
                         }
