@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import toro.sources.AppViewModel
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
@@ -33,6 +34,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons.Filled
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Image
@@ -44,12 +46,16 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.Alignment
 import com.toro.models.Creator
 import com.toro.models.Genre
 import com.toro.models.PgRating
+import com.toro.models.Role
 import com.toro.models.ScrollDirection
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,7 +69,8 @@ fun NewSeriesForm(
     var ratingExpanded by remember { mutableStateOf(false) }
     var directionExpanded by remember { mutableStateOf(false) }
     var genreExpanded by remember { mutableStateOf(false) }
-    val author by viewModel.userProfile.collectAsState()
+    var showAuthorSearch by remember { mutableStateOf(false) }
+    val currentUser by viewModel.userProfile.collectAsState()
     var description by remember { mutableStateOf("") }
     var selectedChapterUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var selectedAudioUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
@@ -76,7 +83,19 @@ fun NewSeriesForm(
     val uploadSuccess by viewModel.uploadSuccess.collectAsState()
     val ratingOptions = PgRating.entries
     val genreOptions = Genre.entries
+    val roleOptions = Role.entries
     val scrollDirectionOptions = ScrollDirection.entries
+    var selectedAuthors by remember {
+        mutableStateOf(
+            listOf(
+                Creator(
+                    id = currentUser?.id ?: "fallback-123",
+                    name = currentUser?.username ?: "User",
+                    role = Role.WRITER
+                )
+            )
+        )
+    }
 
     LaunchedEffect(uploadSuccess) {
         if (uploadSuccess) {
@@ -143,6 +162,26 @@ fun NewSeriesForm(
                 label = { Text("Comic Title") },
                 modifier = Modifier.fillMaxWidth()
             )
+
+            Text("Authors", style = MaterialTheme.typography.titleMedium)
+            selectedAuthors.forEach { creator ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("• ${creator.name} (${creator.role})")
+                    if (creator.id != currentUser?.id) {
+                        IconButton(onClick = {
+                            selectedAuthors = selectedAuthors.filter { it.id != creator.id }
+                        }) {
+                            Icon(Icons.Default.Close, contentDescription = "Remove")
+                        }
+                    }
+                }
+            }
+
+            TextButton(onClick = { showAuthorSearch = true }) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Add Co-Author")
+            }
 
             ExposedDropdownMenuBox(
                 expanded = ratingExpanded,
@@ -286,15 +325,10 @@ fun NewSeriesForm(
                 title.isNotBlank() && selectedChapterUris.isNotEmpty() && !isUploading
             Button(
                 onClick = {
-                    val defaultCreator = Creator(
-                        id = author?.id ?: "fallback-123",
-                        name = author?.username ?: "User",
-                        role = "Creator"
-                    )
                     viewModel.uploadNewChapters(
                         context = context,
                         title = title,
-                        authors = listOf(defaultCreator),
+                        authors = selectedAuthors,
                         scrollDirection = selectedScrollDirection,
                         pgRating = selectedComicRating,
                         description = description,
@@ -310,6 +344,23 @@ fun NewSeriesForm(
             ) {
                 Text("Create Series & Upload")
             }
+        }
+        if (showAuthorSearch) {
+            UserSearchDialog(
+                viewModel = viewModel,
+                title = "Add Co-Creator",
+                roles = roleOptions,
+                onDismiss = { showAuthorSearch = false },
+                onUserSelected = { selectedUser, selectedRole ->
+                    val newCreator = Creator(
+                        id = selectedUser.id,
+                        name = selectedUser.username,
+                        role = selectedRole ?: Role.WRITER
+                    )
+                    selectedAuthors = selectedAuthors + newCreator
+                    showAuthorSearch = false
+                }
+            )
         }
     }
 }
