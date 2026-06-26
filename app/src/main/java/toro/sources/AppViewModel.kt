@@ -170,6 +170,17 @@ class AppViewModel(
 
     private val _chapterComments = MutableStateFlow<List<Comment>>(emptyList())
     val chapterComments = _chapterComments.asStateFlow()
+
+    val combinedComments: StateFlow<List<Comment>> = chapterComments
+        .combine(postComments) { chapterComment, postComment ->
+            chapterComment + postComment
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
     private val _pageCount = MutableStateFlow(0)
     val pageCount = _pageCount.asStateFlow()
 
