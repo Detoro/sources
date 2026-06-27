@@ -223,19 +223,17 @@ fun HomePage(
                             )
                         }
                     }
-
                     item {
                         ComicCarousel(
                             title = "For You",
-                            comics = catalog.shuffled().take(8),
+                            comics = catalog.shuffled().take(5),
                             viewModel = viewModel,
                             onComicClick = onComicClick
                         )
                     }
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(32.dp))
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                 }
             }
         }
