@@ -33,13 +33,13 @@ import com.toro.models.*
 fun OverviewPage(
     viewModel: AppViewModel,
     onBackClick: () -> Unit,
-    onAuthorClick: () -> Unit,
+    onAuthorClick: (String) -> Unit,
     onComicClick: (Comic) -> Unit,
     onChapterClick: (Chapter) -> Unit
 ) {
     val comic by viewModel.currentComic.collectAsState()
     val chapters by viewModel.chapters.collectAsState()
-    val userRating by viewModel.userRating.collectAsState()
+    val userRating = comic?.rating ?: 0f
 
     var showActionSheet by remember { mutableStateOf(false) }
     var showShareDialog by remember { mutableStateOf(false) }
@@ -101,11 +101,10 @@ fun OverviewPage(
             }
         } else {
             val safeComic = comic!!
-            val writers = safeComic.creditsMap["writer"]?.joinToString(", ") ?: "Unknown Writer"
-            val artists = safeComic.creditsMap["artist"]?.joinToString(", ")
+            val artists = safeComic.artBy
 
 
-            if (artists != null) {
+            if (safeComic.artBy.isNotEmpty()) {
                 Text(text = "Art by $artists")
             }
 
@@ -157,12 +156,30 @@ fun OverviewPage(
                                 color = MaterialTheme.colorScheme.onBackground
                             )
 
-                            TextButton(onClick = onAuthorClick) {
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
-                                    text = "Written by $writers",
+                                    text = "Written by",
                                     style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = MaterialTheme.colorScheme.onBackground
                                 )
+
+                                val writers = safeComic.authors.filter { it.role == Role.WRITER || it.role.name.lowercase() == "AUTHOR" }
+                                writers.forEachIndexed { index, writer ->
+                                    TextButton(
+                                        onClick = { onAuthorClick(writer.id) },
+                                        contentPadding = PaddingValues(0.dp),
+                                        modifier = Modifier.height(32.dp)
+                                    ) {
+                                        Text(
+                                            text = writer.name + if (index < writers.size - 1) ", " else "",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
