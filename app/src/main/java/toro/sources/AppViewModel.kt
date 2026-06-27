@@ -248,9 +248,6 @@ class AppViewModel(
     private var chapterPages: List<Page> = emptyList()
     private var chaptersJob: kotlinx.coroutines.Job? = null
 
-    private val _userRating = MutableStateFlow(0)
-    val userRating: StateFlow<Int> = _userRating.asStateFlow()
-
     private val _inboxSearchQuery = MutableStateFlow("")
     val inboxSearchQuery = _inboxSearchQuery.asStateFlow()
 
@@ -1600,16 +1597,29 @@ class AppViewModel(
 
     fun loadComicById(comicId: String) {
         viewModelScope.launch {
-            var comicToLoad = myLibrary.value.find { it.id == comicId }
+            _currentComic.value = null
+
+            var comicToLoad = myLibrary.value.find { it.id == comicId } ?:
+                             catalog.value.find { it.id == comicId } ?:
+                             trending.value.find { it.id == comicId } ?:
+                             userWorks.value.find { it.id == comicId } ?:
+                             targetUserWorks.value.find { it.id == comicId }
 
             if (comicToLoad == null) {
-                comicToLoad = catalog.value.find { it.id == comicId }
+                try {
+                    comicToLoad = withContext(Dispatchers.IO) {
+                        RetrofitClient.comicApiService.getComicById(comicId)
+                    }
+                } catch (e: Exception) {
+                    Log.e("AppViewModel", "Failed to fetch comic $comicId from API", e)
+                }
             }
 
             if (comicToLoad != null) {
                 _currentComic.value = comicToLoad
             } else {
                 Log.e("Comic error", "Comic not found or unavailable.")
+                _errorMessage.value = "Failed to load comic details."
             }
         }
     }
@@ -1631,13 +1641,21 @@ class AppViewModel(
         }
     }
 
-    fun rateComic(comicId: String, rating: Int) {
+    fun rateComic(comicId: String, rating: Float) {
         viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.rateComic(comicId, rating)
                 }
-                _userRating.value = rating
+                _currentComic.update { comic ->
+                    if (comic?.id == comicId) comic.copy(rating = rating) else comic
+                }
+                
+                _catalog.update { list -> list.map { if (it.id == comicId) it.copy(rating = rating) else it } }
+                _trending.update { list -> list.map { if (it.id == comicId) it.copy(rating = rating) else it } }
+                _userWorks.update { list -> list.map { if (it.id == comicId) it.copy(rating = rating) else it } }
+                _targetUserWorks.update { list -> list.map { if (it.id == comicId) it.copy(rating = rating) else it } }
+
             } catch (e: Exception) {
                 val error = e.message
                 _errorMessage.value = error
