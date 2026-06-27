@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -195,11 +196,13 @@ fun ComicCarousel(
     Column(modifier = modifier) {
         SectionHeader(title = title)
 
+        val carouselState = rememberCarouselState { comics.size }
         HorizontalUncontainedCarousel(
-            state = rememberCarouselState { comics.size },
+            state = carouselState,
             modifier = Modifier.fillMaxWidth(),
             itemWidth = 120.dp,
             itemSpacing = 12.dp,
+            flingBehavior = CarouselDefaults.multiBrowseFlingBehavior(carouselState),
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) { index ->
             val comic = comics[index]
