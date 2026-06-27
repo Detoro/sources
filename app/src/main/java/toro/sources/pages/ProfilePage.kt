@@ -15,7 +15,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Message
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,15 +28,18 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.AsyncImage
+import com.toro.models.Conversation
 import toro.sources.Screen
 import toro.sources.AppViewModel
 import toro.sources.components.PostCard
 import toro.sources.components.ComicCoverCard
 import com.toro.models.SharedContent
 import com.toro.models.ShareType
+import toro.sources.components.DefaultAvatar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
@@ -361,7 +366,22 @@ fun ProfilePage(
                             }
 
                             "Friends" -> {
-                                EmptyState("No Friends to see")
+                                if (userFriends.isEmpty()) {
+                                    EmptyState("No Friends to see")
+                                } else {
+                                    LazyColumn(
+                                        contentPadding = PaddingValues(16.dp),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        items(userFriends) { chat ->
+                                            FriendCard(
+                                                friend = chat,
+                                                onChatClick = { viewModel.handleNavigation("Screen.Chat.route/${chat.conversationId}") },
+                                                onProfileClick = { viewModel.getUserProfile(chat.otherUserId) }
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -395,6 +415,80 @@ fun EmptyState(message: String) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun FriendCard(
+    friend: Conversation,
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(4.dp),
+    onProfileClick: () -> Unit,
+    onChatClick: () -> Unit
+) {
+    Surface(
+        modifier = modifier.clip(shape),
+        shape = shape,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 2.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                modifier = Modifier.size(48.dp),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ) {
+                if (friend.otherUserAvatarUrl != null) {
+                    DefaultAvatar(
+                        avatarUrl = friend.otherUserAvatarUrl,
+                    )
+                } else {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Text(
+                            text = friend.otherUserName.first().uppercase(),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = friend.otherUserName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    IconButton(onClick = onProfileClick) {
+                        Icon(
+                            Icons.Rounded.Person,
+                            contentDescription = "Friend Profile",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(onClick = onChatClick) {
+                        Icon(
+                            Icons.AutoMirrored.Rounded.Message,
+                            contentDescription = "Chat",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
         }
     }
 }
