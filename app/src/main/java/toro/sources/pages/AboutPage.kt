@@ -49,9 +49,9 @@ data class Contributor(
 
 private val CoreMaintainer = Contributor(
     id = "toro",
-    displayName = "Adetoro (Toro)",
+    displayName = "Toro",
     role = "Creator & Lead Developer",
-    detail = "Building Sources to be the ultimate full-stack comic discovery platform.",
+    detail = "Building Sources",
     avatarUrl = "https://avatars.githubusercontent.com/u/GITHUB_ID", // meh
     githubUrl = "https://github.com/Detoro/sources",
     portfolioUrl = "https://your-portfolio.com"
@@ -62,7 +62,7 @@ private val SpecialThanks = listOf(
         id = "mentors",
         displayName = "Mentors & Advisors",
         role = "Guidance & Support",
-        detail = "Special thanks to the DreamWorks and Disney mentorship programs for the invaluable career and technical guidance.",
+        detail = "Special thanks to Mr. Naidu, Ryan, and Keelan",
         badge = "Mentorship"
     )
 )
@@ -120,7 +120,6 @@ fun AboutPage(
                     versionName = versionName,
                     onVersionLongPress = {
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        // Easter egg
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -131,7 +130,7 @@ fun AboutPage(
             item(key = "maintainer_title") {
                 AboutSectionHeader(
                     title = "Developer",
-                    subtitle = "The mind behind the code.",
+                    subtitle = "Inspired by Spite",
                     modifier = Modifier.padding(top = 24.dp),
                 )
             }
@@ -170,8 +169,6 @@ fun AboutPage(
         }
     }
 }
-
-// --- Components ---
 
 @Composable
 private fun AboutHeroCard(
@@ -419,7 +416,6 @@ private fun ContributorCard(
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Avatar
             Surface(
                 modifier = Modifier.size(48.dp),
                 shape = CircleShape,
@@ -445,7 +441,6 @@ private fun ContributorCard(
 
             Spacer(Modifier.width(16.dp))
 
-            // Details
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -491,7 +486,6 @@ private fun ContributorCard(
                 }
             }
 
-            // Action Buttons
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 if (contributor.githubUrl != null) {
                     IconButton(onClick = { openUrl(context, contributor.githubUrl) }) {
@@ -508,7 +502,6 @@ private fun ContributorCard(
     }
 }
 
-// Utility function to group adjacent items visually
 private fun expressiveListShape(index: Int, count: Int): RoundedCornerShape {
     val outer = 24.dp
     val inner = 4.dp
