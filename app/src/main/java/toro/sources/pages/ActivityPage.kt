@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import toro.sources.AppViewModel
 import toro.sources.R
 import toro.sources.components.ComicRow
@@ -38,7 +39,7 @@ fun ActivityPage(
     val subscribed by viewModel.subscribedComics.collectAsState()
     val recentlyRead by viewModel.recentlyReadComics.collectAsState()
     val authors by viewModel.subscribedAuthors.collectAsState()
-    val comments by viewModel.chapterComments.collectAsState()
+    val comments by viewModel.combinedComments.collectAsStateWithLifecycle()
 
     ActivityContent(
         subscribedComics = subscribed,
