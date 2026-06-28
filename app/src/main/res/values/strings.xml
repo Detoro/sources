@@ -19,7 +19,7 @@
     <string name="messages">Messages</string>
     <string name="requests">Requests</string>
     <string name="inbox">Inbox</string>
-    <string name="reading_list">Reading List</string>
+    <string name="activity_list">Activity</string>
     <string name="github_link">https://github.com/Detoro/sources</string>
 
 </resources>

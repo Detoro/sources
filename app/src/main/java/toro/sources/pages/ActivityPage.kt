@@ -1,6 +1,7 @@
 package toro.sources.pages
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,6 +9,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material3.*
 import androidx.compose.material3.SecondaryScrollableTabRow
 import androidx.compose.runtime.Composable
@@ -29,12 +31,14 @@ import toro.sources.R
 import toro.sources.components.ComicRow
 import com.toro.models.*
 import kotlinx.coroutines.launch
+import toro.sources.Screen
 
 @Composable
 fun ActivityPage(
     viewModel: AppViewModel,
     onComicClick: (Comic) -> Unit,
-    onAddComic: () -> Unit
+    onAddComic: () -> Unit,
+    onAuthorClick: (UserProfile) -> Unit
 ) {
     val subscribed by viewModel.subscribedComics.collectAsState()
     val recentlyRead by viewModel.recentlyReadComics.collectAsState()
@@ -48,6 +52,7 @@ fun ActivityPage(
         subscribedAuthors = authors,
         onComicClick = onComicClick,
         onAddComic = onAddComic,
+        onAuthorClick = onAuthorClick,
         viewModel = viewModel
     )
 }
@@ -61,6 +66,7 @@ fun ActivityContent(
     subscribedAuthors: List<UserProfile>,
     onComicClick: (Comic) -> Unit,
     onAddComic: () -> Unit,
+    onAuthorClick: (UserProfile) -> Unit,
     viewModel: AppViewModel? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -72,9 +78,14 @@ fun ActivityContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.reading_list)) },
-                windowInsets = WindowInsets(top = 3.dp)
-            ) },
+                title = { Text(stringResource(R.string.activity_list)) },
+                windowInsets = WindowInsets(top = 3.dp),
+                actions = {
+                    IconButton(onClick = { viewModel?.handleNavigation(Screen.Engagement.route) }) {
+                        Icon(Icons.Default.DynamicFeed, contentDescription = "Search Inbox")
+                    }
+                }
+            )},
         floatingActionButton = {
             FloatingActionButton(onClick = { onAddComic() }) {
                 Icon(Icons.Filled.Add, contentDescription = "Find a comic to subscribe to")
@@ -239,7 +250,8 @@ fun ActivityContent(
                             items(subscribedAuthors) { author ->
                                 ListItem(
                                     headlineContent = { Text(author.username) },
-                                    supportingContent = { Text(author.bio ?: "No bio available") }
+                                    supportingContent = { Text(author.bio ?: "No bio available") },
+                                    modifier = Modifier.clickable { onAuthorClick(author) }
                                 )
                                 HorizontalDivider()
                             }

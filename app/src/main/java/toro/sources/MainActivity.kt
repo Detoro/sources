@@ -370,7 +370,10 @@ fun AppNavigation(viewModel: AppViewModel) {
                     onComicClick = { comic ->
                         navController.navigate(Screen.Overview.createRoute(comic.id))
                     },
-                    onAddComic = { navController.navigate(Screen.Search.route) }
+                    onAddComic = { navController.navigate(Screen.Search.route) },
+                    onAuthorClick = { author ->
+                        navController.navigate(Screen.Profile.createRoute(author.id))
+                    }
                 )
             }
             composable(Screen.Login.route) {
@@ -602,8 +605,8 @@ fun AppNavigation(viewModel: AppViewModel) {
                 OverviewPage(
                     viewModel = viewModel,
                     onBackClick = { navController.popBackStack() },
-                    onAuthorClick = {
-                        navController.navigate(Screen.Engagement.route)
+                    onAuthorClick = { authorId ->
+                        navController.navigate(Screen.Profile.createRoute(authorId))
                     },
                     onComicClick = {
                         navController.navigate(Screen.Overview.createRoute(comicId))
