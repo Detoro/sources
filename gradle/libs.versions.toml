@@ -1,5 +1,5 @@
 [versions]
-agp = "9.2.0"
+agp = "9.2.1"
 cloudinaryAndroid = "3.1.2"
 coilCompose = "2.7.0"
 constraintlayout = "2.2.1"
@@ -64,7 +64,6 @@ firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 firebase-messaging-ktx = { module = "com.google.firebase:firebase-messaging-ktx" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 google-services = { module = "com.google.gms:google-services", version.ref = "googleServices" }
-jbcrypt = { module = "org.mindrot:jbcrypt", version.ref = "jbcrypt" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
