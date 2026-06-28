@@ -11,6 +11,8 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,6 +41,7 @@ import toro.sources.components.PostCard
 import toro.sources.components.ComicCoverCard
 import com.toro.models.SharedContent
 import com.toro.models.ShareType
+import kotlinx.coroutines.launch
 import toro.sources.components.DefaultAvatar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
@@ -273,15 +276,21 @@ fun ProfilePage(
 
                     val tabs = mutableListOf("Posts", "Friends")
                     if (profile.isAuthor) tabs.add("Works")
+                    val pagerState = rememberPagerState(pageCount = { tabs.size })
+                    val coroutineScope = rememberCoroutineScope()
 
                     SecondaryTabRow(
-                        selectedTabIndex = selectedTab,
+                        selectedTabIndex = pagerState.currentPage,
                         containerColor = Color.Transparent
                     ) {
                         tabs.forEachIndexed { index, title ->
                             Tab(
-                                selected = selectedTab == index,
-                                onClick = { selectedTab = index },
+                                selected = pagerState.currentPage == index,
+                                onClick = {
+                                    coroutineScope.launch {
+                                        pagerState.animateScrollToPage(index)
+                                    }
+                                },
                                 text = {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
@@ -313,9 +322,12 @@ fun ProfilePage(
                         }
                     }
 
-                    Box(modifier = Modifier.weight(1f)) {
-                        when (tabs[selectedTab]) {
-                            "Posts" -> {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { page ->
+                        when (page) {
+                            0 -> {
                                 if (userPosts.isEmpty()) {
                                     EmptyState("No posts yet.")
                                 } else {
@@ -347,25 +359,7 @@ fun ProfilePage(
                                     }
                                 }
                             }
-
-                            "Works" -> {
-                                if (userWorks.isEmpty()) {
-                                    EmptyState("No works published yet.")
-                                } else {
-                                    LazyVerticalGrid(
-                                        columns = GridCells.Fixed(3),
-                                        contentPadding = PaddingValues(16.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        items(userWorks) { comic ->
-                                            ComicCoverCard(comic, viewModel, onClick = {})
-                                        }
-                                    }
-                                }
-                            }
-
-                            "Friends" -> {
+                            1 -> {
                                 if (userFriends.isEmpty()) {
                                     EmptyState("No Friends to see")
                                 } else {
@@ -379,6 +373,22 @@ fun ProfilePage(
                                                 onChatClick = { viewModel.handleNavigation("Screen.Chat.route/${chat.conversationId}") },
                                                 onProfileClick = { viewModel.getUserProfile(chat.otherUserId) }
                                             )
+                                        }
+                                    }
+                                }
+                            }
+                            2 -> {
+                                if (userWorks.isEmpty()) {
+                                    EmptyState("No works published yet.")
+                                } else {
+                                    LazyVerticalGrid(
+                                        columns = GridCells.Fixed(3),
+                                        contentPadding = PaddingValues(16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        items(userWorks) { comic ->
+                                            ComicCoverCard(comic, viewModel, onClick = {})
                                         }
                                     }
                                 }
