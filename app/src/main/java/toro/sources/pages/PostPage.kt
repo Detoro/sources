@@ -54,7 +54,7 @@ fun PostPage(
                         title = title,
                         isSpoiler = isSpoiler,
                         postContent = text,
-                        tags = emptyList()
+                        tags = mentions
                     )
                 },
                 onTitleChange = { postTitle = it },
@@ -72,7 +72,8 @@ fun PostPage(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp)
-                .verticalScroll(scrollState),
+                .verticalScroll(scrollState)
+                .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
