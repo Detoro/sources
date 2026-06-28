@@ -25,7 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
-import androidx.compose.material3.SecondaryScrollableTabRow
+import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -134,9 +134,8 @@ fun ChatInboxPage(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            SecondaryScrollableTabRow(
+            SecondaryTabRow(
                 selectedTabIndex = pagerState.currentPage,
-                edgePadding = 16.dp
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
@@ -148,7 +147,7 @@ fun ChatInboxPage(
                         },
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(title)}
+                                Text(title)
                                 val count = when (index) {
                                     0 -> pendingRequestsCount
                                     1 -> pendingRequestsCount
@@ -158,6 +157,7 @@ fun ChatInboxPage(
                                     Spacer(Modifier.width(8.dp))
                                     Badge(contentColor = Color.DarkGray) { Text(count.toString()) }
                                 }
+                            }
 
                         }
                     )

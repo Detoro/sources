@@ -1,7 +1,6 @@
 package toro.sources.pages
 
 import androidx.compose.animation.AnimatedContent
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -335,10 +334,6 @@ fun ChatThreadPage(
             itemsIndexed(filteredMessages, key = { _, msg -> msg.id }) { index, msg ->
                 val isFromMe = remember(msg.senderId, me?.id) {
                     msg.senderId.isNotBlank() && msg.senderId.equals(me?.id, ignoreCase = true)
-                }
-
-                if (me == null) {
-                    Log.w("ChatThread", "My profile 'me' is null, cannot determine isFromMe correctly")
                 }
 
                 LaunchedEffect(msg.id) {

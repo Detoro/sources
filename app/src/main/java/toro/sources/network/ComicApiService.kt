@@ -56,7 +56,7 @@ interface ComicApiService {
     @POST("api/comics/{comicId}/rate")
     suspend fun rateComic(
         @Path("comicId") comicId: String,
-        @Query("rating") rating: Int
+        @Query("rating") rating: Float
     ): ServerResponse
 
     @POST("api/comics/chapter/comments/{commentId}/like")

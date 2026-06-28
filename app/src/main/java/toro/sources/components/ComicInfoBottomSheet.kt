@@ -117,7 +117,7 @@ fun ComicInfoBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
-                text = "Other works by ${comic.authorName}",
+                text = "Other works by ${comic.writtenBy}",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
