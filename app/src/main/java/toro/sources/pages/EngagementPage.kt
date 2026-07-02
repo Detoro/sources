@@ -3,6 +3,8 @@ package toro.sources.pages
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -28,14 +30,14 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.setValue
 import com.toro.models.SharedContent
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +51,6 @@ fun EngagementPage(
     val posts by viewModel.communityPosts.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val selectedAuthorIds by viewModel.selectedAuthorIds.collectAsState()
-    var selectedTab by remember { mutableIntStateOf(0) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
 
     val filteredPosts = remember(posts, selectedAuthorIds) {
@@ -97,20 +98,29 @@ fun EngagementPage(
                 .padding(paddingValues)
         ) {
             val tabs = listOf("Trending", "Friends")
+            val pagerState = rememberPagerState(pageCount = { tabs.size })
+            val coroutineScope = rememberCoroutineScope()
 
-            SecondaryTabRow(selectedTabIndex = selectedTab) {
+            SecondaryTabRow(selectedTabIndex = pagerState.currentPage) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
-                        selected = selectedTab == index,
-                        onClick = { selectedTab = index },
+                        selected = pagerState.currentPage == index,
+                        onClick = {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
                         text = { Text(title) }
                     )
                 }
             }
 
-            Box(modifier = Modifier.weight(1f)) {
-                when (tabs[selectedTab]) {
-                    "Trending" -> {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxWidth()
+            ) { page ->
+                when (page) {
+                    0 -> {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             if (isLoading) {
                                 items(5) {
@@ -154,7 +164,7 @@ fun EngagementPage(
                             }
                         }
                     }
-                    "Friends" -> {
+                    1 -> {
                         Column(modifier = Modifier.fillMaxSize()) {
                             AuthorsRow(
                                 viewModel = viewModel,
