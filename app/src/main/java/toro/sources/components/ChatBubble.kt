@@ -54,7 +54,6 @@ fun ChatBubble(
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
-    val isDelivered = message.isDelivered
 
     val text = remember(message.content, message.isEncrypted) {
         if (message.isEncrypted) viewModel.decryptMessage(message.content) else message.content
@@ -398,11 +397,24 @@ fun ChatBubble(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 4.dp, end = 8.dp)
                     ) {
+                        val icon = when {
+                            message.isRead -> Icons.Default.DoneAll
+                            message.isDelivered -> Icons.Default.DoneAll
+                            else -> Icons.Default.Done
+                        }
+                        val tint = when {
+                            message.isRead -> MaterialTheme.colorScheme.primary
+                            else -> MaterialTheme.colorScheme.outline
+                        }
                         Icon(
-                            imageVector = if (isDelivered) Icons.Default.DoneAll else Icons.Default.Done,
-                            contentDescription = if (isDelivered) "Delivered" else "Sent",
+                            imageVector = icon,
+                            contentDescription = when {
+                                message.isRead -> "Read"
+                                message.isDelivered -> "Delivered"
+                                else -> "Sent"
+                            },
                             modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                            tint = tint
                         )
                     }
                 }
