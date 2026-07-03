@@ -1024,8 +1024,13 @@ class AppViewModel(
 
     fun markMessageAsRead(messageId: String) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                repository.updateMessageReadStatus(messageId, true)
+            try {
+                withContext(Dispatchers.IO) {
+                    repository.updateMessageReadStatus(messageId, true)
+                    RetrofitClient.comicApiService.markMessageAsRead(messageId)
+                }
+            } catch (e: Exception) {
+                Log.e("Chat", "Failed to mark message as read: ${e.message}")
             }
         }
     }
