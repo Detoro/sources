@@ -59,6 +59,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.Response
 import toro.sources.db.CanvasDatabase
 import java.util.UUID
+import kotlin.time.Duration.Companion.milliseconds
 
 enum class SearchSource {
     LOCAL, ONLINE
@@ -116,17 +117,16 @@ class AppViewModel(
         }
 
         baseList.filter { comic ->
-            val matchesText = comic.title.contains(query, ignoreCase = true) ||
-                    comic.writtenBy.contains(query, ignoreCase = true)
-
-            val matchesFilter = when (filter) {
+            when (filter) {
                 "Authors" -> comic.writtenBy.contains(query, ignoreCase = true)
                 "Tags" -> comic.genres.any { it.name.contains(query, ignoreCase = true) }
-                "Comics" -> true
-                else -> true
+                "Comics" -> comic.title.contains(query, ignoreCase = true)
+                else -> {
+                    comic.title.contains(query, ignoreCase = true) ||
+                            comic.writtenBy.contains(query, ignoreCase = true) ||
+                            comic.genres.any { it.name.contains(query, ignoreCase = true) }
+                }
             }
-
-            matchesText && matchesFilter
         }
     }.stateIn(
         scope = viewModelScope,
@@ -295,7 +295,7 @@ class AppViewModel(
             combine(_searchQuery, _searchSource) { query, source ->
                 query to source
             }
-                .debounce(500L)
+                .debounce(500.milliseconds)
                 .filter { it.first.isNotBlank() && it.second == SearchSource.ONLINE }
                 .collectLatest { (readyQuery, _) ->
                     if (_userProfile.value?.id?.isNotEmpty() == true) {
