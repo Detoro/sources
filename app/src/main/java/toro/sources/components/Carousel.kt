@@ -1,14 +1,16 @@
 package toro.sources.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.carousel.HorizontalUncontainedCarousel
-import androidx.compose.material3.carousel.rememberCarouselState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -26,7 +28,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.carousel.CarouselDefaults
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SectionHeader(
@@ -66,7 +68,7 @@ fun BillboardCarousel(
 
     LaunchedEffect(Unit) {
         while (true) {
-            delay(5000)
+            delay(5000.milliseconds)
             val nextPage = (pagerState.currentPage + 1) % comics.size
             pagerState.animateScrollToPage(nextPage)
         }
@@ -150,33 +152,34 @@ fun ContinueReadingCarousel(
     Column(modifier = modifier) {
         SectionHeader(title = "Continue Reading")
 
-        HorizontalUncontainedCarousel(
-            state = rememberCarouselState { comics.size },
+        LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            itemWidth = 80.dp,
-            itemSpacing = 12.dp,
-            contentPadding = PaddingValues(horizontal = 16.dp)
-        ) { index ->
-            val comic = comics[index]
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { onComicClick(comic) }
-            ) {
-                AsyncImage(
-                    model = comic.coverImageUrl,
-                    contentDescription = comic.title,
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(comics) { comic ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-                Text(
-                    text = comic.title,
-                    style = MaterialTheme.typography.labelSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
+                        .width(80.dp)
+                        .clickable { onComicClick(comic) }
+                ) {
+                    AsyncImage(
+                        model = comic.coverImageUrl,
+                        contentDescription = comic.title,
+                        modifier = Modifier
+                            .size(80.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                    Text(
+                        text = comic.title,
+                        style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         }
     }
@@ -196,21 +199,19 @@ fun ComicCarousel(
     Column(modifier = modifier) {
         SectionHeader(title = title)
 
-        val carouselState = rememberCarouselState { comics.size }
-        HorizontalUncontainedCarousel(
-            state = carouselState,
+        LazyRow(
             modifier = Modifier.fillMaxWidth(),
-            itemWidth = 120.dp,
-            itemSpacing = 12.dp,
-            flingBehavior = CarouselDefaults.multiBrowseFlingBehavior(carouselState),
-            contentPadding = PaddingValues(horizontal = 16.dp)
-        ) { index ->
-            val comic = comics[index]
-            ComicCoverCard(
-                comic = comic,
-                viewModel = viewModel,
-                onClick = { onComicClick(comic) }
-            )
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(comics) { comic ->
+                ComicCoverCard(
+                    comic = comic,
+                    viewModel = viewModel,
+                    modifier = Modifier.width(120.dp),
+                    onClick = { onComicClick(comic) }
+                )
+            }
         }
     }
 }
