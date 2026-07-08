@@ -67,14 +67,10 @@ fun ReaderPage(
 
     val chapters by viewModel.chapters.collectAsState()
 
-    // 1. Isolate the current chapter to check for its specific audioUrl
     val currentChapter = remember(chapters, chapterId) {
         chapters.find { it.id == chapterId }
     }
 
-    val isLiked = currentChapter?.isLiked ?: false
-
-    // 2. Track the mute state for the music player
     var isMuted by remember { mutableStateOf(false) }
 
     LaunchedEffect(comic.id) {
@@ -83,7 +79,7 @@ fun ReaderPage(
 
     val pagerState = rememberPagerState(
         initialPage = startingIndex,
-        pageCount = { if (comic.scrollDirection == "HORIZONTAL") pageCount + 1 else pageCount }
+        pageCount = { if (comic.scrollDirection == ScrollDirection.HORIZONTAL.name) pageCount + 1 else pageCount }
     )
     val listState = rememberLazyListState()
 
@@ -250,7 +246,7 @@ fun ReaderPage(
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             ReaderNavigationBar(
-                isLiked = isLiked,
+                isLiked = currentChapter?.isLiked ?: false,
                 onPrev = onPreviousChapter,
                 onNext = onNextChapter,
                 onLike = onLikeChapter
