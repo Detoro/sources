@@ -224,6 +224,10 @@ class ComicRepository(
         return conversationDao.getAllConversations()
     }
 
+    suspend fun getConversationById(id: String): Conversation? {
+        return conversationDao.getConversationById(id)
+    }
+
     fun getMessagesForConversation(conversationId: String): Flow<List<ChatMessage>> {
         return conversationDao.getMessagesForConversation(conversationId)
     }

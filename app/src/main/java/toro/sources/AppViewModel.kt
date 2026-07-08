@@ -955,7 +955,7 @@ class AppViewModel(
                     conversationId = conversationId,
                     senderId = userProfile.value?.id ?: "",
                     content = encryptedContent,
-                    timestamp = 0L,
+                    timestamp = System.currentTimeMillis(),
                     isEncrypted = true,
                     isSpoiler = isSpoiler,
                     replyToMessageId = _replyingToMessage.value?.id,
@@ -967,6 +967,16 @@ class AppViewModel(
                 )
 
                 repository.saveMessage(newMessage)
+
+                repository.getConversationById(conversationId)?.let { conversation ->
+                    val decrypted = if (newMessage.isEncrypted) decryptMessage(newMessage.content) else newMessage.content
+                    val updatedConversation = conversation.copy(
+                        lastMessage = decrypted,
+                        timestamp = newMessage.timestamp
+                    )
+                    repository.saveConversations(listOf(updatedConversation))
+                }
+
                 val jsonMessage = socketJson.encodeToString(newMessage)
                 chatWebSocket?.send(jsonMessage)
 
@@ -1758,10 +1768,18 @@ class AppViewModel(
                     val incomingMessage = socketJson.decodeFromString<ChatMessage>(text)
 
                     viewModelScope.launch(Dispatchers.IO) {
-                        repository.saveMessage(incomingMessage)
+                        if (incomingMessage.senderId != userProfile.value?.id) {
+                            repository.saveMessage(incomingMessage)
+                        }
 
-                        // update the Conversation's lastMessage here
-
+                        repository.getConversationById(incomingMessage.conversationId)?.let { conversation ->
+                            val decrypted = if (incomingMessage.isEncrypted) decryptMessage(incomingMessage.content) else incomingMessage.content
+                            val updatedConversation = conversation.copy(
+                                lastMessage = decrypted,
+                                timestamp = incomingMessage.timestamp
+                            )
+                            repository.saveConversations(listOf(updatedConversation))
+                        }
                     }
 
                 } catch (e: Exception) {
