@@ -18,6 +18,7 @@ import com.toro.models.Notification
 import com.toro.models.Page
 import com.toro.models.Post
 import java.io.File
+import kotlin.time.Duration.Companion.milliseconds
 
 class ComicRepository(
     private val context: Context,
@@ -190,7 +191,7 @@ class ComicRepository(
                     Log.e("Network Error", "Failed to fetch chapters for ${comic.title} after $maxRetries retries: ${e.message}")
                 } else {
                     Log.w("Sync", "Fetch chapters failed for ${comic.title}, retrying ($currentRetry/$maxRetries)...")
-                    delay(2000L * currentRetry)
+                    delay((2000L * currentRetry).milliseconds)
                 }
             }
         }
@@ -210,7 +211,7 @@ class ComicRepository(
                     Log.e("Sync", "Failed to sync subscriptions after $maxRetries retries", e)
                 } else {
                     Log.w("Sync", "Sync failed, retrying ($currentRetry/$maxRetries)...", e)
-                    delay(2000L * currentRetry)
+                    delay((2000L * currentRetry).milliseconds)
                 }
             }
         }
