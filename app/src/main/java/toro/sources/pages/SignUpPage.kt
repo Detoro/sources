@@ -36,12 +36,16 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -69,6 +73,7 @@ fun SignUpPage(
     var isError by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedDateText by remember { mutableStateOf("") }
+    var selectedDateMillis by remember { mutableLongStateOf(0L) }
     val errorMessage = stringResource(id = R.string.error_message)
     val scrollState = rememberScrollState()
 
@@ -175,6 +180,7 @@ fun SignUpPage(
                             millis?.let {
                                 val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                                 selectedDateText = formatter.format(Date(it))
+                                selectedDateMillis = millis
                             }
                         },
                         onDismiss = { showDatePicker = false }
@@ -245,6 +251,7 @@ fun SignUpPage(
                         val newUser = AuthRequest(
                             username = username,
                             email = email,
+                            birthday = selectedDateMillis,
                             password = password,
                             avatarUrl = null
                         )
@@ -287,9 +294,14 @@ fun DatePickerModalInput(
     onDismiss: () -> Unit
 ) {
     val datePickerState = rememberDatePickerState(initialDisplayMode = DisplayMode.Input)
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
+    LaunchedEffect(Unit) {
+        keyboardController?.hide()
+        focusManager.clearFocus()
+    }
     DatePickerDialog(
-        modifier = Modifier.imePadding(),
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = {
@@ -305,6 +317,6 @@ fun DatePickerModalInput(
             }
         }
     ) {
-        DatePicker(state = datePickerState)
+        DatePicker(state = datePickerState, modifier = Modifier.verticalScroll(rememberScrollState()))
     }
 }
