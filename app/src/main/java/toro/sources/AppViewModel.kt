@@ -197,7 +197,8 @@ class AppViewModel(
     val targetUserProfile = _targetUserProfile.asStateFlow()
 
     private val _userPosts = MutableStateFlow<List<Post>>(emptyList())
-    val userPosts = _userPosts.asStateFlow()
+    val userPosts: StateFlow<List<Post>> = repository.getPosts()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _targetUserPosts = MutableStateFlow<List<Post>>(emptyList())
     val targetUserPosts = _targetUserPosts.asStateFlow()
@@ -999,7 +1000,6 @@ class AppViewModel(
     fun deleteMessage(conversationId: String, messageId: String) {
         viewModelScope.launch {
             try {
-                // Optimistic local delete
                 withContext(Dispatchers.IO) {
                     repository.deleteMessageById(messageId)
                     RetrofitClient.comicApiService.deleteMessage(conversationId, messageId)
@@ -1158,8 +1158,13 @@ class AppViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                _communityPosts.value = withContext(Dispatchers.IO) {
+                val posts = withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.getCommunityPosts()
+                }
+                _communityPosts.value = posts
+
+                for (post in posts) {
+                    repository.savePost(post)
                 }
             } catch (e: Exception) {
                 val error = e.message
@@ -1173,8 +1178,12 @@ class AppViewModel(
     fun getPostComments(postId: String) {
         viewModelScope.launch {
             try {
-                _postComments.value = withContext(Dispatchers.IO) {
+                val comments = withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.getPostComments(postId)
+                }
+                _postComments.value = comments
+                for (comment in comments) {
+                    repository.saveComment(comment)
                 }
             } catch (e: Exception) {
                 val error = e.message
@@ -1186,8 +1195,12 @@ class AppViewModel(
     fun getChapterComments(chapterId: String) {
         viewModelScope.launch {
             try {
-                _chapterComments.value = withContext(Dispatchers.IO) {
+                val comments = withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.getChapterComments(chapterId)
+                }
+                _chapterComments.value = comments
+                for (comment in comments) {
+                    repository.saveComment(comment)
                 }
             } catch (e: Exception) {
                 val error = e.message
@@ -1492,7 +1505,9 @@ class AppViewModel(
                 val currentUserId = _userProfile.value?.id?.trim() ?: userId.trim()
                 if (userId.trim().equals(currentUserId, ignoreCase = true)) {
                     _userProfile.update { profile }
-                    _userPosts.value = posts
+                    for (post in posts) {
+                        repository.savePost(post)
+                    }
 
                     withContext(Dispatchers.IO) {
                         RetrofitClient.preferenceManager.saveUserData(
