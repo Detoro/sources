@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.BubbleChart
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
@@ -76,6 +77,7 @@ fun SettingsPage(
     var showStorageDialog by remember { mutableStateOf(false) }
     var showUsernameDialog by remember { mutableStateOf(false) }
     var showClearDbDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     var newUsername by remember { mutableStateOf("") }
     val repoLink = stringResource(R.string.github_link)
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
@@ -209,7 +211,32 @@ fun SettingsPage(
                 )
             )
 
+            ListItem(
+                headlineContent = { Text("Delete Account") },
+                leadingContent = { Icon(Icons.Default.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .clickable { showDeleteDialog = true },
+                colors = ListItemDefaults.colors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                    headlineColor = MaterialTheme.colorScheme.onErrorContainer
+                )
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
+        }
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title = { Text("Delete Account") },
+                text = { Text("Are you sure you want to delete your account?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteAccount()
+                    }) { Text("Yes") }
+                }
+            )
         }
         if (showResetPasswordDialog) {
             AlertDialog(
