@@ -82,6 +82,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.exposed.kotlin.datetime)
     debugImplementation(libs.androidx.compose.ui.tooling)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.retrofit)

@@ -34,11 +34,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.getSelectedDate
+import kotlinx.datetime.LocalDate
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -53,9 +54,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.toro.models.AuthRequest
 import toro.sources.R
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import kotlinx.datetime.toKotlinLocalDate
+import kotlinx.datetime.toJavaLocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,7 +74,7 @@ fun SignUpPage(
     var isError by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedDateText by remember { mutableStateOf("") }
-    var selectedDateMillis by remember { mutableLongStateOf(0L) }
+    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
     val errorMessage = stringResource(id = R.string.error_message)
     val scrollState = rememberScrollState()
 
@@ -176,11 +177,11 @@ fun SignUpPage(
 
                 if (showDatePicker) {
                     DatePickerModalInput(
-                        onDateSelected = { millis ->
-                            millis?.let {
-                                val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                                selectedDateText = formatter.format(Date(it))
-                                selectedDateMillis = millis
+                        onDateSelected = { date ->
+                            date?.let {
+                                val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                                selectedDateText = it.toJavaLocalDate().format(formatter)
+                                selectedDate = it
                             }
                         },
                         onDismiss = { showDatePicker = false }
@@ -251,7 +252,7 @@ fun SignUpPage(
                         val newUser = AuthRequest(
                             username = username,
                             email = email,
-                            birthday = selectedDateMillis,
+                            birthday = selectedDate,
                             password = password,
                             avatarUrl = null
                         )
@@ -290,7 +291,7 @@ fun SignUpPage(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatePickerModalInput(
-    onDateSelected: (Long?) -> Unit,
+    onDateSelected: (LocalDate?) -> Unit,
     onDismiss: () -> Unit
 ) {
     val datePickerState = rememberDatePickerState(initialDisplayMode = DisplayMode.Input)
@@ -305,7 +306,7 @@ fun DatePickerModalInput(
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = {
-                onDateSelected(datePickerState.selectedDateMillis)
+                onDateSelected(datePickerState.getSelectedDate()?.toKotlinLocalDate())
                 onDismiss()
             }) {
                 Text("OK")
