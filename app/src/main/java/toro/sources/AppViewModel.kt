@@ -526,6 +526,12 @@ class AppViewModel(
         }
     }
 
+    fun deleteAccount() {
+        viewModelScope.launch {
+            RetrofitClient.comicApiService.deleteAccount()
+        }
+    }
+
     private fun clearProfileData() {
         _userProfile.value = null
         _userPosts.value = emptyList()

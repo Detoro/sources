@@ -224,6 +224,9 @@ interface ComicApiService {
     @POST("api/users/avatar")
     suspend fun updateAvatar(@Body avatar: String): ServerResponse
 
+    @DELETE("api/users")
+    suspend fun deleteAccount(): ServerResponse
+
     // miscellaneous
     @POST("api/reports/submit")
     suspend fun submitReport(@Body request: ReportRequest): ServerResponse
