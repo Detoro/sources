@@ -131,6 +131,11 @@ class ComicRepository(
         try {
             chapterDao.deleteAllChapters()
             comicDao.deleteAllComics()
+            conversationDao.deleteAllConversations()
+            notificationDao.deleteAllNotifications()
+            commentDao.deleteAllComments()
+            postDao.deleteAllPosts()
+
             withContext(Dispatchers.IO) {
                 val directory = File(context.filesDir, "sideloaded_comics")
                 if (directory.exists()) {
@@ -278,7 +283,7 @@ class ComicRepository(
     }
 
     suspend fun clearNotifications() {
-        notificationDao.deleteAll()
+        notificationDao.deleteAllNotifications()
     }
 
     fun getComments(): Flow<List<Comment>> {
@@ -293,10 +298,6 @@ class ComicRepository(
         commentDao.deleteById(commentId)
     }
 
-    suspend fun clearComments() {
-        commentDao.deleteAll()
-    }
-
     fun getPosts(): Flow<List<Post>> {
         return postDao.getUserPosts()
     }
@@ -305,11 +306,8 @@ class ComicRepository(
         postDao.insert(post)
     }
 
-    suspend fun deletePostById(commentId: String) {
-        postDao.deleteById(commentId)
-    }
-
-    suspend fun clearPosts() {
-        postDao.deleteAll()
+    suspend fun deletePostById(postId: String) {
+        postDao.deleteById(postId)
+        apiService.deletePost(postId)
     }
 }
