@@ -86,12 +86,19 @@ fun PostCard(
                                 onShareClick(post)
                             }
                         )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
                         DropdownMenuItem(
                             text = { Text("Report", color = MaterialTheme.colorScheme.error) },
                             onClick = {
                                 showMenu = false
                                 viewModel.handleNavigation(Screen.Report.createRoute("POST", post.id))
+                            }
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+                        DropdownMenuItem(
+                            text = { Text("Delete", color = MaterialTheme.colorScheme.scrim) },
+                            onClick = {
+                                showMenu = false
+                                viewModel.deletePost(post.id)
                             }
                         )
                     }

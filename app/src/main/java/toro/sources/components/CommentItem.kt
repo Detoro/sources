@@ -35,6 +35,7 @@ fun CommentItem(
     isReply: Boolean = false,
     onReplyClick: (Comment) -> Unit = {},
     onLikeClick: (Comment) -> Unit = {},
+    onDeleteClick: (Comment) -> Unit = {},
     onCommentClick: (Comment) -> Unit = {},
     onAuthorClick: (String) -> Unit = {},
     onShareClick: (Comment) -> Unit = {},
@@ -111,11 +112,18 @@ fun CommentItem(
                                     onShareClick(comment)
                                 }
                             )
-                            HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
                             DropdownMenuItem(
                                 text = { Text("Report", color = MaterialTheme.colorScheme.error) },
                                 onClick = { showMenu = false
                                     viewModel?.handleNavigation(Screen.Report.createRoute("COMMENT", comment.id))
+                                }
+                            )
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+                            DropdownMenuItem(
+                                text = { Text("Delete", color = MaterialTheme.colorScheme.scrim) },
+                                onClick = {
+                                    showMenu = false
+                                    onDeleteClick(comment)
                                 }
                             )
                         }
