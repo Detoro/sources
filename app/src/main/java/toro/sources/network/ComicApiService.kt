@@ -75,6 +75,12 @@ interface ComicApiService {
         @Body comment: CommentRequest
     ): ServerResponse
 
+    @DELETE("api/comics/{chapterId}/comments/{commentId}")
+    suspend fun deleteChapterComment(
+        @Path("chapterId") chapterId: String,
+        @Path("commentId") commentId: String
+    ): ServerResponse
+
     @POST("api/comics/register")
     suspend fun registerNewComic(
         @Body request: RegisterComicRequest
@@ -183,6 +189,14 @@ interface ComicApiService {
     @POST("api/community/posts/comments/{commentId}/like")
     suspend fun likePostComment(@Path("commentId") commentId: String): ServerResponse
 
+    @DELETE("api/community/posts/{postId}")
+    suspend fun deletePost(@Path("postId") postId: String): ServerResponse
+
+    @DELETE("api/community/posts/{postId}/comments/{commentId}")
+    suspend fun deletePostComment(
+        @Path("postId") postId: String,
+        @Path("commentId") commentId: String
+    ): ServerResponse
 
     // users apis
     @GET("api/users/{userId}/profile")

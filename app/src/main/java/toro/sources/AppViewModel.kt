@@ -171,10 +171,7 @@ class AppViewModel(
     private val _chapterComments = MutableStateFlow<List<Comment>>(emptyList())
     val chapterComments = _chapterComments.asStateFlow()
 
-    val combinedComments: StateFlow<List<Comment>> = chapterComments
-        .combine(postComments) { chapterComment, postComment ->
-            chapterComment + postComment
-        }
+    val combinedComments: StateFlow<List<Comment>> = repository.getComments()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -529,6 +526,28 @@ class AppViewModel(
     fun deleteAccount() {
         viewModelScope.launch {
             RetrofitClient.comicApiService.deleteAccount()
+        }
+    }
+
+    fun deleteComment(
+        commentLocation: CommentLocation,
+        commentTypeId: String,
+        commentId: String
+    ) {
+        viewModelScope.launch {
+            if (commentLocation == CommentLocation.ON_CHAPTER) {
+                RetrofitClient.comicApiService.deleteChapterComment(commentTypeId, commentId)
+            }
+            else {
+                RetrofitClient.comicApiService.deletePostComment(commentTypeId, commentId)
+            }
+            repository.deleteCommentById(commentId)
+        }
+    }
+
+    fun deletePost(postId: String) {
+        viewModelScope.launch {
+            repository.deletePostById(postId)
         }
     }
 

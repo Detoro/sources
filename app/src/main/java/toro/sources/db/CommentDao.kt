@@ -19,5 +19,5 @@ interface CommentDao {
     suspend fun deleteById(id: String)
 
     @Query("DELETE FROM comments")
-    suspend fun deleteAll()
+    suspend fun deleteAllComments()
 }
