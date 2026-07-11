@@ -152,6 +152,13 @@ fun CommentsPage(
                             )
                             viewModel.showShareDialog(true)
                         },
+                        onDeleteClick = {
+                            viewModel.deleteComment(
+                                comment.commentLocation,
+                                targetId,
+                                comment.id
+                            )
+                        },
                         viewModel = viewModel
                     )
                 }
