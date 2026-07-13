@@ -41,7 +41,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 
@@ -54,7 +53,6 @@ fun AddChapterForm(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selectedChapterUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
-    val context = LocalContext.current
     val userWorks by viewModel.userWorks.collectAsState()
     var selectedComicId by remember { mutableStateOf<String?>(null) }
     var selectedComicTitle by remember { mutableStateOf("") }
@@ -169,7 +167,6 @@ fun AddChapterForm(
             Button(
                 onClick = {
                     viewModel.uploadNewChapters(
-                        context = context,
                         comicId = selectedComicId,
                         chapterUris = selectedChapterUris,
                         audioUris = selectedAudioUris
