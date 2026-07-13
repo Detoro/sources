@@ -14,7 +14,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import toro.sources.AppViewModel
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -78,7 +77,6 @@ fun NewSeriesForm(
     var selectedComicRating by remember { mutableStateOf(PgRating.ALL) }
     var selectedScrollDirection by remember { mutableStateOf(ScrollDirection.VERTICAL) }
     val selectedComicGenres = remember { mutableStateListOf<Genre>() }
-    val context = LocalContext.current
     val isUploading by viewModel.isUploading.collectAsState()
     val uploadSuccess by viewModel.uploadSuccess.collectAsState()
     val ratingOptions = PgRating.entries
@@ -326,7 +324,6 @@ fun NewSeriesForm(
             Button(
                 onClick = {
                     viewModel.uploadNewChapters(
-                        context = context,
                         title = title,
                         authors = selectedAuthors,
                         scrollDirection = selectedScrollDirection,
