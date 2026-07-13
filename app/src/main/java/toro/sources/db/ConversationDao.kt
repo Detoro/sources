@@ -32,6 +32,9 @@ interface ConversationDao {
     @Query("SELECT * FROM chat_messages WHERE conversationId = :conversationId ORDER BY timestamp DESC")
     fun getMessagesForConversation(conversationId: String): Flow<List<ChatMessage>>
 
+    @Query("SELECT * FROM chat_messages WHERE isDelivered = 0 AND senderId = :userId")
+    suspend fun getPendingMessages(userId: String): List<ChatMessage>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessages(messages: List<ChatMessage>)
 

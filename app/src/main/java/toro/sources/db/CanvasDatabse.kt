@@ -16,7 +16,7 @@ import toro.sources.PreferenceManager
 
 @Database(
     entities = [Comic::class, Chapter::class, Conversation::class, ChatMessage::class, Notification::class, Comment::class, Post::class],
-    version = 23,
+    version = 24,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
