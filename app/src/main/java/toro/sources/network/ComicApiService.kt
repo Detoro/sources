@@ -19,7 +19,6 @@ import com.toro.models.Page
 import com.toro.models.Post
 import com.toro.models.PostRequest
 import com.toro.models.ServerResponse
-import com.toro.models.SubscribeResponse
 import com.toro.models.UserProfile
 import com.toro.models.UpdateBioRequest
 import com.toro.models.UpdateUsernameRequest
@@ -27,6 +26,7 @@ import com.toro.models.UpdateInterestsRequest
 import com.toro.models.FcmTokenRequest
 import RegisterChaptersRequest
 import RegisterComicRequest
+import com.toro.models.BoolResponse
 import com.toro.models.RefreshTokenRequest
 import com.toro.models.ReportRequest
 import retrofit2.http.DELETE
@@ -102,7 +102,7 @@ interface ComicApiService {
     suspend fun searchComics(@Query("q") query: String): List<Comic>
 
     @POST("api/comics/subscribe/comic/{comicId}")
-    suspend fun toggleComicSubscription(@Path("comicId") comicId: String): SubscribeResponse
+    suspend fun toggleComicSubscription(@Path("comicId") comicId: String): BoolResponse
 
     @GET("api/comics/subscriptions")
     suspend fun getSubscribedComics(): List<Comic>
@@ -160,6 +160,9 @@ interface ComicApiService {
 
     @POST("api/chat/messages/{messageId}/read")
     suspend fun markMessageAsRead(@Path("messageId") messageId: String): ServerResponse
+
+    @POST("api/chat/sync")
+    suspend fun syncPendingMessages(@Body pendingMessage: List<ChatMessage>): BoolResponse
 
     // community apis
     @GET("api/community/posts")

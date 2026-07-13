@@ -32,9 +32,12 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.toro.models.ShareType
+import kotlinx.coroutines.delay
 import toro.sources.AppViewModel
 import toro.sources.components.ChatBubble
 import toro.sources.components.SmartInput
+import toro.sources.components.TypingIndicator
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +51,7 @@ fun ChatThreadPage(
     val me by viewModel.userProfile.collectAsState()
     val inbox by viewModel.filteredInbox.collectAsState()
     val replyingToMessage by viewModel.replyingToMessage.collectAsState(null)
+    val typingUsers by viewModel.typingUsers.collectAsState()
 
     var expanded by remember { mutableStateOf(false) }
     var isSearching by remember { mutableStateOf(false) }
@@ -282,8 +286,24 @@ fun ChatThreadPage(
                         }
                         val sharedContent by viewModel.sharedContent.collectAsState()
                         val editingMessage by viewModel.editingMessage.collectAsState()
+                        var isCurrentlyTyping by remember { mutableStateOf(false) }
+                        LaunchedEffect(isCurrentlyTyping) {
+                            if (isCurrentlyTyping) {
+                                viewModel.sendTypingIndicator(conversationId, true)
+                                delay(3000.milliseconds)
+                                isCurrentlyTyping = false
+                                viewModel.sendTypingIndicator(conversationId, false)
+                            }
+                        }
                         SmartInput(
+                            onTextChange = { newText ->
+                                if (newText.isNotEmpty() && !isCurrentlyTyping) {
+                                    isCurrentlyTyping = true
+                                }
+                            },
                             onSend = { _, text, _, _, attachment, isSpoiler ->
+                                isCurrentlyTyping = false
+                                viewModel.sendTypingIndicator(conversationId, false)
                                 val currentEditingMessage = editingMessage
                                 if (currentEditingMessage != null) {
                                     viewModel.editMessage(
@@ -318,6 +338,7 @@ fun ChatThreadPage(
         }
     ) { paddingValues ->
         val lastUserMessageIndex = messages.indexOfFirst { it.senderId == me?.id }
+        val isTargetTyping = typingUsers.contains(targetUserId)
 
         LazyColumn(
             modifier = Modifier
@@ -330,6 +351,11 @@ fun ChatThreadPage(
         ) {
             item {
                 Spacer(modifier = Modifier.height(8.dp))
+            }
+            if (isTargetTyping) {
+                item {
+                    TypingIndicator()
+                }
             }
             itemsIndexed(filteredMessages, key = { _, msg -> msg.id }) { index, msg ->
                 val isFromMe = remember(msg.senderId, me?.id) {

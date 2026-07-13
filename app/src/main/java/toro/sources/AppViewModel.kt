@@ -4,10 +4,10 @@ import ChapterUploadData
 import RegisterChaptersRequest
 import RegisterComicRequest
 import Chapter
+import android.app.Application
 import android.util.Log
 import android.net.Uri
 import kotlinx.coroutines.flow.combine
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,8 +18,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import toro.sources.db.ComicRepository
 import toro.sources.network.RetrofitClient
-import android.content.Context
 import android.provider.OpenableColumns
+import androidx.lifecycle.AndroidViewModel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -60,6 +60,10 @@ import okhttp3.Response
 import toro.sources.db.CanvasDatabase
 import java.util.UUID
 import kotlin.time.Duration.Companion.milliseconds
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 
 enum class SearchSource {
     LOCAL, ONLINE
@@ -67,8 +71,9 @@ enum class SearchSource {
 
 @OptIn(FlowPreview::class)
 class AppViewModel(
+    application: Application,
     private val repository: ComicRepository
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private var chatWebSocket: WebSocket? = null
     private val socketJson = Json { ignoreUnknownKeys = true }
@@ -158,6 +163,11 @@ class AppViewModel(
 
     private val _currentComic = MutableStateFlow<Comic?>(null)
     val currentComic = _currentComic.asStateFlow()
+
+    private val _typingUsers = MutableStateFlow<Set<String>>(emptySet())
+    val typingUsers = _typingUsers.asStateFlow()
+
+    private var typingJob: kotlinx.coroutines.Job? = null
 
     private val _communityPosts = MutableStateFlow<List<Post>>(emptyList())
     val communityPosts = _communityPosts.asStateFlow()
@@ -259,11 +269,11 @@ class AppViewModel(
                 val messageMatch = try {
                     decryptMessage(convo.lastMessage ?: "").contains(query, ignoreCase = true)
                 } catch (e: Exception) {
-                    convo.lastMessage?.contains(query, ignoreCase = true)
                     Log.i("filtered inbox", "${e.message}")
+                    convo.lastMessage?.contains(query, ignoreCase = true) == true // Now returns a Boolean
                 }
 
-                nameMatch || messageMatch == true
+                nameMatch || messageMatch
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -304,7 +314,7 @@ class AppViewModel(
 
         val userData = RetrofitClient.preferenceManager.getUserDataSync()
         val hasTokens = RetrofitClient.preferenceManager.getAccessTokenSync() != null
-        if (userData.userId != null && hasTokens) {
+        if (userData.userId != null && hasTokens){
             _userProfile.value = UserProfile(
                 id = userData.userId,
                 username = userData.username ?: "User",
@@ -377,12 +387,12 @@ class AppViewModel(
             try {
                 val response = withContext(Dispatchers.IO) {
                     val res = RetrofitClient.comicApiService.toggleComicSubscription(comicId)
-                    repository.toggleLocalSubscription(comicId, res.isSubscribed)
+                    repository.toggleLocalSubscription(comicId, res.isSuccessful)
                     res
                 }
-                _currentComic.value = _currentComic.value?.copy(isSubscribed = response.isSubscribed)
+                _currentComic.value = _currentComic.value?.copy(isSubscribed = response.isSuccessful)
                 val topicName = "comic_$comicId"
-                if (response.isSubscribed) {
+                if (response.isSuccessful) {
                     FirebaseMessaging.getInstance().subscribeToTopic(topicName)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) Log.i("FCM Topic", "Subscribed to $topicName")
@@ -461,7 +471,6 @@ class AppViewModel(
 
                 val userId = response.userId
                 onUserAuthenticated(userId)
-                _userProfile.first { it != null }
                 _currentComic.value = null
                 onSuccess()
                 Log.i("Success", "Logged in successfully")
@@ -578,7 +587,7 @@ class AppViewModel(
                             RetrofitClient.comicApiService.updateBio(userId, UpdateBioRequest(bio))
                         res
                     }
-                    _userProfile.value = _userProfile.value?.copy(bio = response.message)
+                    _userProfile.update { it?.copy(bio = response.message) }
 
                     Log.i("Success", "Bio updated successfully")
                 }
@@ -667,7 +676,7 @@ class AppViewModel(
                             Log.i("Cloudinary", "Upload success: $publicUrl")
 
                             viewModelScope.launch {
-                                _userProfile.value = _userProfile.value?.copy(avatarUrl = publicUrl)
+                                _userProfile.update { it?.copy(avatarUrl = publicUrl) }
 
                                 try {
                                     withContext(Dispatchers.IO) {
@@ -750,7 +759,6 @@ class AppViewModel(
     }
 
     fun uploadNewChapters(
-        context: Context,
         title: String = "",
         authors: List<Creator> = emptyList(),
         scrollDirection: ScrollDirection = ScrollDirection.VERTICAL,
@@ -785,7 +793,7 @@ class AppViewModel(
                     0f
                 }
                 val chaptersData = chapterUris.mapIndexed { index, uri ->
-                    processAndUploadChapter(context, uri, startingChapterNumber + index + 1f).apply {
+                    processAndUploadChapter(uri, startingChapterNumber + index + 1f).apply {
                         // Assign audio from the list if available, otherwise fallback to primary
                         this.audioUrl = uploadedAudioUrls.getOrNull(index) ?: primaryAudioUrl
                     }
@@ -830,10 +838,10 @@ class AppViewModel(
     }
 
     private suspend fun processAndUploadChapter(
-        context: Context,
         uri: Uri,
         chapterNumber: Float
     ): ChapterUploadData = withContext(Dispatchers.IO) {
+        val context = getApplication<Application>()
         val tempDir = File(context.cacheDir, "upload_extract_${System.currentTimeMillis()}")
         tempDir.mkdirs()
 
@@ -942,6 +950,28 @@ class AppViewModel(
         }
     }
 
+    fun sendTypingIndicator(conversationId: String, isTyping: Boolean) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val typingSignal = ChatMessage(
+                    id = "TYPING_SIGNAL",
+                    conversationId = conversationId,
+                    senderId = userProfile.value?.id ?: "",
+                    content = if (isTyping) "TYPING_START" else "TYPING_STOP",
+                    timestamp = System.currentTimeMillis(),
+                    isEncrypted = false,
+                    isSpoiler = false,
+                    mediaType = "SYSTEM_TYPING"
+                )
+
+                val jsonMessage = socketJson.encodeToString(typingSignal)
+                chatWebSocket?.send(jsonMessage)
+            } catch (e: Exception) {
+                Log.e("Typing", "Failed to send typing indicator: ${e.message}")
+            }
+        }
+    }
+
     fun resetChatState() {
         _currentConversationId.value = null
     }
@@ -992,15 +1022,17 @@ class AppViewModel(
                     mediaType = mediaType
                 )
 
-                repository.saveMessage(newMessage)
+                withContext(Dispatchers.IO) {
+                    repository.saveMessage(newMessage)
 
-                repository.getConversationById(conversationId)?.let { conversation ->
-                    val decrypted = if (newMessage.isEncrypted) decryptMessage(newMessage.content) else newMessage.content
-                    val updatedConversation = conversation.copy(
-                        lastMessage = decrypted,
-                        timestamp = newMessage.timestamp
-                    )
-                    repository.saveConversations(listOf(updatedConversation))
+                    repository.getConversationById(conversationId)?.let { conversation ->
+                        val decrypted = if (newMessage.isEncrypted) decryptMessage(newMessage.content) else newMessage.content
+                        val updatedConversation = conversation.copy(
+                            lastMessage = decrypted,
+                            timestamp = newMessage.timestamp
+                        )
+                        repository.saveConversations(listOf(updatedConversation))
+                    }
                 }
 
                 val jsonMessage = socketJson.encodeToString(newMessage)
@@ -1799,6 +1831,18 @@ class AppViewModel(
             }
         }
     }
+    private fun syncPendingMessages() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val syncRequest = OneTimeWorkRequestBuilder<MessageSyncWorker>()
+            .setConstraints(constraints)
+            .build()
+
+        val context = getApplication<Application>()
+        WorkManager.getInstance(context).enqueue(syncRequest)
+    }
     fun connectChatSocket() {
         if (chatWebSocket != null) return
 
@@ -1807,18 +1851,37 @@ class AppViewModel(
                 try {
                     val incomingMessage = socketJson.decodeFromString<ChatMessage>(text)
 
-                    viewModelScope.launch(Dispatchers.IO) {
-                        if (incomingMessage.senderId != userProfile.value?.id) {
-                            repository.saveMessage(incomingMessage)
+                    if (incomingMessage.mediaType == "SYSTEM_TYPING") {
+                        val senderId = incomingMessage.senderId
+                        if (incomingMessage.content == "TYPING_START") {
+                            _typingUsers.update { it + senderId }
+                            typingJob?.cancel()
+                            typingJob = viewModelScope.launch {
+                                kotlinx.coroutines.delay(5000.milliseconds)
+                                _typingUsers.update { it - senderId }
+                            }
+                        } else {
+                            _typingUsers.update { it - senderId }
                         }
+                        return
+                    }
 
-                        repository.getConversationById(incomingMessage.conversationId)?.let { conversation ->
-                            val decrypted = if (incomingMessage.isEncrypted) decryptMessage(incomingMessage.content) else incomingMessage.content
-                            val updatedConversation = conversation.copy(
-                                lastMessage = decrypted,
-                                timestamp = incomingMessage.timestamp
-                            )
-                            repository.saveConversations(listOf(updatedConversation))
+                    viewModelScope.launch(Dispatchers.IO) {
+                        val myUserId = userProfile.value?.id
+
+                        if (incomingMessage.senderId == myUserId) {
+                            repository.updateMessageDeliveryStatus(incomingMessage.id, true)
+                        } else {
+                            repository.saveMessage(incomingMessage)
+
+                            repository.getConversationById(incomingMessage.conversationId)?.let { conversation ->
+                                val decrypted = if (incomingMessage.isEncrypted) decryptMessage(incomingMessage.content) else incomingMessage.content
+                                val updatedConversation = conversation.copy(
+                                    lastMessage = decrypted,
+                                    timestamp = incomingMessage.timestamp
+                                )
+                                repository.saveConversations(listOf(updatedConversation))
+                            }
                         }
                     }
 
@@ -1837,6 +1900,7 @@ class AppViewModel(
         }
 
         chatWebSocket = RetrofitClient.createChatWebSocket(listener)
+        syncPendingMessages()
     }
 
     fun disconnectChatSocket() {

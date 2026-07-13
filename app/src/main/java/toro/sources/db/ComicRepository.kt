@@ -266,6 +266,10 @@ class ComicRepository(
         conversationDao.updateMessageReadStatus(messageId, read)
     }
 
+    suspend fun updateMessageDeliveryStatus(messageId: String, isDelivered: Boolean) {
+        conversationDao.updateMessageDeliveryStatus(messageId, isDelivered)
+    }
+
     suspend fun updateMessageContent(messageId: String, content: String) {
         conversationDao.updateMessageContent(messageId, content)
     }
