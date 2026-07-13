@@ -35,6 +35,7 @@ fun SmartInput(
     title: String? = null,
     onTitleChange: ((String) -> Unit)? = null,
     supportTitle: Boolean = false,
+    onTextChange: ((String) -> Unit)? = null,
     onSend: (title: String?, text: String, mentions: List<String>, sharedComicIds: List<String>, attachment: Uri?, isSpoiler: Boolean) -> Unit,
     initialText: String = "",
     placeholder: String = "Type a message...",
@@ -77,6 +78,7 @@ fun SmartInput(
     ) { uri: Uri? -> selectedUri = uri }
 
     LaunchedEffect(inputText) {
+        onTextChange?.invoke(inputText)
         val lastWord = inputText.substringAfterLast(' ', inputText)
         if (lastWord.startsWith("@")) {
             val searchQuery = lastWord.removePrefix("@")
