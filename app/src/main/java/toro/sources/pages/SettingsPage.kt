@@ -211,17 +211,27 @@ fun SettingsPage(
                 )
             )
 
-            ListItem(
-                headlineContent = { Text("Delete Account") },
-                leadingContent = { Icon(Icons.Default.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .clickable { showDeleteDialog = true },
-                colors = ListItemDefaults.colors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                    headlineColor = MaterialTheme.colorScheme.onErrorContainer
+            Spacer(modifier = Modifier.height(32.dp))
+
+            SettingsGroup(title = "Deletion") {
+                ListItem(
+                    headlineContent = { Text("Delete Account") },
+                    leadingContent = {
+                        Icon(
+                            Icons.Default.DeleteForever,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                    },
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { showDeleteDialog = true },
+                    colors = ListItemDefaults.colors(
+                        containerColor = MaterialTheme.colorScheme.primaryFixedDim,
+                        headlineColor = MaterialTheme.colorScheme.error
+                    )
                 )
-            )
+            }
 
             Spacer(modifier = Modifier.height(32.dp))
         }
@@ -289,7 +299,10 @@ fun SettingsPage(
             AlertDialog(
                 onDismissRequest = { showClearDbDialog = false },
                 title = { Text("Clear Local Database") },
-                text = { Text("This will permanently delete all local comics and reading progress. This action cannot be undone.") },
+                text = {
+                    Text(
+                        "This will permanently delete all local versions of comics, comments and posts. This action cannot be undone."
+                    ) },
                 confirmButton = {
                     TextButton(
                         onClick = {
