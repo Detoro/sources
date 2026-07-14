@@ -211,7 +211,7 @@ fun SettingsPage(
                 )
             )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             SettingsGroup(title = "Deletion") {
                 ListItem(
@@ -228,12 +228,10 @@ fun SettingsPage(
                         .clickable { showDeleteDialog = true },
                     colors = ListItemDefaults.colors(
                         containerColor = MaterialTheme.colorScheme.primaryFixedDim,
-                        headlineColor = MaterialTheme.colorScheme.error
+                        headlineColor = MaterialTheme.colorScheme.onErrorContainer
                     )
                 )
             }
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
         if (showDeleteDialog) {
             AlertDialog(
