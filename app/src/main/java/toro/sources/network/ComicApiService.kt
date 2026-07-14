@@ -121,7 +121,7 @@ interface ComicApiService {
     suspend fun markChapterAsRead(
         @Path("comicId") comicId: String,
         @Path("chapterId") chapterId: String,
-    ): ServerResponse
+    ): BoolResponse
 
     // Chat apis
     @GET("api/chat/conversations")

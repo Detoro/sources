@@ -45,6 +45,10 @@ class ComicRepository(
         return comicDao.getAllComics()
     }
 
+    suspend fun getComicByIdSync(comicId: String): Comic? {
+        return comicDao.getComicByIdSync(comicId)
+    }
+
     // issues
     fun getChaptersForComic(comicId: String): Flow<List<Chapter>> {
         return chapterDao.getChaptersForComic(comicId)
@@ -151,6 +155,10 @@ class ComicRepository(
         chapterDao.updateReadingProgress(chapterId, pageIndex)
     }
 
+    suspend fun updateChapterLikeState(chapterId: String, isLiked: Boolean) {
+        chapterDao.updateLikeState(chapterId, isLiked)
+    }
+
     private suspend fun getLocalPages(comicId: String, chapterId: String): List<Page> {
         return withContext(Dispatchers.IO) {
             val directory = File(context.filesDir, "sideloaded_comics/$comicId/$chapterId")
@@ -181,7 +189,14 @@ class ComicRepository(
             Log.e("Sync", "Cannot sync chapters for comic with blank ID")
             return
         }
-        comicDao.insertComic(comic)
+
+        val existing = comicDao.getComicByIdSync(comic.id)
+        val comicToInsert = if (existing != null) {
+            comic.copy(isSubscribed = existing.isSubscribed)
+        } else {
+            comic
+        }
+        comicDao.insertComic(comicToInsert)
 
         var currentRetry = 0
         while (currentRetry < maxRetries) {
