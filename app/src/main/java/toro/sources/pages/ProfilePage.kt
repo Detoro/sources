@@ -42,7 +42,6 @@ import toro.sources.components.ComicCoverCard
 import com.toro.models.SharedContent
 import com.toro.models.ShareType
 import kotlinx.coroutines.launch
-import toro.sources.components.DefaultAvatar
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
@@ -428,18 +427,16 @@ fun EmptyState(message: String) {
         }
     }
 }
-
 @Composable
 private fun FriendCard(
     friend: Conversation,
-    modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(4.dp),
     onProfileClick: () -> Unit,
-    onChatClick: () -> Unit
+    onChatClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.clip(shape),
-        shape = shape,
+        modifier = modifier.clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 4.dp, bottomEnd = 4.dp)),
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 2.dp,
     ) {
@@ -455,8 +452,11 @@ private fun FriendCard(
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
             ) {
                 if (friend.otherUserAvatarUrl != null) {
-                    DefaultAvatar(
-                        avatarUrl = friend.otherUserAvatarUrl,
+                    AsyncImage(
+                        model = friend.otherUserAvatarUrl,
+                        contentDescription = "Avatar",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
                 } else {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -482,21 +482,32 @@ private fun FriendCard(
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    IconButton(onClick = onProfileClick) {
-                        Icon(
-                            Icons.Rounded.Person,
-                            contentDescription = "Friend Profile",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                    IconButton(onClick = onChatClick) {
-                        Icon(
-                            Icons.AutoMirrored.Rounded.Message,
-                            contentDescription = "Chat",
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
+                if (!friend.lastMessage.isNullOrBlank()) {
+                    Text(
+                        text = friend.lastMessage ?: "Start a conversation",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                IconButton(onClick = onProfileClick) {
+                    Icon(
+                        Icons.Rounded.Person,
+                        contentDescription = "Profile",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                IconButton(onClick = onChatClick) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.Message,
+                        contentDescription = "Chat",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }
