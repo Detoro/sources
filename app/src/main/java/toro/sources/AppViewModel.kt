@@ -342,7 +342,9 @@ class AppViewModel(
 
     fun setCurrentComic(comic: Comic) {
         viewModelScope.launch {
-            val localComic = myLibrary.value.find { it.id == comic.id }
+            val localComic = withContext(Dispatchers.IO) {
+                repository.getComicByIdSync(comic.id)
+            }
             _currentComic.value = localComic ?: comic
         }
     }
@@ -385,9 +387,14 @@ class AppViewModel(
     fun toggleComicSubscription(comicId: String) {
         viewModelScope.launch {
             try {
+                val current = _currentComic.value
                 val response = withContext(Dispatchers.IO) {
                     val res = RetrofitClient.comicApiService.toggleComicSubscription(comicId)
-                    repository.toggleLocalSubscription(comicId, res.isSuccessful)
+                    if (current != null && current.id == comicId) {
+                        repository.insertComics(listOf(current.copy(isSubscribed = res.isSuccessful)))
+                    } else {
+                        repository.toggleLocalSubscription(comicId, res.isSuccessful)
+                    }
                     res
                 }
                 _currentComic.value = _currentComic.value?.copy(isSubscribed = response.isSuccessful)
@@ -910,22 +917,24 @@ class AppViewModel(
     fun likeChapter(comicId: String, chapterId: String) {
         viewModelScope.launch {
             try {
-                val response = withContext(Dispatchers.IO) {
-                    RetrofitClient.comicApiService.likeChapter(comicId, chapterId)
-                }
                 val currentChapters = _chapters.value
-                _chapters.value = currentChapters.map { chapter ->
-                    if (chapter.id == chapterId) {
-                        chapter.copy(
-                            isLiked = !chapter.isLiked,
-                        )
-                    } else chapter
+                val chapterToLike = currentChapters.find { it.id == chapterId } ?: return@launch
+                val newLikedState = !chapterToLike.isLiked
+                
+                _chapters.value = currentChapters.map { 
+                    if (it.id == chapterId) it.copy(isLiked = newLikedState) else it 
                 }
-                Log.d("Chapter like", "Success ${response.message}")
+
+                withContext(Dispatchers.IO) {
+                    RetrofitClient.comicApiService.likeChapter(comicId, chapterId)
+                    repository.updateChapterLikeState(chapterId, newLikedState)
+                }
+                Log.d("Chapter like", "Success")
             } catch (e: Exception) {
                 val error = e.message
                 _errorMessage.value = error
                 Log.e("Chapter like", "Failed to like Chapter $error")
+                getChaptersForComic(currentComic.value ?: return@launch)
             }
         }
     }
@@ -1686,7 +1695,9 @@ class AppViewModel(
         viewModelScope.launch {
             _currentComic.value = null
 
-            var comicToLoad = myLibrary.value.find { it.id == comicId } ?:
+            var comicToLoad = withContext(Dispatchers.IO) {
+                repository.getComicByIdSync(comicId)
+            } ?:
                              catalog.value.find { it.id == comicId } ?:
                              trending.value.find { it.id == comicId } ?:
                              userWorks.value.find { it.id == comicId } ?:
@@ -1765,7 +1776,7 @@ class AppViewModel(
                         )
                     } else chapter
                 }
-                Log.d("Chapter read", "Success ${response.message}")
+                Log.d("Chapter read", "Success ${response.isSuccessful}")
             } catch(e: Exception) {
                 val error = e.message
                 _errorMessage.value = error

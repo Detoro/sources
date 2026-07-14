@@ -22,6 +22,9 @@ interface ChapterDao {
     @Query("UPDATE chapters SET lastReadPageIndex = :pageIndex WHERE id = :chapterId")
     suspend fun updateReadingProgress(chapterId: String, pageIndex: Int)
 
+    @Query("UPDATE chapters SET isLiked = :isLiked WHERE id = :chapterId")
+    suspend fun updateLikeState(chapterId: String, isLiked: Boolean)
+
     @Query("UPDATE chapters SET isDownloaded = :isDownloaded WHERE id = :chapterId")
     suspend fun updateDownloadState(chapterId: String, isDownloaded: Boolean)
 
