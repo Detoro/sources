@@ -132,21 +132,21 @@ fun HomePage(
                         )
                     }
 
+                    if (recentlyRead.isNotEmpty()) {
+                        item {
+                            ContinueReadingCarousel(
+                                comics = recentlyRead,
+                                onComicClick = onComicClick
+                            )
+                        }
+                    }
+
                     if (libraryList.isNotEmpty()) {
                         item {
                             ComicCarousel(
                                 title = "From Your Device",
                                 comics = libraryList,
                                 viewModel = viewModel,
-                                onComicClick = onComicClick
-                            )
-                        }
-                    }
-
-                    if (recentlyRead.isNotEmpty()) {
-                        item {
-                            ContinueReadingCarousel(
-                                comics = recentlyRead,
                                 onComicClick = onComicClick
                             )
                         }

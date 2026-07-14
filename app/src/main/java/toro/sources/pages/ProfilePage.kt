@@ -370,7 +370,8 @@ fun ProfilePage(
                                             FriendCard(
                                                 friend = chat,
                                                 onChatClick = { viewModel.handleNavigation("Screen.Chat.route/${chat.conversationId}") },
-                                                onProfileClick = { viewModel.getUserProfile(chat.otherUserId) }
+                                                onProfileClick = { viewModel.getUserProfile(chat.otherUserId) },
+                                                viewModel = viewModel
                                             )
                                         }
                                     }
@@ -432,6 +433,7 @@ private fun FriendCard(
     friend: Conversation,
     onProfileClick: () -> Unit,
     onChatClick: () -> Unit,
+    viewModel: AppViewModel,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -484,7 +486,7 @@ private fun FriendCard(
 
                 if (!friend.lastMessage.isNullOrBlank()) {
                     Text(
-                        text = friend.lastMessage ?: "Start a conversation",
+                        text = viewModel.decryptMessage(friend.lastMessage ?: "Start a conversation"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,

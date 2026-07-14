@@ -161,7 +161,7 @@ fun OverviewPage(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Written by",
+                                    text = "Written by ",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.onBackground
                                 )

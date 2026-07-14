@@ -28,7 +28,7 @@ fun ActiveChatsList(
             val conversationId = chat.conversationId
             val username = chat.otherUserName
             val otherUserId = chat.otherUserId
-            val lastMessage = viewModel.decryptMessage(chat.lastMessage!!)
+            val lastMessage = chat.lastMessage ?: ""
 
             ListItem(
                 headlineContent = { Text(username, fontWeight = FontWeight.Bold) },

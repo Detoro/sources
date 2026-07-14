@@ -64,6 +64,7 @@ import androidx.work.Constraints
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
+import kotlinx.coroutines.CancellationException
 
 enum class SearchSource {
     LOCAL, ONLINE
@@ -267,7 +268,7 @@ class AppViewModel(
                 val nameMatch = convo.otherUserName.contains(query, ignoreCase = true)
 
                 val messageMatch = try {
-                    decryptMessage(convo.lastMessage ?: "").contains(query, ignoreCase = true)
+                    convo.lastMessage?.contains(query, ignoreCase = true) == true
                 } catch (e: Exception) {
                     Log.i("filtered inbox", "${e.message}")
                     convo.lastMessage?.contains(query, ignoreCase = true) == true // Now returns a Boolean
@@ -1206,6 +1207,7 @@ class AppViewModel(
                     _chapters.value = localChapters
                 }
             } catch (e: Exception) {
+                if (e is CancellationException) throw e
                 val error = e.message
                 _errorMessage.value = error
                 Log.e("Chapter error", "Failed to load chapters: $error")
@@ -1715,6 +1717,7 @@ class AppViewModel(
 
             if (comicToLoad != null) {
                 _currentComic.value = comicToLoad
+                getChaptersForComic(comicToLoad)
             } else {
                 Log.e("Comic error", "Comic not found or unavailable.")
                 _errorMessage.value = "Failed to load comic details."

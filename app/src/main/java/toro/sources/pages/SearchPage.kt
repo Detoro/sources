@@ -93,7 +93,7 @@ fun SearchPage(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest, CircleShape),
-                placeholder = { Text("Search titles, authors, or genres...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                placeholder = { Text("Start Search...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon", tint = MaterialTheme.colorScheme.primary) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
