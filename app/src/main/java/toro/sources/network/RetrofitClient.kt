@@ -30,7 +30,11 @@ interface AuthApi {
 }
 
 object RetrofitClient {
-    private val networkJson = Json { ignoreUnknownKeys = true }
+    private val networkJson = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        explicitNulls = false
+    }
 
     @SuppressLint("StaticFieldLeak")
     lateinit var preferenceManager: PreferenceManager

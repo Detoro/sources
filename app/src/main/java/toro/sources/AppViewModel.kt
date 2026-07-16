@@ -836,9 +836,18 @@ class AppViewModel(
                 }
                 _uploadSuccess.value = true
             } catch (e: Exception) {
-                val error = e.message
+                val error = if (e is retrofit2.HttpException) {
+                    try {
+                        val errorBody = e.response()?.errorBody()?.string()
+                        "HTTP ${e.code()}: $errorBody"
+                    } catch (ioe: Exception) {
+                        ioe.message
+                    }
+                } else {
+                    e.message
+                }
                 _errorMessage.value = error
-                Log.e("Upload Error", "Upload failed", e)
+                Log.e("Upload Error", "Upload failed: $error", e)
             } finally {
                 _isUploading.value = false
             }

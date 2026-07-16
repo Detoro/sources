@@ -95,6 +95,18 @@ fun NewSeriesForm(
         )
     }
 
+    LaunchedEffect(currentUser) {
+        if (currentUser != null && selectedAuthors.any { it.id == "fallback-123" }) {
+            selectedAuthors = listOf(
+                Creator(
+                    id = currentUser!!.id,
+                    name = currentUser!!.username,
+                    role = Role.WRITER
+                )
+            )
+        }
+    }
+
     LaunchedEffect(uploadSuccess) {
         if (uploadSuccess) {
             onUploadComplete()
@@ -331,7 +343,8 @@ fun NewSeriesForm(
                         description = description,
                         chapterUris = selectedChapterUris,
                         selectedCover = selectedCoverUri,
-                        audioUris = selectedAudioUris
+                        audioUris = selectedAudioUris,
+                        genres = selectedComicGenres.toList()
                     )
                 },
                 modifier = Modifier
