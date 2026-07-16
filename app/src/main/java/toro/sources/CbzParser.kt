@@ -10,7 +10,7 @@ import java.util.zip.ZipInputStream
 import java.util.UUID
 import com.toro.models.Comic
 import com.toro.models.Creator
-import Chapter
+import com.toro.models.Chapter
 import com.toro.models.Role
 
 class CbzParser(private val context: Context) {

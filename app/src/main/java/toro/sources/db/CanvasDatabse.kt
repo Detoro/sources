@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.toro.models.Comic
-import Chapter
+import com.toro.models.Chapter
 import com.toro.models.Conversation
 import com.toro.models.ChatMessage
 import com.toro.models.Notification

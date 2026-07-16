@@ -92,7 +92,7 @@ sealed class Screen(val route: String) {
     object Home : Screen("home/{userId}")
     object Upload : Screen("upload")
     object Success : Screen("success/{successMessage}") {
-        fun createRoute(message: String) = "success/$message"
+        fun createRoute(successMessage: String) = "success/$successMessage"
     }
     object Inbox : Screen("inbox")
     object Search : Screen("search")
@@ -673,7 +673,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                     viewModel = viewModel,
                     onComicClick = { comic ->
                         viewModel.setCurrentComic(comic)
-                        navController.navigate(Screen.Overview.route)
+                        navController.navigate(Screen.Overview.createRoute(comic.id))
                     }
                 )
             }

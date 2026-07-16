@@ -5,10 +5,11 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.DELETE
 import com.toro.models.AuthRequest
 import com.toro.models.AuthResponse
 import com.toro.models.AuthorRequest
-import Chapter
+import com.toro.models.Chapter
 import com.toro.models.ChatMessage
 import com.toro.models.ChatRequest
 import com.toro.models.Comic
@@ -24,82 +25,84 @@ import com.toro.models.UpdateBioRequest
 import com.toro.models.UpdateUsernameRequest
 import com.toro.models.UpdateInterestsRequest
 import com.toro.models.FcmTokenRequest
-import RegisterChaptersRequest
-import RegisterComicRequest
+import com.toro.models.RegisterChaptersRequest
+import com.toro.models.RegisterComicRequest
 import com.toro.models.BoolResponse
 import com.toro.models.RefreshTokenRequest
 import com.toro.models.ReportRequest
-import retrofit2.http.DELETE
 
 interface ComicApiService {
 
-    // comics apis
+    // COMICS APIs
+
     @GET("api/comics/recommendation")
     suspend fun getRecommendation(): List<Comic>
 
     @GET("api/comics/trending")
     suspend fun getTrending(): List<Comic>
 
-    @GET("api/comics/{comicId}")
+    @GET("api/comics/search")
+    suspend fun searchComics(@Query("q") query: String): List<Comic>
+
+    @GET("api/comics/comic/{comicId}")
     suspend fun getComicById(@Path("comicId") comicId: String): Comic
 
-    @GET("api/comics/{comicId}/chapters")
-    suspend fun getChaptersForComic(
-        @Path("comicId") comicId: String
-    ): List<Chapter>
+    @POST("api/comics/register")
+    suspend fun registerNewComic(@Body request: RegisterComicRequest): ServerResponse
 
-    @GET("api/comics/chapters/{chapterId}/pages")
-    suspend fun getPagesForChapter(
-        @Path("chapterId") chapterId: String
-    ): List<Page>
-
-    @POST("api/comics/{comicId}/rate")
+    @POST("api/comics/comic/{comicId}/rate")
     suspend fun rateComic(
         @Path("comicId") comicId: String,
         @Query("rating") rating: Float
     ): ServerResponse
 
-    @POST("api/comics/chapter/comments/{commentId}/like")
-    suspend fun likeChapterComment(
-        @Path("commentId") commentId: String
-    ): ServerResponse
+    // CHAPTER APIs
 
-    @GET("api/comics/{chapterId}/comments")
-    suspend fun getChapterComments(
-        @Path("chapterId") chapterId: String
-    ): List<Comment>
+    @GET("api/comics/comic/{comicId}/chapters")
+    suspend fun getChaptersForComic(@Path("comicId") comicId: String): List<Chapter>
 
-    @POST("api/comics/{chapterId}/comments")
-    suspend fun addChapterComment(
-        @Path("chapterId") chapterId: String,
-        @Body comment: CommentRequest
-    ): ServerResponse
-
-    @DELETE("api/comics/{chapterId}/comments/{commentId}")
-    suspend fun deleteChapterComment(
-        @Path("chapterId") chapterId: String,
-        @Path("commentId") commentId: String
-    ): ServerResponse
-
-    @POST("api/comics/register")
-    suspend fun registerNewComic(
-        @Body request: RegisterComicRequest
-    ): ServerResponse
-
-    @POST("api/comics/{comicId}/register-chapters")
+    @POST("api/comics/comic/{comicId}/register-chapters")
     suspend fun registerChapters(
         @Path("comicId") comicId: String,
         @Body request: RegisterChaptersRequest
     ): ServerResponse
 
-    @POST("api/comics/{comicId}/chapters/{chapterId}/like")
+    @GET("api/comics/chapters/{chapterId}/pages")
+    suspend fun getPagesForChapter(@Path("chapterId") chapterId: String): List<Page>
+
+    @POST("api/comics/comic/{comicId}/chapters/{chapterId}/read")
+    suspend fun markChapterAsRead(
+        @Path("comicId") comicId: String,
+        @Path("chapterId") chapterId: String,
+    ): BoolResponse
+
+    @POST("api/comics/comic/{comicId}/chapters/{chapterId}/like")
     suspend fun likeChapter(
         @Path("comicId") comicId: String,
         @Path("chapterId") chapterId: String,
     ): ServerResponse
 
-    @GET("api/comics/search")
-    suspend fun searchComics(@Query("q") query: String): List<Comic>
+    // COMMENT APIs
+
+    @GET("api/comics/chapters/{chapterId}/comments")
+    suspend fun getChapterComments(@Path("chapterId") chapterId: String): List<Comment>
+
+    @POST("api/comics/chapters/{chapterId}/comments")
+    suspend fun addChapterComment(
+        @Path("chapterId") chapterId: String,
+        @Body comment: CommentRequest
+    ): ServerResponse
+
+    @DELETE("api/comics/chapters/{chapterId}/comments/{commentId}")
+    suspend fun deleteChapterComment(
+        @Path("chapterId") chapterId: String,
+        @Path("commentId") commentId: String
+    ): ServerResponse
+
+    @POST("api/comics/chapter/comments/{commentId}/like")
+    suspend fun likeChapterComment(@Path("commentId") commentId: String): ServerResponse
+
+    // SUBSCRIPTION APIs
 
     @POST("api/comics/subscribe/comic/{comicId}")
     suspend fun toggleComicSubscription(@Path("comicId") comicId: String): BoolResponse
@@ -107,7 +110,8 @@ interface ComicApiService {
     @GET("api/comics/subscriptions")
     suspend fun getSubscribedComics(): List<Comic>
 
-    // Auth apis
+    // AUTH APIs
+
     @POST("api/auth/register")
     suspend fun signUp(@Body request: AuthRequest): AuthResponse
 
@@ -117,13 +121,8 @@ interface ComicApiService {
     @POST("api/auth/logout")
     suspend fun logout(@Body request: RefreshTokenRequest): ServerResponse
 
-    @POST("api/comics/{comicId}/chapters/{chapterId}/read")
-    suspend fun markChapterAsRead(
-        @Path("comicId") comicId: String,
-        @Path("chapterId") chapterId: String,
-    ): BoolResponse
+    // CHAT APIs
 
-    // Chat apis
     @GET("api/chat/conversations")
     suspend fun getInbox(): List<Conversation>
 
@@ -164,21 +163,19 @@ interface ComicApiService {
     @POST("api/chat/sync")
     suspend fun syncPendingMessages(@Body pendingMessage: List<ChatMessage>): BoolResponse
 
-    // community apis
+    // COMMUNITY APIs
+
     @GET("api/community/posts")
     suspend fun getCommunityPosts(): List<Post>
 
     @POST("api/community/posts")
-    suspend fun makePost(
-        @Body request: PostRequest
-    ): ServerResponse
+    suspend fun makePost(@Body request: PostRequest): ServerResponse
 
     @POST("api/community/posts/{postId}/like")
     suspend fun likePost(@Path("postId") postId: String): ServerResponse
 
     @POST("api/community/posts/{postId}/bookmark")
-    suspend fun bookmarkPost(
-        @Path("postId") postId: String): ServerResponse
+    suspend fun bookmarkPost(@Path("postId") postId: String): ServerResponse
 
     @GET("api/community/posts/{postId}/comments")
     suspend fun getPostComments(@Path("postId") postId: String): List<Comment>
@@ -201,7 +198,8 @@ interface ComicApiService {
         @Path("commentId") commentId: String
     ): ServerResponse
 
-    // users apis
+    // USER APIs
+
     @GET("api/users/{userId}/profile")
     suspend fun getUserProfile(@Path("userId") userId: String): UserProfile
 
@@ -244,7 +242,8 @@ interface ComicApiService {
     @DELETE("api/users")
     suspend fun deleteAccount(): ServerResponse
 
-    // miscellaneous
+    // MISCELLANEOUS APIs
+
     @POST("api/reports/submit")
     suspend fun submitReport(@Body request: ReportRequest): ServerResponse
 

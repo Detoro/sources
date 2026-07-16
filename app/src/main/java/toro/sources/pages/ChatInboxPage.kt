@@ -34,7 +34,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -60,7 +59,6 @@ fun ChatInboxPage(
     onFriendRequest: () -> Unit,
     onProfileClick: (String) -> Unit
 ) {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
     val pendingRequestsCount by viewModel.pendingRequestsCount.collectAsState()
     var isSearching by remember { mutableStateOf(false) }
     val searchQuery by viewModel.inboxSearchQuery.collectAsState()
@@ -107,7 +105,7 @@ fun ChatInboxPage(
                     }
                 },
                 actions = {
-                    if (!isSearching && selectedTabIndex == 0) {
+                    if (!isSearching && pagerState.currentPage == 0) {
                         IconButton(onClick = { isSearching = true }) {
                             Icon(Icons.Default.Search, contentDescription = "Search Inbox")
                         }

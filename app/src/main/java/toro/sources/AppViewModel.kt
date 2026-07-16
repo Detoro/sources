@@ -1,9 +1,9 @@
 package toro.sources
 
-import ChapterUploadData
-import RegisterChaptersRequest
-import RegisterComicRequest
-import Chapter
+import com.toro.models.ChapterUploadData
+import com.toro.models.RegisterChaptersRequest
+import com.toro.models.RegisterComicRequest
+import com.toro.models.Chapter
 import android.app.Application
 import android.util.Log
 import android.net.Uri
@@ -1710,10 +1710,13 @@ class AppViewModel(
             var comicToLoad = withContext(Dispatchers.IO) {
                 repository.getComicByIdSync(comicId)
             } ?:
-                             catalog.value.find { it.id == comicId } ?:
-                             trending.value.find { it.id == comicId } ?:
-                             userWorks.value.find { it.id == comicId } ?:
-                             targetUserWorks.value.find { it.id == comicId }
+            catalog.value.find { it.id == comicId } ?:
+            trending.value.find { it.id == comicId } ?:
+            userWorks.value.find { it.id == comicId } ?:
+            targetUserWorks.value.find { it.id == comicId } ?:
+            subscribedComics.value.find { it.id == comicId } ?:
+            recentlyReadComics.value.find { it.id == comicId } ?:
+            myLibrary.value.find { it.id == comicId }
 
             if (comicToLoad == null) {
                 try {

@@ -25,7 +25,7 @@ import coil.compose.AsyncImage
 import toro.sources.AppViewModel
 import toro.sources.components.*
 import com.toro.models.ShareType
-import Chapter
+import com.toro.models.Chapter
 import com.toro.models.*
 
 @OptIn(ExperimentalMaterial3Api::class)

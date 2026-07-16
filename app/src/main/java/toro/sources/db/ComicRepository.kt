@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import toro.sources.CbzParser
 import toro.sources.network.ComicApiService
-import Chapter
+import com.toro.models.Chapter
 import com.toro.models.Comic
 import com.toro.models.Conversation
 import com.toro.models.ChatMessage
