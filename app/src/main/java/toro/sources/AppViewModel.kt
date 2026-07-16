@@ -820,7 +820,7 @@ class AppViewModel(
                                 pgRating = pgRating,
                                 genres = genres,
                                 chapters = chaptersData,
-                                audioUri = primaryAudioUrl
+                                audioUrl = primaryAudioUrl
                             )
                         )
                     }
@@ -1201,23 +1201,24 @@ class AppViewModel(
     }
     fun getChaptersForComic(comic: Comic) {
         chaptersJob?.cancel()
-        chaptersJob = viewModelScope.launch {
-            try {
-                repository.getChaptersForComic(comic.id).collect { localChapters ->
-                    _chapters.value = localChapters
-                }
-            } catch (e: Exception) {
-                if (e is CancellationException) throw e
-                val error = e.message
-                _errorMessage.value = error
-                Log.e("Chapter error", "Failed to load chapters: $error")
-            }
-        }
-
         if (!comic.isLocalSideload) {
-            viewModelScope.launch {
-                withContext(Dispatchers.IO) {
-                    repository.syncRemoteChaptersForComic(comic)
+            chaptersJob = viewModelScope.launch {
+                try {
+                    val remoteChapters = withContext(Dispatchers.IO) {
+                        RetrofitClient.comicApiService.getChaptersForComic(comic.id)
+                    }
+                    Log.i("Chapters", "$remoteChapters")
+
+                    if (_chapters.value.isEmpty()) {
+                        _chapters.value = remoteChapters
+                    }
+
+                    withContext(Dispatchers.IO) {
+                        repository.syncRemoteChaptersForComic(comic)
+                    }
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    Log.e("Chapter error", "Failed to fetch remote chapters: ${e.message}")
                 }
             }
         }
