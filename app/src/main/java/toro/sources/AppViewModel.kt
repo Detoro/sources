@@ -9,6 +9,7 @@ import android.util.Log
 import android.net.Uri
 import kotlinx.coroutines.flow.combine
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -183,6 +184,14 @@ class AppViewModel(
             }
         }
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    /** Room-backed messages for a specific thread — safe to collect per ChatThreadPage. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun messagesForConversation(conversationId: String): Flow<List<ChatMessage>> {
+        return _databaseUpdateSignal.flatMapLatest {
+            repository.getMessagesForConversation(conversationId)
+        }
+    }
 
     private val _currentComic = MutableStateFlow<Comic?>(null)
     val currentComic = _currentComic.asStateFlow()
@@ -1000,11 +1009,10 @@ class AppViewModel(
         _isUploading.value = false
     }
     fun getChatMessages(conversationId: String) {
+        // Set synchronously so chatMessages / reply lookups switch before the network returns.
+        _currentConversationId.value = conversationId
         viewModelScope.launch {
             try {
-                if (_currentConversationId.value != conversationId) {
-                    _currentConversationId.value = conversationId
-                }
                 withContext(Dispatchers.IO) {
                     val lastTimestamp = repository.getLastMessageTimestamp(conversationId)
                     val messages = RetrofitClient.comicApiService.getChatMessages(conversationId, lastTimestamp)
@@ -1012,6 +1020,8 @@ class AppViewModel(
                         repository.saveMessages(messages)
                     }
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 val error = e.message
                 _errorMessage.value = error
