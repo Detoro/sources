@@ -50,6 +50,7 @@ fun ChatBubble(
     isFromMe: Boolean,
     viewModel: AppViewModel,
     showStatus: Boolean = false,
+    threadMessages: List<ChatMessage> = emptyList(),
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
     val actualSharedId = message.sharedId ?: message.sharedComicId
@@ -134,7 +135,7 @@ fun ChatBubble(
                 ) {
                     Column {
                         if (message.replyToMessageId != null) {
-                            val repliedMessage = viewModel.chatMessages.collectAsState().value.find { it.id == message.replyToMessageId }
+                            val repliedMessage = threadMessages.find { it.id == message.replyToMessageId }
 
                             if (repliedMessage != null) {
                                 val rawDecrypted = if (repliedMessage.isEncrypted) viewModel.decryptMessage(repliedMessage.content) else repliedMessage.content

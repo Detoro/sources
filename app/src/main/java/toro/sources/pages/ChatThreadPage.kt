@@ -54,8 +54,11 @@ fun ChatThreadPage(
     onBackClick: () -> Unit,
     onProfileClick: (String) -> Unit
 ) {
-    val messages by viewModel.chatMessages.collectAsState()
-    Log.d("ChatThreadPage", "messages: $messages")
+    val messagesFlow = remember(conversationId) {
+        viewModel.messagesForConversation(conversationId)
+    }
+    val messages by messagesFlow.collectAsState(initial = emptyList())
+    Log.d("ChatThreadPage", "messages($conversationId): $messages")
     val me by viewModel.userProfile.collectAsState()
     val inbox by viewModel.inbox.collectAsState()
     val replyingToMessage by viewModel.replyingToMessage.collectAsState(null)
@@ -434,7 +437,8 @@ fun ChatThreadPage(
                             message = msg,
                             isFromMe = isFromMe,
                             showStatus = isFromMe && index == lastUserMessageIndex,
-                            viewModel = viewModel
+                            viewModel = viewModel,
+                            threadMessages = messages
                         )
                     }
 
