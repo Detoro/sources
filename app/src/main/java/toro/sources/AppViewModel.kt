@@ -53,6 +53,8 @@ import java.io.File
 import java.io.FileOutputStream
 import kotlin.Boolean
 import kotlin.collections.map
+import coil.imageLoader
+import coil.request.ImageRequest
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import kotlinx.serialization.json.Json
@@ -65,6 +67,8 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 
 enum class SearchSource {
     LOCAL, ONLINE
@@ -79,7 +83,20 @@ class AppViewModel(
     private var chatWebSocket: WebSocket? = null
     private val socketJson = Json { ignoreUnknownKeys = true }
 
-    val myLibrary: StateFlow<List<Comic>> = repository.getMyLibrary()
+    private var reconnectionDelay = 5000L
+    private var reconnectionJob: Job? = null
+
+    private val _userProfile = MutableStateFlow<UserProfile?>(null)
+    val userProfile = _userProfile.asStateFlow()
+
+    private val _targetUserProfile = MutableStateFlow<UserProfile?>(null)
+    val targetUserProfile = _targetUserProfile.asStateFlow()
+
+    private val _databaseUpdateSignal = MutableStateFlow(0)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    var localLibrary: StateFlow<List<Comic>> = _databaseUpdateSignal
+        .flatMapLatest { repository.getMyLibrary() }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -96,8 +113,8 @@ class AppViewModel(
         _searchSource.value = source
     }
 
-    private val _catalog = MutableStateFlow<List<Comic>>(emptyList())
-    val catalog = _catalog.asStateFlow()
+    private val _onlineLibrary = MutableStateFlow<List<Comic>>(emptyList())
+    val onlineLibrary = _onlineLibrary.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage = _errorMessage.asStateFlow()
@@ -112,7 +129,7 @@ class AppViewModel(
     val searchFilter = _searchFilter.asStateFlow()
 
     val searchResults: StateFlow<List<Comic>> = combine(
-        myLibrary, _catalog, _searchQuery, _searchSource, searchFilter
+        localLibrary, _onlineLibrary, _searchQuery, _searchSource, searchFilter
     ) { library, online, query, source, filter ->
         if (query.isBlank()) {
             return@combine emptyList()
@@ -149,18 +166,23 @@ class AppViewModel(
     private val _chapters = MutableStateFlow<List<Chapter>>(emptyList())
     val chapters = _chapters.asStateFlow()
 
-    val inbox: StateFlow<List<Conversation>> = repository.getConversations()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val inbox: StateFlow<List<Conversation>> = _databaseUpdateSignal
+        .flatMapLatest { repository.getConversations() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _currentConversationId = MutableStateFlow<String?>(null)
+    val currentConversationId = _currentConversationId.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val chatMessages: StateFlow<List<ChatMessage>> = _currentConversationId
+    val chatMessages: StateFlow<List<ChatMessage>> = currentConversationId
         .flatMapLatest { id ->
-            if (id != null) repository.getMessagesForConversation(id)
-            else flowOf(emptyList())
+            _databaseUpdateSignal.flatMapLatest {
+                if (id != null) repository.getMessagesForConversation(id)
+                else flowOf(emptyList())
+            }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     private val _currentComic = MutableStateFlow<Comic?>(null)
     val currentComic = _currentComic.asStateFlow()
@@ -168,7 +190,7 @@ class AppViewModel(
     private val _typingUsers = MutableStateFlow<Set<String>>(emptySet())
     val typingUsers = _typingUsers.asStateFlow()
 
-    private var typingJob: kotlinx.coroutines.Job? = null
+    private var typingJob: Job? = null
 
     private val _communityPosts = MutableStateFlow<List<Post>>(emptyList())
     val communityPosts = _communityPosts.asStateFlow()
@@ -182,7 +204,18 @@ class AppViewModel(
     private val _chapterComments = MutableStateFlow<List<Comment>>(emptyList())
     val chapterComments = _chapterComments.asStateFlow()
 
-    val combinedComments: StateFlow<List<Comment>> = repository.getComments()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val combinedComments: StateFlow<List<Comment>> = combine(
+        _databaseUpdateSignal.flatMapLatest { repository.getComments() },
+        _userProfile
+    ) { comments: List<Comment>, profile: UserProfile? ->
+        val userId = profile?.id
+        if (userId != null) {
+            comments.filter { it.authorId == userId }
+        } else {
+            emptyList()
+        }
+    }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -198,15 +231,19 @@ class AppViewModel(
     private val _uploadSuccess = MutableStateFlow(false)
     val uploadSuccess = _uploadSuccess.asStateFlow()
 
-    private val _userProfile = MutableStateFlow<UserProfile?>(null)
-    val userProfile = _userProfile.asStateFlow()
-
-    private val _targetUserProfile = MutableStateFlow<UserProfile?>(null)
-    val targetUserProfile = _targetUserProfile.asStateFlow()
-
     private val _userPosts = MutableStateFlow<List<Post>>(emptyList())
-    val userPosts: StateFlow<List<Post>> = repository.getPosts()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val userPosts: StateFlow<List<Post>> = combine(
+        _databaseUpdateSignal.flatMapLatest { repository.getPosts() },
+        _userProfile
+    ) { posts: List<Post>, profile: UserProfile? ->
+        val userId = profile?.id
+        if (userId != null) {
+            posts.filter { it.authorId == userId }
+        } else {
+            emptyList()
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _targetUserPosts = MutableStateFlow<List<Post>>(emptyList())
     val targetUserPosts = _targetUserPosts.asStateFlow()
@@ -220,13 +257,17 @@ class AppViewModel(
     private val _userSuggestions = MutableStateFlow<List<UserProfile>>(emptyList())
     val userSuggestions = _userSuggestions.asStateFlow()
 
-    private val _subscribedAuthors = MutableStateFlow<List<UserProfile>>(emptyList())
-    val subscribedAuthors = _subscribedAuthors.asStateFlow()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val subscribedAuthors: StateFlow<List<UserProfile>> = _databaseUpdateSignal
+        .flatMapLatest { repository.getSubscribedAuthors() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _selectedAuthorIds = MutableStateFlow<Set<String>>(emptySet())
     val selectedAuthorIds = _selectedAuthorIds.asStateFlow()
 
-    val notifications: StateFlow<List<Notification>> = repository.getNotifications()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val notifications: StateFlow<List<Notification>> = _databaseUpdateSignal
+        .flatMapLatest { repository.getNotifications() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isDarkTheme = MutableStateFlow(true)
@@ -248,14 +289,18 @@ class AppViewModel(
         _showShareDialog.value = show
     }
 
-    val subscribedComics: StateFlow<List<Comic>> = repository.getSubscribedComics()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val subscribedComics: StateFlow<List<Comic>> = _databaseUpdateSignal
+        .flatMapLatest { repository.getSubscribedComics() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val recentlyReadComics: StateFlow<List<Comic>> = repository.getRecentlyReadComics()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val recentlyReadComics: StateFlow<List<Comic>> = _databaseUpdateSignal
+        .flatMapLatest { repository.getRecentlyReadComics() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var chapterPages: List<Page> = emptyList()
-    private var chaptersJob: kotlinx.coroutines.Job? = null
+    private var chaptersJob: Job? = null
 
     private val _inboxSearchQuery = MutableStateFlow("")
     val inboxSearchQuery = _inboxSearchQuery.asStateFlow()
@@ -328,6 +373,8 @@ class AppViewModel(
     }
 
     private fun onUserAuthenticated(userId: String) {
+        CanvasDatabase.resetDatabase()
+        _databaseUpdateSignal.value++
         viewModelScope.launch {
             repository.syncSubscriptions()
             getUserProfile(userId)
@@ -376,7 +423,6 @@ class AppViewModel(
                 withContext(Dispatchers.IO) {
                     repository.removeComicFromLibrary(comicId)
                 }
-                _catalog.value = _catalog.value.filter { it.id != comicId }
                 onRemoved()
             } catch (e: Exception) {
                 val error = e.message
@@ -435,12 +481,17 @@ class AppViewModel(
     fun openChapter(comic: Comic, chapterId: String = "") {
         viewModelScope.launch {
             _pageCount.value = 0
-            withContext(Dispatchers.IO) {
-                repository.updateLastRead(comic.id)
+            val targetChapter = _chapters.value.find { it.id == chapterId }
+            val loadLocally = comic.isLocalSideload || targetChapter?.isDownloaded == true
+
+            if (comic.isLocalSideload) {
+                withContext(Dispatchers.IO) {
+                    repository.updateLastRead(comic.id)
+                }
             }
             try {
                 val pages = withContext(Dispatchers.IO) {
-                    repository.getPagesForChapter(chapterId, comic.id)
+                    repository.getPagesForChapter(chapterId, comic.id, loadLocally)
                 }
                 chapterPages = pages
                 _pageCount.value = pages.size
@@ -451,10 +502,21 @@ class AppViewModel(
             }
         }
     }
-    suspend fun getPageData(pageIndex: Int): Any? {
-        return withContext(Dispatchers.IO) {
-            val page = chapterPages.getOrNull(pageIndex)
-            page?.localUri ?: page?.imageUrl
+    fun getPageData(pageIndex: Int): Any? {
+        val page = chapterPages.getOrNull(pageIndex)
+        return page?.localUri ?: page?.imageUrl
+    }
+
+    fun preloadAdjacentPages(currentIndex: Int) {
+        val pagesToPreload = listOf(currentIndex - 1, currentIndex + 1, currentIndex + 2, currentIndex + 3)
+        pagesToPreload.forEach { index ->
+            val data = getPageData(index)
+            if (data != null) {
+                val request = ImageRequest.Builder(getApplication())
+                    .data(data)
+                    .build()
+                getApplication<Application>().imageLoader.enqueue(request)
+            }
         }
     }
     fun onPageTurned(chapterId: String, newPageIndex: Int) {
@@ -474,8 +536,6 @@ class AppViewModel(
                     RetrofitClient.preferenceManager.saveTokens(res.accessToken, res.refreshToken)
                     res
                 }
-
-                resetDatabaseAndRepository()
 
                 val userId = response.userId
                 onUserAuthenticated(userId)
@@ -505,11 +565,12 @@ class AppViewModel(
             } finally {
                 withContext(Dispatchers.IO) {
                     RetrofitClient.preferenceManager.clearTokens()
-                    resetDatabaseAndRepository()
                 }
-                FirebaseMessaging.getInstance().deleteToken()
+                FirebaseMessaging.getInstance().unregister()
                 clearProfileData()
                 disconnectChatSocket()
+                CanvasDatabase.resetDatabase()
+                _databaseUpdateSignal.value++
                 _currentComic.value = null
                 onLogoutComplete()
             }
@@ -524,8 +585,6 @@ class AppViewModel(
                     RetrofitClient.preferenceManager.saveTokens(res.accessToken, res.refreshToken)
                     res
                 }
-
-                resetDatabaseAndRepository()
 
                 val userId = response.userId
                 onUserAuthenticated(userId)
@@ -542,7 +601,16 @@ class AppViewModel(
 
     fun deleteAccount() {
         viewModelScope.launch {
-            RetrofitClient.comicApiService.deleteAccount()
+            val userId = _userProfile.value?.id
+            try {
+                RetrofitClient.comicApiService.deleteAccount()
+            } catch (e: Exception) {
+                Log.e("AppViewModel", "Failed to delete account from server: ${e.message}")
+            }
+            withContext(Dispatchers.IO) {
+                CanvasDatabase.deleteDatabase(getApplication(), userId)
+            }
+            logoutUser { }
         }
     }
 
@@ -575,13 +643,6 @@ class AppViewModel(
         _targetUserProfile.value = null
         _targetUserPosts.value = emptyList()
         _targetUserWorks.value = emptyList()
-    }
-
-    private suspend fun resetDatabaseAndRepository() {
-        withContext(Dispatchers.IO) {
-            CanvasDatabase.resetDatabase()
-            repository.refreshDAOs()
-        }
     }
 
     fun updateBio(bio: String) {
@@ -691,7 +752,7 @@ class AppViewModel(
                                         updateAvatar(publicUrl)
                                     }
 
-                                        Log.i("Cloudinary", "Avatar updated to $publicUrl")
+                                    Log.i("Cloudinary", "Avatar updated to $publicUrl")
                                 } catch (e: Exception) {
                                     val error = e.message
                                     _errorMessage.value = error
@@ -722,13 +783,13 @@ class AppViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                _catalog.value = withContext(Dispatchers.IO) {
+                _onlineLibrary.value = withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.getRecommendation()
                 }
             } catch (e: Exception) {
                 val error = e.message
                 _errorMessage.value = error
-                Log.e("Comic error", "Failed to load catalog: $error")
+                Log.e("Comic error", "Failed to load onlineLibrary: $error")
             } finally {
                 _isLoading.value = false
             }
@@ -751,21 +812,6 @@ class AppViewModel(
             }
         }
     }
-
-    fun getComicById(comicId: String) {
-        viewModelScope.launch {
-            try {
-                _currentComic.value = withContext(Dispatchers.IO) {
-                    RetrofitClient.comicApiService.getComicById(comicId)
-                }
-            } catch (e: Exception) {
-                val error = e.message
-                _errorMessage.value = error
-                Log.e("Comic error", "Failed to get Comic: $error")
-            }
-        }
-    }
-
     fun uploadNewChapters(
         title: String = "",
         authors: List<Creator> = emptyList(),
@@ -789,9 +835,9 @@ class AppViewModel(
                 } else {
                     emptyList()
                 }
-                
+
                 val primaryAudioUrl = uploadedAudioUrls.firstOrNull()
-                
+
                 val startingChapterNumber = if (comicId != null) {
                     val existingChapters = withContext(Dispatchers.IO) {
                         repository.getChaptersForComic(comicId).first()
@@ -930,9 +976,9 @@ class AppViewModel(
                 val currentChapters = _chapters.value
                 val chapterToLike = currentChapters.find { it.id == chapterId } ?: return@launch
                 val newLikedState = !chapterToLike.isLiked
-                
-                _chapters.value = currentChapters.map { 
-                    if (it.id == chapterId) it.copy(isLiked = newLikedState) else it 
+
+                _chapters.value = currentChapters.map {
+                    if (it.id == chapterId) it.copy(isLiked = newLikedState) else it
                 }
 
                 withContext(Dispatchers.IO) {
@@ -954,12 +1000,17 @@ class AppViewModel(
         _isUploading.value = false
     }
     fun getChatMessages(conversationId: String) {
-        _currentConversationId.value = conversationId
         viewModelScope.launch {
             try {
+                if (_currentConversationId.value != conversationId) {
+                    _currentConversationId.value = conversationId
+                }
                 withContext(Dispatchers.IO) {
-                    val messages = RetrofitClient.comicApiService.getChatMessages(conversationId)
-                    repository.saveMessages(messages.map { it.copy(conversationId = conversationId) })
+                    val lastTimestamp = repository.getLastMessageTimestamp(conversationId)
+                    val messages = RetrofitClient.comicApiService.getChatMessages(conversationId, lastTimestamp)
+                    if (messages.isNotEmpty()) {
+                        repository.saveMessages(messages)
+                    }
                 }
             } catch (e: Exception) {
                 val error = e.message
@@ -984,7 +1035,10 @@ class AppViewModel(
                 )
 
                 val jsonMessage = socketJson.encodeToString(typingSignal)
-                chatWebSocket?.send(jsonMessage)
+                val sent = chatWebSocket?.send(jsonMessage) ?: false
+                if (!sent) {
+                    connectChatSocket()
+                }
             } catch (e: Exception) {
                 Log.e("Typing", "Failed to send typing indicator: ${e.message}")
             }
@@ -1002,13 +1056,39 @@ class AppViewModel(
             }
         }
     }
+    fun setChatBackground(conversationId: String, uri: Uri?) {
+        viewModelScope.launch {
+            try {
+                if (uri != null) {
+                    val context = getApplication<Application>()
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                }
+
+                withContext(Dispatchers.IO) {
+                    repository.updateChatBackground(conversationId, uri?.toString())
+
+                    val updatedConvo = repository.getConversationById(conversationId)
+                    if (updatedConvo != null) {
+                        repository.saveConversations(listOf(updatedConvo))
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("ChatBackground", "Failed to set background: ${e.message}")
+            }
+        }
+    }
     fun sendMessage(
         conversationId: String,
         content: String,
         isSpoiler: Boolean = false,
         sharedId: String? = null,
         sharedType: ShareType? = null,
-        attachment: Uri? = null
+        attachment: Uri? = null,
+        receiverId: String? = null,
+        receiverName: String? = null
     ) {
         viewModelScope.launch {
             try {
@@ -1025,10 +1105,25 @@ class AppViewModel(
                 val encryptedContent = encryptMessage(content)
                 val tempMessageId = UUID.randomUUID().toString()
 
+                val conversation = withContext(Dispatchers.IO) {
+                    val existing = repository.getConversationById(conversationId)
+                    if (existing == null && receiverId != null) {
+                        val shell = Conversation(
+                            conversationId = conversationId,
+                            otherUserId = receiverId,
+                            otherUserName = receiverName ?: "Chat",
+                            timestamp = System.currentTimeMillis()
+                        )
+                        repository.saveConversations(listOf(shell))
+                        shell
+                    } else existing
+                }
+
                 val newMessage = ChatMessage(
                     id = tempMessageId,
                     conversationId = conversationId,
                     senderId = userProfile.value?.id ?: "",
+                    receiverId = conversation?.otherUserId ?: "",
                     content = encryptedContent,
                     timestamp = System.currentTimeMillis(),
                     isEncrypted = true,
@@ -1036,17 +1131,17 @@ class AppViewModel(
                     replyToMessageId = _replyingToMessage.value?.id,
                     sharedId = sharedId,
                     sharedType = sharedType,
-                    imageUrl = if (mediaType == "IMAGE") mediaUrl else null,
-                    videoUrl = if (mediaType == "VIDEO") mediaUrl else null,
+                    imageUrls = if (mediaType == "IMAGE") listOfNotNull(mediaUrl) else emptyList(),
+                    videoUrls = if (mediaType == "VIDEO") listOfNotNull(mediaUrl) else emptyList(),
                     mediaType = mediaType
                 )
 
                 withContext(Dispatchers.IO) {
                     repository.saveMessage(newMessage)
 
-                    repository.getConversationById(conversationId)?.let { conversation ->
+                    conversation?.let { convo ->
                         val decrypted = if (newMessage.isEncrypted) decryptMessage(newMessage.content) else newMessage.content
-                        val updatedConversation = conversation.copy(
+                        val updatedConversation = convo.copy(
                             lastMessage = decrypted,
                             timestamp = newMessage.timestamp
                         )
@@ -1055,7 +1150,11 @@ class AppViewModel(
                 }
 
                 val jsonMessage = socketJson.encodeToString(newMessage)
-                chatWebSocket?.send(jsonMessage)
+                val sent = chatWebSocket?.send(jsonMessage) ?: false
+                if (!sent) {
+                    Log.w("WebSocket", "Message not sent, socket null or closed. Triggering reconnect.")
+                    connectChatSocket()
+                }
 
                 _replyingToMessage.value = null
                 _sharedContent.value = null
@@ -1071,7 +1170,12 @@ class AppViewModel(
     }
 
     fun decryptMessage(content: String): String {
-        return CryptoUtils.decrypt(content)
+        return try {
+            CryptoUtils.decrypt(content)
+        } catch (e: Exception) {
+            Log.e("Crypto", "Failed to decrypt message content: ${e.message}")
+            "[Unable to decrypt message]"
+        }
     }
     fun deleteMessage(conversationId: String, messageId: String) {
         viewModelScope.launch {
@@ -1096,7 +1200,7 @@ class AppViewModel(
             try {
                 val encryptedContent = encryptMessage(content)
                 withContext(Dispatchers.IO) {
-                    repository.updateMessageContent(messageId, content)
+                    repository.updateMessageContent(messageId, encryptedContent)
                     val updatedMessage = ChatMessage(id = messageId, content = encryptedContent, isEncrypted = true)
                     RetrofitClient.comicApiService.updateMessage(conversationId, messageId, updatedMessage)
                 }
@@ -1198,7 +1302,7 @@ class AppViewModel(
     fun searchComics(query: String) {
         viewModelScope.launch {
             try {
-                _catalog.value = withContext(Dispatchers.IO) {
+                withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.searchComics(query)
                 }
             } catch (e: Exception) {
@@ -1386,10 +1490,21 @@ class AppViewModel(
         title: String?,
         isSpoiler: Boolean,
         postContent: String,
-        tags: List<String> = emptyList()
+        tags: List<String> = emptyList(),
+        attachment: Uri? = null
     ) {
         viewModelScope.launch {
             try {
+                var mediaUrl: String? = null
+                var mediaType: String? = null
+
+                if (attachment != null) {
+                    _isUploading.value = true
+                    mediaUrl = uploadFileToCloudinary(attachment)
+                    mediaType = if (mediaUrl.endsWith(".mp4") || mediaUrl.endsWith(".mov") || mediaUrl.contains("video/upload")) "VIDEO" else "IMAGE"
+                    _isUploading.value = false
+                }
+
                 val shared = _sharedContent.value
 
                 val request = PostRequest(
@@ -1401,7 +1516,9 @@ class AppViewModel(
                     sharedType = shared?.type,
                     sharedTitle = shared?.title,
                     sharedPreview = shared?.previewText,
-                    sharedImageUrl = null
+                    sharedImageUrl = null,
+                    imageUrls = if (mediaType == "IMAGE") listOfNotNull(mediaUrl) else emptyList(),
+                    videoUrls = if (mediaType == "VIDEO") listOfNotNull(mediaUrl) else emptyList()
                 )
 
                 withContext(Dispatchers.IO) {
@@ -1521,9 +1638,10 @@ class AppViewModel(
     fun getSubscribedAuthors() {
         viewModelScope.launch {
             try {
-                _subscribedAuthors.value = withContext(Dispatchers.IO) {
+                val authors = withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.getSubscribedAuthors()
                 }
+                repository.saveAuthors(authors)
             } catch (e: Exception) {
                 val error = e.message
                 _errorMessage.value = error
@@ -1625,28 +1743,8 @@ class AppViewModel(
         }
     }
 
-    fun registerFcmToken(token: String) {
-        viewModelScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    RetrofitClient.comicApiService.registerFcmToken(FcmTokenRequest(token))
-                }
-                Log.i("FCM", "Token registered successfully")
-            } catch (e: Exception) {
-                val error = e.message
-                _errorMessage.value = error
-                Log.e("FCM", "Failed to register token: $error")
-            }
-        }
-    }
-
     fun fetchAndRegisterFcmToken() {
-        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                Log.i("fcm", "fcm fetch success")
-                task.result?.let { registerFcmToken(it) }
-            }
-        }
+        FirebaseMessaging.getInstance().register()
     }
     fun handleNavigation(route: String) {
         _pendingNavigation.value = route
@@ -1668,10 +1766,11 @@ class AppViewModel(
         }
     }
 
-    fun clearLocalDatabase() {
+    fun deleteUserLocalData() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 repository.clearAllData()
+                _databaseUpdateSignal.value++
             }
         }
     }
@@ -1680,19 +1779,16 @@ class AppViewModel(
         _sharedContent.value = content
     }
 
-    fun loadAndNavigateToSharedComic(comicId: String) {
+    fun loadAndNavigateToComic(comicId: String) {
         viewModelScope.launch {
-            var comicToLoad = myLibrary.value.find { it.id == comicId }
+            val comicToLoad = onlineLibrary.value.find { it.id == comicId }
 
-            if (comicToLoad == null) {
-                comicToLoad = catalog.value.find { it.id == comicId }
-            }
             if (comicToLoad != null) {
                 setCurrentComic(comicToLoad)
                 handleNavigation(Screen.Overview.createRoute(comicId))
             } else {
                 try {
-                    getComicById(comicId)
+                    loadComicById(comicId)
                     handleNavigation(Screen.Overview.createRoute(comicId))
                 } catch (e: Exception) {
                     val error = e.message
@@ -1704,30 +1800,28 @@ class AppViewModel(
     }
 
     fun loadComicById(comicId: String) {
+        val trimmedId = comicId.trim()
         viewModelScope.launch {
             _currentComic.value = null
+            _chapters.value = emptyList()
 
-            var comicToLoad = withContext(Dispatchers.IO) {
-                repository.getComicByIdSync(comicId)
-            } ?:
-            catalog.value.find { it.id == comicId } ?:
-            trending.value.find { it.id == comicId } ?:
-            userWorks.value.find { it.id == comicId } ?:
-            targetUserWorks.value.find { it.id == comicId } ?:
-            subscribedComics.value.find { it.id == comicId } ?:
-            recentlyReadComics.value.find { it.id == comicId } ?:
-            myLibrary.value.find { it.id == comicId }
+            var comicToLoad = onlineLibrary.value.find { it.id == trimmedId }
 
             if (comicToLoad == null) {
                 try {
                     comicToLoad = withContext(Dispatchers.IO) {
-                        RetrofitClient.comicApiService.getComicById(comicId)
+                        RetrofitClient.comicApiService.getComicById(trimmedId)
                     }
                 } catch (e: Exception) {
-                    Log.e("AppViewModel", "Failed to fetch comic $comicId from API", e)
+                    Log.e("AppViewModel", "Failed to fetch comic $trimmedId from API", e)
+                    comicToLoad = onlineLibrary.value.find { it.id == trimmedId } ?:
+                            trending.value.find { it.id == trimmedId } ?:
+                            userWorks.value.find { it.id == trimmedId } ?:
+                            targetUserWorks.value.find { it.id == trimmedId } ?:
+                            subscribedComics.value.find { it.id == trimmedId } ?:
+                            recentlyReadComics.value.find { it.id == trimmedId }
                 }
             }
-
             if (comicToLoad != null) {
                 _currentComic.value = comicToLoad
                 getChaptersForComic(comicToLoad)
@@ -1764,8 +1858,8 @@ class AppViewModel(
                 _currentComic.update { comic ->
                     if (comic?.id == comicId) comic.copy(rating = rating) else comic
                 }
-                
-                _catalog.update { list -> list.map { if (it.id == comicId) it.copy(rating = rating) else it } }
+
+                _onlineLibrary.update { list -> list.map { if (it.id == comicId) it.copy(rating = rating) else it } }
                 _trending.update { list -> list.map { if (it.id == comicId) it.copy(rating = rating) else it } }
                 _userWorks.update { list -> list.map { if (it.id == comicId) it.copy(rating = rating) else it } }
                 _targetUserWorks.update { list -> list.map { if (it.id == comicId) it.copy(rating = rating) else it } }
@@ -1872,8 +1966,15 @@ class AppViewModel(
     }
     fun connectChatSocket() {
         if (chatWebSocket != null) return
+        reconnectionJob?.cancel()
 
         val listener = object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                Log.i("WebSocket", "Connection opened")
+                reconnectionDelay = 5000L
+                syncPendingMessages()
+            }
+
             override fun onMessage(webSocket: WebSocket, text: String) {
                 try {
                     val incomingMessage = socketJson.decodeFromString<ChatMessage>(text)
@@ -1884,7 +1985,7 @@ class AppViewModel(
                             _typingUsers.update { it + senderId }
                             typingJob?.cancel()
                             typingJob = viewModelScope.launch {
-                                kotlinx.coroutines.delay(5000.milliseconds)
+                                delay(5000.milliseconds)
                                 _typingUsers.update { it - senderId }
                             }
                         } else {
@@ -1897,21 +1998,32 @@ class AppViewModel(
                         val myUserId = userProfile.value?.id
 
                         if (incomingMessage.senderId == myUserId) {
-                            repository.updateMessageDeliveryStatus(incomingMessage.id, true)
+                            val pending = repository.getPendingMessages(myUserId)
+                            val match = pending.find { p ->
+                                p.conversationId == incomingMessage.conversationId &&
+                                        decryptMessage(p.content) == decryptMessage(incomingMessage.content)
+                            }
+                            if (match != null) {
+                                repository.deleteMessageById(match.id)
+                            }
+                            repository.saveMessage(incomingMessage)
                         } else {
                             repository.saveMessage(incomingMessage)
 
-                            repository.getConversationById(incomingMessage.conversationId)?.let { conversation ->
-                                val decrypted = if (incomingMessage.isEncrypted) decryptMessage(incomingMessage.content) else incomingMessage.content
-                                val updatedConversation = conversation.copy(
-                                    lastMessage = decrypted,
-                                    timestamp = incomingMessage.timestamp
-                                )
-                                repository.saveConversations(listOf(updatedConversation))
-                            }
+                            repository.getConversationById(incomingMessage.conversationId)
+                                ?.let { conversation ->
+                                    val decrypted = if (incomingMessage.isEncrypted) decryptMessage(
+                                        incomingMessage.content
+                                    ) else incomingMessage.content
+                                    val updatedConversation = conversation.copy(
+                                        lastMessage = decrypted,
+                                        timestamp = incomingMessage.timestamp
+                                    )
+                                    repository.saveConversations(listOf(updatedConversation))
+                                }
                         }
                     }
-
+                    Log.i("WebSocket", "Received message: $text")
                 } catch (e: Exception) {
                     val error = e.message
                     _errorMessage.value = error
@@ -1919,18 +2031,47 @@ class AppViewModel(
                 }
             }
 
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                webSocket.close(1000, null)
+                Log.i("WebSocket", "Closing: $code / $reason")
+            }
+
+            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                chatWebSocket = null
+                Log.i("WebSocket", "Closed: $code / $reason")
+            }
+
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                val error = t.message
-                _errorMessage.value = error
-                Log.e("WebSocket", "Connection failed: $error")
+                chatWebSocket = null
+                val errorMessage = when {
+                    t is java.io.EOFException -> "Connection lost (server closed socket)"
+                    response != null -> "${response.message} (Code: ${response.code})"
+                    else -> t.message ?: "Unknown connection error"
+                }
+
+                _errorMessage.value = "Chat issue: $errorMessage"
+                Log.e("WebSocket", "Connection failed: $errorMessage (Exception: ${t.javaClass.simpleName})", t)
+
+                reconnectWithDelay()
             }
         }
 
         chatWebSocket = RetrofitClient.createChatWebSocket(listener)
-        syncPendingMessages()
+    }
+
+    private fun reconnectWithDelay() {
+        if (chatWebSocket != null) return
+        reconnectionJob?.cancel()
+        reconnectionJob = viewModelScope.launch {
+            Log.i("WebSocket", "Reconnecting in ${reconnectionDelay}ms...")
+            delay(reconnectionDelay.milliseconds)
+            reconnectionDelay = (reconnectionDelay * 2).coerceAtMost(60000L)
+            connectChatSocket()
+        }
     }
 
     fun disconnectChatSocket() {
+        reconnectionJob?.cancel()
         chatWebSocket?.close(1000, "App backgrounded")
         chatWebSocket = null
     }

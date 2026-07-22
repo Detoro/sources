@@ -8,11 +8,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.SpanStyle
@@ -106,7 +109,7 @@ fun ChatBubble(
                             onClick = {
                                 if (actualSharedId != null && actualSharedType != null) {
                                     when (actualSharedType) {
-                                        ShareType.COMIC -> viewModel.loadAndNavigateToSharedComic(
+                                        ShareType.COMIC -> viewModel.loadAndNavigateToComic(
                                             actualSharedId
                                         )
 
@@ -142,8 +145,8 @@ fun ChatBubble(
                                 val replyDisplay = when {
                                     repliedMessage.isSpoiler -> "Spoiler detected"
                                     cleanDecryptedText.isNotEmpty() && cleanDecryptedText != "null" -> cleanDecryptedText
-                                    repliedMessage.imageUrl != null -> "Shared Image"
-                                    repliedMessage.videoUrl != null -> "Shared Video"
+                                    repliedMessage.imageUrls.isNotEmpty() -> "Shared Image"
+                                    repliedMessage.videoUrls.isNotEmpty() -> "Shared Video"
                                     repliedSharedType != null -> "Shared ${repliedSharedType.name.lowercase().replaceFirstChar { it.uppercase() }}"
                                     repliedMessage.sharedId != null || repliedMessage.sharedComicId != null -> "Shared Content"
                                     else -> "Attachment"
@@ -202,11 +205,11 @@ fun ChatBubble(
                                 title = message.sharedType?.name
                                     ?: "Shared ${actualSharedType.name.lowercase()}",
                                 previewText = message.mediaType ?: "Tap to view details",
-                                imageUrl = message.imageUrl,
+                                imageUrl = message.imageUrls.firstOrNull(),
                                 modifier = Modifier.padding(bottom = 8.dp),
                                 onClick = {
                                     when (actualSharedType) {
-                                        ShareType.COMIC -> viewModel.loadAndNavigateToSharedComic(
+                                        ShareType.COMIC -> viewModel.loadAndNavigateToComic(
                                             actualSharedId
                                         )
 
@@ -232,15 +235,46 @@ fun ChatBubble(
                             )
                         }
 
-                        if (message.imageUrl != null) {
+                        message.imageUrls.forEach { imageUrl ->
                             AsyncImage(
-                                model = message.imageUrl,
+                                model = imageUrl,
                                 contentDescription = "Shared Image",
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
                                     .padding(bottom = 8.dp)
                             )
+                        }
+
+                        message.videoUrls.forEach { videoUrl ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(200.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.Black)
+                                    .padding(bottom = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                AsyncImage(
+                                    model = videoUrl,
+                                    contentDescription = "Shared Video",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                                Surface(
+                                    color = Color.Black.copy(alpha = 0.5f),
+                                    shape = CircleShape,
+                                    modifier = Modifier.size(48.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PlayArrow,
+                                        contentDescription = "Play",
+                                        tint = Color.White,
+                                        modifier = Modifier.padding(12.dp)
+                                    )
+                                }
+                            }
                         }
 
                         if (text.isNotEmpty()) {
@@ -324,7 +358,7 @@ fun ChatBubble(
 
                                                     if (actualSharedId != null && actualSharedType != null) {
                                                         when (actualSharedType) {
-                                                            ShareType.COMIC -> viewModel.loadAndNavigateToSharedComic(
+                                                            ShareType.COMIC -> viewModel.loadAndNavigateToComic(
                                                                 actualSharedId
                                                             )
 

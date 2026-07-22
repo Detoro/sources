@@ -1,5 +1,6 @@
 package toro.sources.pages
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,6 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import toro.sources.AppViewModel
 import toro.sources.Screen
@@ -26,7 +28,6 @@ import toro.sources.components.AuthorsRow
 import toro.sources.components.PostCard
 import toro.sources.components.PostCardShimmer
 import com.toro.models.ShareType
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
@@ -67,6 +68,7 @@ fun EngagementPage(
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
         topBar = {
             LargeTopAppBar(
                 title = { Text("Community") },
@@ -121,14 +123,15 @@ fun EngagementPage(
             ) { page ->
                 when (page) {
                     0 -> {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 6.dp)
+                                .background(MaterialTheme.colorScheme.surface)
+                        ) {
                             if (isLoading) {
                                 items(5) {
                                     PostCardShimmer()
-                                    HorizontalDivider(
-                                        thickness = 1.dp,
-                                        color = MaterialTheme.colorScheme.surfaceVariant
-                                    )
                                 }
                             } else {
                                 items(filteredPosts) { post ->
@@ -150,11 +153,9 @@ fun EngagementPage(
                                             )
                                             viewModel.showShareDialog(true)
                                         },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    HorizontalDivider(
-                                        thickness = 1.dp,
-                                        color = MaterialTheme.colorScheme.surfaceVariant
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RectangleShape,
+                                        containerColor = Color.Transparent
                                     )
                                 }
                             }
@@ -165,45 +166,42 @@ fun EngagementPage(
                         }
                     }
                     1 -> {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            AuthorsRow(
-                                viewModel = viewModel,
-                                onAddAuthorClick = onAddAuthorClick
-                            )
-
-                            LazyColumn(
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                items(filteredPosts.take(5)) { post ->
-                                    HorizontalDivider(
-                                        thickness = 1.dp,
-                                        color = MaterialTheme.colorScheme.surfaceVariant
-                                    )
-                                    PostCard(
-                                        viewModel = viewModel,
-                                        post = post,
-                                        onCommentClick = { onCommentClick(post.id) },
-                                        onAuthorClick = { userId ->
-                                            viewModel.handleNavigation(Screen.Profile.createRoute(userId))
-                                        },
-                                        onShareClick = {
-                                            viewModel.setSharedContent(
-                                                SharedContent(
-                                                    id = it.id,
-                                                    type = ShareType.POST,
-                                                    title = it.title ?: "Post by ${it.authorName}",
-                                                    previewText = it.content.take(50)
-                                                )
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 6.dp)
+                                .background(MaterialTheme.colorScheme.surface)
+                        ) {
+                            item {
+                                AuthorsRow(
+                                    viewModel = viewModel,
+                                    onAddAuthorClick = onAddAuthorClick
+                                )
+                            }
+                            
+                            items(filteredPosts.take(10)) { post ->
+                                PostCard(
+                                    viewModel = viewModel,
+                                    post = post,
+                                    onCommentClick = { onCommentClick(post.id) },
+                                    onAuthorClick = { userId ->
+                                        viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                    },
+                                    onShareClick = {
+                                        viewModel.setSharedContent(
+                                            SharedContent(
+                                                id = it.id,
+                                                type = ShareType.POST,
+                                                title = it.title ?: "Post by ${it.authorName}",
+                                                previewText = it.content.take(50)
                                             )
-                                            viewModel.showShareDialog(true)
-                                        },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    HorizontalDivider(
-                                        thickness = 1.dp,
-                                        color = MaterialTheme.colorScheme.surfaceVariant
-                                    )
-                                }
+                                        )
+                                        viewModel.showShareDialog(true)
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RectangleShape,
+                                    containerColor = Color.Transparent
+                                )
                             }
                         }
                     }

@@ -92,6 +92,11 @@ fun SettingsPage(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    IconButton(onClick = { viewModel.logoutUser(onLogoutClick) }) {
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Profile")
+                    }
+                },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -109,8 +114,8 @@ fun SettingsPage(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp), // Padding for the grouped cards
-            verticalArrangement = Arrangement.spacedBy(24.dp) // Space between setting groups
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -200,38 +205,22 @@ fun SettingsPage(
             }
 
             ListItem(
-                headlineContent = { Text("Log Out") },
-                leadingContent = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                headlineContent = { Text("Delete Account") },
+                leadingContent = {
+                    Icon(
+                        Icons.Default.DeleteForever,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                },
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
-                    .clickable { viewModel.logoutUser(onLogoutClick) },
+                    .clickable { showDeleteDialog = true },
                 colors = ListItemDefaults.colors(
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                     headlineColor = MaterialTheme.colorScheme.onErrorContainer
                 )
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            SettingsGroup(title = "Deletion") {
-                ListItem(
-                    headlineContent = { Text("Delete Account") },
-                    leadingContent = {
-                        Icon(
-                            Icons.Default.DeleteForever,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.error
-                        )
-                    },
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { showDeleteDialog = true },
-                    colors = ListItemDefaults.colors(
-                        containerColor = MaterialTheme.colorScheme.primaryFixedDim,
-                        headlineColor = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                )
-            }
         }
         if (showDeleteDialog) {
             AlertDialog(
@@ -304,7 +293,7 @@ fun SettingsPage(
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            viewModel.clearLocalDatabase()
+                            viewModel.deleteUserLocalData()
                             showClearDbDialog = false
                         },
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)

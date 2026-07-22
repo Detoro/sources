@@ -147,7 +147,6 @@ fun ChatInboxPage(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(title)
                                 val count = when (index) {
-                                    0 -> pendingRequestsCount
                                     1 -> pendingRequestsCount
                                     else -> 0
                                 }

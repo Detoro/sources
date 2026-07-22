@@ -40,7 +40,7 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("String", "BASE_API_URL","\"https://192.168.1.172:8080\"")
+            buildConfigField("String", "BASE_API_URL","\"https://sources-comic-server.onrender.com\"")
         }
         release {
             buildConfigField("String", "BASE_API_URL","\"https://sources-comic-server.onrender.com\"")
@@ -88,6 +88,7 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.converter.scalars)
     implementation(libs.coil.compose)
+    implementation(libs.coil.gif)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.retrofit2.kotlinx.serialization.converter)
@@ -101,6 +102,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.messaging)
+    implementation(libs.firebase.installations)
     implementation(libs.cloudinary.android)
     implementation(libs.glide)
     implementation(libs.androidx.constraintlayout)

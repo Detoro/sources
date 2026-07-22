@@ -40,6 +40,18 @@ fun OverviewPage(
     val comic by viewModel.currentComic.collectAsState()
     val chapters by viewModel.chapters.collectAsState()
     val userRating = comic?.rating ?: 0f
+    var expanded by remember { mutableStateOf(false) }
+    var dropDownSelection by remember { mutableStateOf("Latest First") }
+
+    val sortedChapters by remember {
+        derivedStateOf {
+            if (dropDownSelection == "Latest First") {
+                chapters.asReversed()
+            } else {
+                chapters
+            }
+        }
+    }
 
     var showActionSheet by remember { mutableStateOf(false) }
     var showShareDialog by remember { mutableStateOf(false) }
@@ -237,21 +249,53 @@ fun OverviewPage(
                 }
 
                 item {
-                    Text(
-                        text = "Chapters",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 24.dp)
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Chapters",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        Box {
+                            TextButton(
+                                onClick = { expanded = true }
+                            ) {
+                                Text(dropDownSelection)
+                            }
+                            DropdownMenu(
+                                expanded = expanded,
+                                onDismissRequest = { expanded = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Latest First") },
+                                    onClick = {
+                                        expanded = false
+                                        dropDownSelection = "Latest First"
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Oldest First") },
+                                    onClick = {
+                                        expanded = false
+                                        dropDownSelection = "Oldest First"
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
 
-                items(chapters) { chapter ->
+                items(sortedChapters, key = {chapter -> chapter.id}) { chapter ->
                     Box(modifier = Modifier.padding(horizontal = 16.dp)) {
                         ChapterRow(
                             chapter = chapter,
                             onClick = {
                                 onChapterClick(chapter)
-                                viewModel.markChapterAsRead(safeComic.id, chapter.id)
                             }
                         )
                     }

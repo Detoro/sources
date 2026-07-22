@@ -76,7 +76,6 @@ fun ComicSearchBottomSheet(
                 items(searchResults) { comic ->
                     ComicRow(
                         comic = comic,
-                        viewModel = viewModel,
                         onClick = {
                             viewModel.setSharedContent(
                                 SharedContent(

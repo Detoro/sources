@@ -19,8 +19,9 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.IO + job)
 
+    @Deprecated("Deprecated in Java")
     override fun onNewToken(token: String) {
-        super.onNewToken(token)
+        super.onRegistered(token)
         scope.launch {
             try {
                 RetrofitClient.comicApiService.registerFcmToken(FcmTokenRequest(token))
@@ -109,7 +110,7 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
         scope.launch {
             try {
                 val db = CanvasDatabase.getDatabase(applicationContext)
-                db.conversationDao().updateMessageDeliveryStatus(messageId, true)
+                db.chatMessageDao().updateMessageDeliveryStatus(messageId, true)
                 Log.i("FCM", "Successfully updated delivery status for message $messageId")
             } catch (e: Exception) {
                 Log.e("FCM", "Error updating delivery status", e)
@@ -121,7 +122,7 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
         scope.launch {
             try {
                 val db = CanvasDatabase.getDatabase(applicationContext)
-                db.conversationDao().updateMessageReadStatus(messageId, true)
+                db.chatMessageDao().updateMessageReadStatus(messageId, true)
                 Log.i("FCM", "Successfully updated read status for message $messageId via remote sync")
             } catch (e: Exception) {
                 Log.e("FCM", "Error updating read status", e)
@@ -145,7 +146,7 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
         scope.launch {
             try {
                 val db = CanvasDatabase.getDatabase(applicationContext)
-                db.conversationDao().deleteMessageById(messageId)
+                db.chatMessageDao().deleteMessageById(messageId)
                 Log.i("FCM", "Successfully deleted message $messageId via remote sync")
             } catch (e: Exception) {
                 Log.e("FCM", "Error deleting message", e)
@@ -157,7 +158,7 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
         scope.launch {
             try {
                 val db = CanvasDatabase.getDatabase(applicationContext)
-                db.conversationDao().updateMessageContent(messageId, newContent)
+                db.chatMessageDao().updateMessageContent(messageId, newContent)
                 Log.i("FCM", "Successfully updated content for message $messageId via remote sync")
             } catch (e: Exception) {
                 Log.e("FCM", "Error editing message content", e)

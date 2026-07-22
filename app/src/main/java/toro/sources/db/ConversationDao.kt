@@ -2,7 +2,6 @@ package toro.sources.db
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
-import com.toro.models.ChatMessage
 import com.toro.models.Conversation
 
 @Dao
@@ -19,6 +18,9 @@ interface ConversationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertConversation(conversation: Conversation)
 
+    @Query("UPDATE conversations SET backgroundImageUri = :uri WHERE conversationId = :conversationId")
+    suspend fun updateChatBackground(conversationId: String, uri: String?)
+
     @Delete
     suspend fun deleteConversation(conversation: Conversation)
 
@@ -27,32 +29,4 @@ interface ConversationDao {
 
     @Query("DELETE FROM conversations")
     suspend fun deleteAllConversations()
-
-    // Message methods
-    @Query("SELECT * FROM chat_messages WHERE conversationId = :conversationId ORDER BY timestamp DESC")
-    fun getMessagesForConversation(conversationId: String): Flow<List<ChatMessage>>
-
-    @Query("SELECT * FROM chat_messages WHERE isDelivered = 0 AND senderId = :userId")
-    suspend fun getPendingMessages(userId: String): List<ChatMessage>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMessages(messages: List<ChatMessage>)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMessage(message: ChatMessage)
-
-    @Query("DELETE FROM chat_messages WHERE id = :messageId")
-    suspend fun deleteMessageById(messageId: String)
-
-    @Query("DELETE FROM chat_messages WHERE conversationId = :conversationId")
-    suspend fun deleteMessagesForConversation(conversationId: String)
-
-    @Query("UPDATE chat_messages SET isDelivered = :delivered WHERE id = :messageId")
-    suspend fun updateMessageDeliveryStatus(messageId: String, delivered: Boolean)
-
-    @Query("UPDATE chat_messages SET isRead = :read WHERE id = :messageId")
-    suspend fun updateMessageReadStatus(messageId: String, read: Boolean)
-
-    @Query("UPDATE chat_messages SET content = :content WHERE id = :messageId")
-    suspend fun updateMessageContent(messageId: String, content: String)
 }

@@ -1,29 +1,34 @@
 package toro.sources.components
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
-import toro.sources.AppViewModel
 
 @Composable
-fun SmartContentPage(pageIndex: Int, viewModel: AppViewModel) {
-    val pageData by produceState<Any?>(initialValue = null, key1 = pageIndex) {
-        value = viewModel.getPageData(pageIndex)
-    }
-
-    if (pageData != null) {
-        AsyncImage(
-            model = pageData,
-            contentDescription = "Page $pageIndex",
-            contentScale = ContentScale.FillWidth,
-            modifier = Modifier.fillMaxWidth()
-        )
-    } else {
-        CircularProgressIndicator()
+fun SmartContentPage(pageIndex: Int, pageData: Any?) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(0.7f),
+        contentAlignment = Alignment.Center
+    ) {
+        if (pageData != null) {
+            AsyncImage(
+                model = pageData,
+                contentDescription = "Page $pageIndex",
+                contentScale = ContentScale.FillWidth,
+                modifier = Modifier.fillMaxWidth(),
+                onLoading = { /* Show something? */ },
+                onSuccess = { /* Done */ }
+            )
+        } else {
+            CircularProgressIndicator()
+        }
     }
 }

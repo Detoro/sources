@@ -139,7 +139,10 @@ interface ComicApiService {
     suspend fun declineChatRequest(@Path("requestId") requestId: String): ServerResponse
 
     @GET("api/chat/{conversationId}/messages")
-    suspend fun getChatMessages(@Path("conversationId") conversationId: String): List<ChatMessage>
+    suspend fun getChatMessages(
+        @Path("conversationId") conversationId: String,
+        @Query("since") since: Long? = null
+    ): List<ChatMessage>
 
     @DELETE("api/chat/{conversationId}/messages/{messageId}")
     suspend fun deleteMessage(

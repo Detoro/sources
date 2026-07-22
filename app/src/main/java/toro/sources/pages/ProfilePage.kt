@@ -265,7 +265,7 @@ fun ProfilePage(
                             ) {
                                 ProfileStat("Posts", profile.postsCount)
                                 if (profile.isAuthor) ProfileStat("Followers", profile.followersCount)
-                                ProfileStat("Friends", profile.friendsCount)
+                                ProfileStat("Friends", userFriendsCount)
                                 if (profile.isAuthor) ProfileStat("Works", profile.worksCount)
                             }
                         }
@@ -369,7 +369,7 @@ fun ProfilePage(
                                         items(userFriends) { chat ->
                                             FriendCard(
                                                 friend = chat,
-                                                onChatClick = { viewModel.handleNavigation("Screen.Chat.route/${chat.conversationId}") },
+                                                onChatClick = { viewModel.handleNavigation(Screen.Chat.createRoute(chat.conversationId)) },
                                                 onProfileClick = { viewModel.getUserProfile(chat.otherUserId) },
                                                 viewModel = viewModel
                                             )

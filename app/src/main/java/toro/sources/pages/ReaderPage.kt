@@ -44,7 +44,8 @@ import toro.sources.components.CommentsSection
 import toro.sources.components.MuteToggleButton
 import toro.sources.components.ReaderNavigationBar
 import toro.sources.components.SmartContentPage
-import toro.sources.components.ChapterBgmPlayer // Import the new player
+import toro.sources.components.ChapterBgmPlayer
+import toro.sources.components.ReaderHeaderBar
 import com.toro.models.Comic
 import com.toro.models.ScrollDirection
 
@@ -56,6 +57,7 @@ fun ReaderPage(
     viewModel: AppViewModel,
     chapterId: String,
     startingIndex: Int = 0,
+    onBack: () -> Unit = {},
     onPageChanged: (Int) -> Unit,
     onNextChapter: () -> Unit = {},
     onPreviousChapter: () -> Unit = {},
@@ -110,7 +112,18 @@ fun ReaderPage(
     LaunchedEffect(pagerState.currentPage) {
         if (pagerState.currentPage < pageCount) {
             onPageChanged(pagerState.currentPage)
+            viewModel.preloadAdjacentPages(pagerState.currentPage)
         }
+    }
+
+    // Preloading for vertical scroll
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex }
+            .collect {
+                if (comic.scrollDirection != ScrollDirection.HORIZONTAL.name) {
+                    viewModel.preloadAdjacentPages(listState.firstVisibleItemIndex)
+                }
+            }
     }
 
     var globalScale by remember { mutableFloatStateOf(1f) }
@@ -198,7 +211,7 @@ fun ReaderPage(
                     modifier = Modifier.fillMaxSize()
                 ) { pageIndex ->
                     if (pageIndex < pageCount) {
-                        SmartContentPage(pageIndex, viewModel)
+                        SmartContentPage(pageIndex, viewModel.getPageData(pageIndex))
                         val chapter = chapters.find { it.id == chapterId }
                         chapter?.lastReadPageIndex = pageIndex
                     } else {
@@ -215,10 +228,14 @@ fun ReaderPage(
                     state = listState,
                     modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)
                 ) {
-                    items(count = pageCount) { pageIndex ->
-                        SmartContentPage(pageIndex, viewModel)
+                    items(
+                        count = pageCount,
+                        key = { index -> "${chapterId}_$index" },
+                        contentType = { "page" }
+                    ) { pageIndex ->
+                        SmartContentPage(pageIndex, viewModel.getPageData(pageIndex))
                     }
-                    item {
+                    item(key = "comments", contentType = "comments") {
                         CommentsSection(
                             viewModel = viewModel,
                             onViewAllClick = { onViewAllComments(chapterId) },
@@ -229,6 +246,20 @@ fun ReaderPage(
                 }
             }
         }
+
+        AnimatedVisibility(
+            visible = isNavbarVisible,
+            enter = slideInVertically(initialOffsetY = { -it }),
+            exit = slideOutVertically(targetOffsetY = { -it }),
+            modifier = Modifier.align(Alignment.TopCenter)
+        ) {
+            ReaderHeaderBar(
+                comicTitle = comic.title,
+                chapterTitle = currentChapter?.chapterTitle ?: "Chapter",
+                onBack = onBack
+            )
+        }
+
         if (!currentChapter?.audioUrl.isNullOrBlank()) {
             MuteToggleButton(
                 isMuted = isMuted,

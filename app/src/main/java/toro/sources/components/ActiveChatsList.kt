@@ -37,7 +37,7 @@ fun ActiveChatsList(
                 },
                 leadingContent = { 
                     Box(modifier = Modifier.clickable { onProfileClick(otherUserId) }) {
-                        DefaultAvatar()
+                        DefaultAvatar(avatarUrl = chat.otherUserAvatarUrl)
                     }
                 },
                 modifier = Modifier.clickable { onChatClick(conversationId) }

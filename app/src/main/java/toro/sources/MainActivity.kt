@@ -370,10 +370,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                     onComicClick = { comic ->
                         navController.navigate(Screen.Overview.createRoute(comic.id))
                     },
-                    onAddComic = { navController.navigate(Screen.Search.route) },
-                    onAuthorClick = { author ->
-                        navController.navigate(Screen.Profile.createRoute(author.id))
-                    }
+                    onAddComic = { navController.navigate(Screen.Search.route) }
                 )
             }
             composable(Screen.Login.route) {
@@ -478,6 +475,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                             viewModel = viewModel,
                             chapterId = chapterId ?: "",
                             startingIndex = 0,
+                            onBack = { navController.popBackStack() },
                             onPageChanged = { newPageIndex ->
                                 if (chapterId != null) {
                                      viewModel.onPageTurned(chapterId, newPageIndex)
@@ -609,10 +607,11 @@ fun AppNavigation(viewModel: AppViewModel) {
                         navController.navigate(Screen.Profile.createRoute(authorId))
                     },
                     onComicClick = {
-                        navController.navigate(Screen.Overview.createRoute(comicId))
+                        viewModel.loadAndNavigateToComic(comicId)
                     },
                     onChapterClick = { chapter ->
                         navController.navigate(Screen.Reader.createRoute(chapter.id))
+                        viewModel.markChapterAsRead(comicId, chapter.id)
                     }
                 )
             }

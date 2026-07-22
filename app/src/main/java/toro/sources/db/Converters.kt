@@ -49,4 +49,14 @@ class Converters {
     fun toCreatorList(value: String): List<Creator> {
         return Json.decodeFromString<List<Creator>>(value)
     }
+
+    @TypeConverter
+    fun fromStringList(value: List<String>): String {
+        return Json.encodeToString<List<String>>(value)
+    }
+
+    @TypeConverter
+    fun toStringList(value: String): List<String> {
+        return Json.decodeFromString<List<String>>(value)
+    }
 }

@@ -17,29 +17,29 @@ import com.toro.models.Comment
 import com.toro.models.Notification
 import com.toro.models.Page
 import com.toro.models.Post
+import com.toro.models.UserProfile
+import toro.sources.SourcesCanvas
 import java.io.File
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
 class ComicRepository(
     private val context: Context,
-    private var comicDao: ComicDao,
-    private var chapterDao: ChapterDao,
-    private var conversationDao: ConversationDao,
-    private var notificationDao: NotificationDao,
-    private var commentDao: CommentDao,
-    private var postDao: PostDao,
     private val cbzParser: CbzParser,
     private val apiService: ComicApiService
 ) {
-    fun refreshDAOs() {
-        val db = CanvasDatabase.getDatabase(context)
-        comicDao = db.comicDao()
-        chapterDao = db.chapterDao()
-        conversationDao = db.conversationDao()
-        notificationDao = db.notificationDao()
-        commentDao = db.commentDao()
-        postDao = db.postDao()
-    }
+    private val database: CanvasDatabase
+        get() = (context.applicationContext as SourcesCanvas).database
+
+    private val comicDao get() = database.comicDao()
+    private val chapterDao get() = database.chapterDao()
+    private val conversationDao get() = database.conversationDao()
+    private val chatMessageDao get() = database.chatMessageDao()
+    private val notificationDao get() = database.notificationDao()
+    private val commentDao get() = database.commentDao()
+    private val postDao get() = database.postDao()
+    private val authorDao get() = database.authorDao()
+
     // new novels
     fun getMyLibrary(): Flow<List<Comic>> {
         return comicDao.getAllComics()
@@ -70,23 +70,15 @@ class ComicRepository(
         comicDao.updateSubscription(comicId, isSubscribed)
     }
 
-    suspend fun getPagesForChapter(chapterId: String, comicId: String): List<Page> {
-        val chapter = chapterDao.getChapterById(chapterId)
-        val comic = comicDao.getComicByIdSync(comicId)
+    suspend fun getPagesForChapter(chapterId: String, comicId: String, loadLocally: Boolean): List<Page> {
+        Log.i("Repository", "Fetching pages for Chapter ID: $chapterId (Local: $loadLocally)")
 
-        if (chapter == null) {
-            Log.e("Repository", "Chapter not found in local DB: $chapterId")
-            return emptyList()
-        }
-
-        Log.i("Repository", "Fetching pages for Chapter: ${chapter.chapterTitle}, ID: $chapterId")
-
-        val pages = if (comic?.isLocalSideload == true || chapter.isDownloaded) {
+        val pages = if (loadLocally) {
             getLocalPages(comicId, chapterId)
         } else {
             apiService.getPagesForChapter(chapterId)
         }
-        
+
         Log.i("Repository", "Found ${pages.size} pages")
         return pages
     }
@@ -135,10 +127,10 @@ class ComicRepository(
         try {
             chapterDao.deleteAllChapters()
             comicDao.deleteAllComics()
-            conversationDao.deleteAllConversations()
             notificationDao.deleteAllNotifications()
             commentDao.deleteAllComments()
             postDao.deleteAllPosts()
+            authorDao.deleteAllAuthors()
 
             withContext(Dispatchers.IO) {
                 val directory = File(context.filesDir, "sideloaded_comics")
@@ -146,6 +138,8 @@ class ComicRepository(
                     directory.deleteRecursively()
                 }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             Log.e("Repository", "Failed to clear all data", e)
         }
@@ -250,27 +244,39 @@ class ComicRepository(
     }
 
     fun getMessagesForConversation(conversationId: String): Flow<List<ChatMessage>> {
-        return conversationDao.getMessagesForConversation(conversationId)
+        return chatMessageDao.getMessagesForConversation(conversationId)
     }
 
     suspend fun saveConversations(conversations: List<Conversation>) {
         conversationDao.insertConversations(conversations)
     }
 
+    suspend fun updateChatBackground(conversationId: String, uri: String?) {
+        conversationDao.updateChatBackground(conversationId, uri)
+    }
+
     suspend fun saveMessages(messages: List<ChatMessage>) {
-        conversationDao.insertMessages(messages)
+        chatMessageDao.insertMessages(messages)
     }
 
     suspend fun saveMessage(message: ChatMessage) {
-        conversationDao.insertMessage(message)
+        chatMessageDao.insertMessage(message)
+    }
+
+    suspend fun getPendingMessages(userId: String): List<ChatMessage> {
+        return chatMessageDao.getPendingMessages(userId)
+    }
+
+    suspend fun getLastMessageTimestamp(conversationId: String): Long? {
+        return chatMessageDao.getLastMessageTimestamp(conversationId)
     }
 
     suspend fun deleteMessageById(messageId: String) {
-        conversationDao.deleteMessageById(messageId)
+        chatMessageDao.deleteMessageById(messageId)
     }
 
     suspend fun deleteMessagesForConversation(conversationId: String) {
-        conversationDao.deleteMessagesForConversation(conversationId)
+        chatMessageDao.deleteMessagesForConversation(conversationId)
     }
 
     suspend fun deleteConversationById(conversationId: String) {
@@ -278,15 +284,15 @@ class ComicRepository(
     }
 
     suspend fun updateMessageReadStatus(messageId: String, read: Boolean) {
-        conversationDao.updateMessageReadStatus(messageId, read)
+        chatMessageDao.updateMessageReadStatus(messageId, read)
     }
 
     suspend fun updateMessageDeliveryStatus(messageId: String, isDelivered: Boolean) {
-        conversationDao.updateMessageDeliveryStatus(messageId, isDelivered)
+        chatMessageDao.updateMessageDeliveryStatus(messageId, isDelivered)
     }
 
     suspend fun updateMessageContent(messageId: String, content: String) {
-        conversationDao.updateMessageContent(messageId, content)
+        chatMessageDao.updateMessageContent(messageId, content)
     }
 
     fun getNotifications(): Flow<List<Notification>> {
@@ -328,5 +334,18 @@ class ComicRepository(
     suspend fun deletePostById(postId: String) {
         postDao.deleteById(postId)
         apiService.deletePost(postId)
+    }
+
+    // authors
+    fun getSubscribedAuthors(): Flow<List<UserProfile>> {
+        return authorDao.getAllAuthors()
+    }
+
+    suspend fun saveAuthors(authors: List<UserProfile>) {
+        authorDao.insertAuthors(authors)
+    }
+
+    suspend fun deleteAllAuthors() {
+        authorDao.deleteAllAuthors()
     }
 }

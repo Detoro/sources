@@ -12,11 +12,21 @@ import com.toro.models.ChatMessage
 import com.toro.models.Notification
 import com.toro.models.Comment
 import com.toro.models.Post
+import com.toro.models.UserProfile
 import toro.sources.PreferenceManager
 
 @Database(
-    entities = [Comic::class, Chapter::class, Conversation::class, ChatMessage::class, Notification::class, Comment::class, Post::class],
-    version = 24,
+    entities = [
+        Comic::class,
+        Chapter::class,
+        Conversation::class,
+        ChatMessage::class,
+        Notification::class,
+        Comment::class,
+        Post::class,
+        UserProfile::class
+    ],
+    version = 28,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -25,19 +35,32 @@ abstract class CanvasDatabase : RoomDatabase() {
     abstract fun comicDao(): ComicDao
     abstract fun chapterDao(): ChapterDao
     abstract fun conversationDao(): ConversationDao
+    abstract fun chatMessageDao(): ChatMessageDao
     abstract fun notificationDao(): NotificationDao
     abstract fun commentDao(): CommentDao
     abstract fun postDao(): PostDao
+    abstract fun authorDao(): AuthorDao
 
     companion object {
         @Volatile
         private var INSTANCE: CanvasDatabase? = null
 
         fun getDatabase(context: Context): CanvasDatabase {
-            return INSTANCE ?: synchronized(this) {
+            INSTANCE?.let { return it }
+
+            synchronized(this) {
+                // Re-check inside the lock: another thread may have already
+                // built the instance while we were waiting for the lock.
+                INSTANCE?.let { return it }
+
                 val prefs = PreferenceManager(context)
                 val userId = prefs.getUserDataSync().userId
-                val dbName = if (userId != null) "graphic_novel_database_$userId" else "graphic_novel_database"
+
+                val dbName = if (userId != null) {
+                    "graphic_novel_database_$userId"
+                } else {
+                    "graphic_novel_database_guest"
+                }
 
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
@@ -48,7 +71,7 @@ abstract class CanvasDatabase : RoomDatabase() {
                     .build()
 
                 INSTANCE = instance
-                instance
+                return instance
             }
         }
 
@@ -56,6 +79,18 @@ abstract class CanvasDatabase : RoomDatabase() {
             synchronized(this) {
                 INSTANCE?.close()
                 INSTANCE = null
+            }
+        }
+
+        fun deleteDatabase(context: Context, userId: String?) {
+            synchronized(this) {
+                resetDatabase()
+                val dbName = if (userId != null) {
+                    "graphic_novel_database_$userId"
+                } else {
+                    "graphic_novel_database_guest"
+                }
+                context.deleteDatabase(dbName)
             }
         }
     }

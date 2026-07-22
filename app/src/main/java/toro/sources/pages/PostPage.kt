@@ -49,12 +49,13 @@ fun PostPage(
                 supportTitle = true,
                 supportUpload = true,
                 viewModel = viewModel,
-                onSend = { title, text, mentions, _, _, isSpoiler ->
+                onSend = { title, text, mentions, _, attachment, isSpoiler ->
                     viewModel.makePost(
                         title = title,
                         isSpoiler = isSpoiler,
                         postContent = text,
-                        tags = mentions
+                        tags = mentions,
+                        attachment = attachment
                     )
                 },
                 onTitleChange = { postTitle = it },

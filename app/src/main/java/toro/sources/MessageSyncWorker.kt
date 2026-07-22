@@ -19,7 +19,7 @@ class MessageSyncWorker(
             val db = CanvasDatabase.getDatabase(applicationContext)
             val myUserId = RetrofitClient.preferenceManager.getUserDataSync().userId
 
-            val pendingMessages = db.conversationDao().getPendingMessages(myUserId ?: "")
+            val pendingMessages = db.chatMessageDao().getPendingMessages(myUserId ?: "")
 
             if (pendingMessages.isEmpty()) {
                 return@withContext Result.success()
@@ -31,7 +31,7 @@ class MessageSyncWorker(
 
             if (response.isSuccessful) {
                 pendingMessages.forEach { msg ->
-                    db.conversationDao().updateMessageDeliveryStatus(msg.id, true)
+                    db.chatMessageDao().updateMessageDeliveryStatus(msg.id, true)
                 }
                 Log.i("MessageSync", "Successfully synced all pending messages")
                 Result.success()

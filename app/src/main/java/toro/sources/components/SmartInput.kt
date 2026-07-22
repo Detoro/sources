@@ -2,6 +2,7 @@ package toro.sources.components
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -32,6 +33,7 @@ import com.toro.models.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SmartInput(
+    modifier: Modifier = Modifier,
     title: String? = null,
     onTitleChange: ((String) -> Unit)? = null,
     supportTitle: Boolean = false,
@@ -55,7 +57,7 @@ fun SmartInput(
     }
 
     val userSuggestions by viewModel.userSuggestions.collectAsState()
-    val comicSuggestions by viewModel.catalog.collectAsState()
+    val comicSuggestions by viewModel.onlineLibrary.collectAsState()
     val comic by viewModel.currentComic.collectAsState()
     val sharedContent by viewModel.sharedContent.collectAsState()
 
@@ -68,13 +70,13 @@ fun SmartInput(
     LaunchedEffect(sharedContent) {
         sharedContent?.let { content ->
             if (content.type == ShareType.COMIC) {
-                viewModel.getComicById(content.id)
+                viewModel.loadComicById(content.id)
             }
         }
     }
 
     val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? -> selectedUri = uri }
 
     LaunchedEffect(inputText) {
@@ -92,10 +94,9 @@ fun SmartInput(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp)
-            .imePadding(),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.Bottom
     ) {
         // Mentions & Suggestions Floating Surface
@@ -153,6 +154,8 @@ fun SmartInput(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (selectedUri != null) {
+                            val isVideo = selectedUri?.toString()?.contains("video") == true || selectedUri?.toString()?.endsWith(".mp4") == true
+                            
                             AsyncImage(
                                 model = selectedUri,
                                 contentDescription = "Attachment",
@@ -162,7 +165,7 @@ fun SmartInput(
                                 contentScale = ContentScale.Crop
                             )
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text("Image Attached", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                            Text(if (isVideo) "Video Attached" else "Image Attached", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                             IconButton(onClick = { selectedUri = null }) {
                                 Icon(Icons.Default.Close, contentDescription = "Remove")
                             }
@@ -238,8 +241,10 @@ fun SmartInput(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (supportUpload) {
-                        IconButton(onClick = { launcher.launch("image/*") }) {
-                            Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Upload Image", tint = MaterialTheme.colorScheme.primary)
+                        IconButton(onClick = { 
+                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) 
+                        }) {
+                            Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Upload Media", tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                     IconButton(onClick = { showAttachComicSheet = true }) {

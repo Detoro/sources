@@ -24,11 +24,7 @@ fun SuggestionItem(title: String, imageUrl: String?, onClick: () -> Unit) {
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (imageUrl != null) {
-            AsyncImage(model = imageUrl, contentDescription = null, modifier = Modifier.size(32.dp).clip(CircleShape), contentScale = ContentScale.Crop)
-        } else {
-            DefaultAvatar(modifier = Modifier.size(32.dp))
-        }
+        DefaultAvatar(avatarUrl = imageUrl, modifier = Modifier.size(32.dp))
         Spacer(modifier = Modifier.width(12.dp))
         Text(title)
     }

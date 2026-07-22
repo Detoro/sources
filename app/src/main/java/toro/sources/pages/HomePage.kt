@@ -38,8 +38,8 @@ fun HomePage(
     onAccountClick: () -> Unit,
     onNotificationsClick: () -> Unit
 ) {
-    val libraryList by viewModel.myLibrary.collectAsState()
-    val catalog by viewModel.catalog.collectAsState()
+    val localCatalog by viewModel.localLibrary.collectAsState()
+    val onlineCatalog by viewModel.onlineLibrary.collectAsState()
     val trending by viewModel.trending.collectAsState()
     val recentlyRead by viewModel.recentlyReadComics.collectAsState()
     val communityPosts by viewModel.communityPosts.collectAsState()
@@ -101,7 +101,7 @@ fun HomePage(
             )
         }
     ) { paddingValues ->
-        if (libraryList.isEmpty() && catalog.isEmpty()) {
+        if (localCatalog.isEmpty() && onlineCatalog.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -141,11 +141,11 @@ fun HomePage(
                         }
                     }
 
-                    if (libraryList.isNotEmpty()) {
+                    if (localCatalog.isNotEmpty()) {
                         item {
                             ComicCarousel(
                                 title = "From Your Device",
-                                comics = libraryList,
+                                comics = localCatalog,
                                 viewModel = viewModel,
                                 onComicClick = onComicClick
                             )
@@ -237,7 +237,7 @@ fun HomePage(
                     item {
                         ComicCarousel(
                             title = "For You",
-                            comics = catalog.shuffled().take(5),
+                            comics = onlineCatalog,
                             viewModel = viewModel,
                             onComicClick = onComicClick
                         )

@@ -1,7 +1,6 @@
 package toro.sources.pages
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,21 +37,17 @@ fun ActivityPage(
     viewModel: AppViewModel,
     onComicClick: (Comic) -> Unit,
     onAddComic: () -> Unit,
-    onAuthorClick: (UserProfile) -> Unit
 ) {
     val subscribed by viewModel.subscribedComics.collectAsState()
     val recentlyRead by viewModel.recentlyReadComics.collectAsState()
-    val authors by viewModel.subscribedAuthors.collectAsState()
     val comments by viewModel.combinedComments.collectAsStateWithLifecycle()
 
     ActivityContent(
         subscribedComics = subscribed,
         recentlyReadComics = recentlyRead,
         comments = comments,
-        subscribedAuthors = authors,
         onComicClick = onComicClick,
         onAddComic = onAddComic,
-        onAuthorClick = onAuthorClick,
         viewModel = viewModel
     )
 }
@@ -63,15 +58,13 @@ fun ActivityContent(
     subscribedComics: List<Comic>,
     recentlyReadComics: List<Comic>,
     comments: List<Comment>,
-    subscribedAuthors: List<UserProfile>,
     onComicClick: (Comic) -> Unit,
     onAddComic: () -> Unit,
-    onAuthorClick: (UserProfile) -> Unit,
     viewModel: AppViewModel? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
     var dropDownSelection by remember { mutableStateOf("Recently Updated") }
-    val tabs = listOf("Recents", "Subscribed", "Comments", "Authors")
+    val tabs = listOf("Recents", "Subscribed", "Comments")
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
 
@@ -116,12 +109,11 @@ fun ActivityContent(
                                     0 -> recentlyReadComics.size
                                     1 -> subscribedComics.size
                                     2 -> comments.size
-                                    3 -> subscribedAuthors.size
                                     else -> 0
                                 }
                                 if (count > 0) {
                                     Spacer(Modifier.width(8.dp))
-                                    Badge(contentColor = Color.DarkGray) { Text(count.toString()) }
+                                    Badge(containerColor = Color.Blue, contentColor = Color.DarkGray) { Text(count.toString()) }
                                 }
                             }
                         }
@@ -193,7 +185,7 @@ fun ActivityContent(
 
                             items(sortedList) { comic ->
                                 if (viewModel != null) {
-                                    ComicRow(comic, viewModel, onComicClick)
+                                    ComicRow(comic, onComicClick)
                                     HorizontalDivider()
                                 } else {
                                     ListItem(
@@ -239,32 +231,6 @@ fun ActivityContent(
                                     ) {
                                         Text(
                                             "No comments found.",
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                        3 -> {
-                            items(subscribedAuthors) { author ->
-                                ListItem(
-                                    headlineContent = { Text(author.username) },
-                                    supportingContent = { Text(author.bio ?: "No bio available") },
-                                    modifier = Modifier.clickable { onAuthorClick(author) }
-                                )
-                                HorizontalDivider()
-                            }
-                            if (subscribedAuthors.isEmpty()) {
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillParentMaxSize()
-                                            .padding(32.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            "No authors followed.",
                                             style = MaterialTheme.typography.bodyLarge,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )

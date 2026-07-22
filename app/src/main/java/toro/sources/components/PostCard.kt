@@ -4,17 +4,23 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import toro.sources.AppViewModel
 import toro.sources.Screen
 import com.toro.models.Post
@@ -28,14 +34,16 @@ fun PostCard(
     onCommentClick: () -> Unit,
     modifier: Modifier = Modifier,
     onAuthorClick: (String) -> Unit = {},
-    onShareClick: (Post) -> Unit = {}
+    onShareClick: (Post) -> Unit = {},
+    shape: Shape = RoundedCornerShape(24.dp),
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainerLow
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = shape,
+        color = containerColor,
         shadowElevation = 0.dp
     ) {
         Column(
@@ -114,7 +122,7 @@ fun PostCard(
                     type = sharedType,
                     title = post.title ?: "Shared ${sharedType.name.lowercase()}",
                     previewText = "Tap to view details",
-                    imageUrl = post.authorAvatarUrl,
+                    imageUrl = post.sharedImageUrl,
                     modifier = Modifier.padding(bottom = 16.dp),
                     onClick = {
                         when (sharedType) {
@@ -125,6 +133,49 @@ fun PostCard(
                         }
                     }
                 )
+            }
+
+            post.imageUrls.forEach { imageUrl ->
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = "Post Image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .padding(bottom = 16.dp),
+                    contentScale = ContentScale.FillWidth
+                )
+            }
+
+            post.videoUrls.forEach { videoUrl ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.Black)
+                        .padding(bottom = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = videoUrl,
+                        contentDescription = "Post Video",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    Surface(
+                        color = Color.Black.copy(alpha = 0.5f),
+                        shape = CircleShape,
+                        modifier = Modifier.size(64.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Play",
+                            tint = Color.White,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                }
             }
 
             var isExpanded by remember { mutableStateOf(false) }

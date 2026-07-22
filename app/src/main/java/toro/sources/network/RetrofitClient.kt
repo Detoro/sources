@@ -113,6 +113,11 @@ object RetrofitClient {
         .writeTimeout(15, TimeUnit.SECONDS)
         .build()
 
+    private val webSocketClient = okHttpClient.newBuilder()
+        .readTimeout(0, TimeUnit.MILLISECONDS)
+        .pingInterval(15, TimeUnit.SECONDS)
+        .build()
+
     private val retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BuildConfig.BASE_API_URL)
@@ -130,6 +135,6 @@ object RetrofitClient {
             .url("wss://sources-comic-server.onrender.com/api/chat/stream")
             .build()
 
-        return okHttpClient.newWebSocket(request, listener)
+        return webSocketClient.newWebSocket(request, listener)
     }
 }
