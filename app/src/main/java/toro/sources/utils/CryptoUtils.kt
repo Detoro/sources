@@ -37,6 +37,7 @@ object CryptoUtils {
     }
 
     fun decrypt(encryptedText: String): String {
+        if (encryptedText.isEmpty()) return ""
         try {
             val combined = Base64.decode(encryptedText, Base64.DEFAULT)
             

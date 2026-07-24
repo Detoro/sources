@@ -264,8 +264,8 @@ class ComicRepository(
         chatMessageDao.insertMessage(message)
     }
 
-    suspend fun getPendingMessages(userId: String): List<ChatMessage> {
-        return chatMessageDao.getPendingMessages(userId)
+    suspend fun getPendingMessages(): List<ChatMessage> {
+        return chatMessageDao.getPendingMessages()
     }
 
     suspend fun getLastMessageTimestamp(conversationId: String): Long? {

@@ -1,6 +1,5 @@
 package toro.sources.session
 
-import android.content.Context
 import com.google.firebase.messaging.FirebaseMessaging
 import com.toro.models.UserProfile
 import kotlinx.coroutines.Dispatchers
@@ -11,8 +10,7 @@ import toro.sources.PreferenceManager
 import toro.sources.db.CanvasDatabase
 
 class SessionManager(
-    private val preferenceManager: PreferenceManager,
-    private val context: Context
+    private val preferenceManager: PreferenceManager
 ) {
     private val _userProfile = MutableStateFlow<UserProfile?>(null)
     val userProfile = _userProfile.asStateFlow()
@@ -30,7 +28,7 @@ class SessionManager(
     }
 
     suspend fun updateUserProfile(profile: UserProfile?) = withContext(Dispatchers.IO) {
-        if (profile == null) clearSession(null)
+        if (profile == null) clearSession()
         _userProfile.value = profile
         preferenceManager.saveUserData(
             profile?.id ?: "",
@@ -46,10 +44,9 @@ class SessionManager(
             CanvasDatabase.resetDatabase()
         }
 
-    suspend fun clearSession(userId: String?) = withContext(Dispatchers.IO) {
+    suspend fun clearSession() = withContext(Dispatchers.IO) {
         preferenceManager.clearTokens()
         FirebaseMessaging.getInstance().unregister()
-        CanvasDatabase.deleteDatabase(context, userId)
         CanvasDatabase.resetDatabase()
     }
 

@@ -50,11 +50,13 @@ import toro.sources.components.ChatRequestsList
 import toro.sources.components.ActiveChatsList
 import toro.sources.R
 import toro.sources.viewmodel.ChatViewModel
+import toro.sources.viewmodel.SessionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatInboxPage(
     chatViewModel: ChatViewModel,
+    sessionViewModel: SessionViewModel,
     onChatClick: (String) -> Unit,
     onFriendRequest: () -> Unit,
     onProfileClick: (String) -> Unit
@@ -170,6 +172,7 @@ fun ChatInboxPage(
                     0 -> {
                         ActiveChatsList(
                             chatViewModel = chatViewModel,
+                            sessionViewModel = sessionViewModel,
                             onChatClick = onChatClick,
                             onProfileClick = onProfileClick,
                             onArchive = {},

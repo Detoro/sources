@@ -37,7 +37,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.toro.models.ShareType
+import com.toro.models.*
 import kotlinx.coroutines.delay
 import toro.sources.components.ChatBubble
 import toro.sources.components.SmartInput
@@ -73,7 +73,7 @@ fun ChatThreadPage(
     val activeChat = remember(conversationId, inbox) {
         inbox.find { it.conversationId == conversationId }
     }
-    val targetUserId = activeChat?.otherUserId ?: ""
+    val targetUserId = activeChat?.otherUser?.userId ?: ""
 
     var debouncedSearchQuery by remember { mutableStateOf("") }
     LaunchedEffect(searchQuery) {
@@ -180,7 +180,7 @@ fun ChatThreadPage(
                                         contentPadding = PaddingValues(horizontal = 8.dp)
                                     ) {
                                         Text(
-                                            text = activeChat?.otherUserName ?: "Friend",
+                                            text = activeChat?.otherUser?.username ?: "Friend",
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface
@@ -321,7 +321,7 @@ fun ChatThreadPage(
 
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = if (replyTarget.senderId == me?.id) "You" else "${activeChat?.otherUserName}",
+                                                text = if (replyTarget.senderId == me?.id) "You" else activeChat?.otherUser?.username ?: "Friend",
                                                 style = MaterialTheme.typography.labelMedium,
                                                 color = MaterialTheme.colorScheme.primary
                                             )
@@ -374,16 +374,26 @@ fun ChatThreadPage(
                                         )
                                         chatViewModel.setEditingMessage(null)
                                     } else if (targetUserId.isNotEmpty()) {
+                                        val content = when {
+                                            sharedContent != null -> MessageContent.Shared(
+                                                id = sharedContent!!.id,
+                                                type = sharedContent!!.type
+                                            )
+                                            sharedComicIds.isNotEmpty() -> MessageContent.Shared(
+                                                id = sharedComicIds.first(),
+                                                type = ShareType.COMIC
+                                            )
+                                            else -> MessageContent.Text(text)
+                                        }
+
                                         chatViewModel.sendMessage(
-                                            conversationId,
-                                            text,
+                                            conversationId = conversationId,
+                                            content = content,
                                             isSpoiler = isSpoiler,
-                                            sharedId = sharedContent?.id,
-                                            sharedType = sharedContent?.type,
-                                            sharedComicId = sharedComicIds.firstOrNull(),
                                             receiverId = targetUserId,
-                                            receiverName = activeChat?.otherUserName
+                                            receiverName = activeChat?.otherUser?.username
                                         )
+                                        sessionViewModel.setSharedContent(null)
                                     }
                                 },
                                 initialText = editingMessage?.content ?: "",

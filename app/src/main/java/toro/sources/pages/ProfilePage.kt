@@ -380,7 +380,7 @@ fun ProfilePage(
                                             FriendCard(
                                                 friend = chat,
                                                 onChatClick = { sessionViewModel.handleNavigation(Screen.Chat.createRoute(chat.conversationId)) },
-                                                onProfileClick = { profileViewModel.getUserProfile(chat.otherUserId) }
+                                                onProfileClick = { profileViewModel.getUserProfile(chat.otherUser.userId) }
                                             )
                                         }
                                     }
@@ -463,9 +463,9 @@ private fun FriendCard(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
             ) {
-                if (friend.otherUserAvatarUrl != null) {
+                if (friend.otherUser.avatarUrl != null) {
                     AsyncImage(
-                        model = friend.otherUserAvatarUrl,
+                        model = friend.otherUser.avatarUrl,
                         contentDescription = "Avatar",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
@@ -473,7 +473,7 @@ private fun FriendCard(
                 } else {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Text(
-                            text = friend.otherUserName.first().uppercase(),
+                            text = friend.otherUser.username.firstOrNull()?.uppercase() ?: "",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -487,16 +487,17 @@ private fun FriendCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = friend.otherUserName,
+                    text = friend.otherUser.username,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                if (!friend.lastMessage.isNullOrBlank()) {
+                val lastMsg = friend.lastMessage
+                if (lastMsg != null) {
                     Text(
-                        text = friend.lastMessage ?: "Start a conversation",
+                        text = lastMsg.content,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,

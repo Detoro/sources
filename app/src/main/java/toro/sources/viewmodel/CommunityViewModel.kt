@@ -48,7 +48,7 @@ class CommunityViewModel @Inject constructor(
                 _communityState.update { it.copy(posts = posts, isLoading = false) }
                 posts.forEach { repository.savePost(it) }
             } catch (e: Exception) {
-                _communityState.update { it.copy(isLoading = false, errorMessage = e.message) }
+                _communityState.update { it.copy(isLoading = false, errorMessage = "Failed to fetch posts: ${e.message}") }
             }
         }
     }
@@ -89,7 +89,7 @@ class CommunityViewModel @Inject constructor(
                 getCommunityPosts()
                 shareCoordinator.setSharedContent(null)
             } catch (e: Exception) {
-                _communityState.update { it.copy(errorMessage = "Failed to make post") }
+                _communityState.update { it.copy(errorMessage = "Failed to make post: ${e.message}") }
             }
         }
     }
@@ -100,7 +100,9 @@ class CommunityViewModel @Inject constructor(
                 val comments = withContext(Dispatchers.IO) { RetrofitClient.comicApiService.getPostComments(postId) }
                 _postComments.value = comments
                 comments.forEach { repository.saveComment(it) }
-            } catch (e: Exception) { }
+            } catch (e: Exception) {
+                _communityState.update { it.copy(errorMessage = "Failed to fetch comments: ${e.message}") }
+            }
         }
     }
 
@@ -110,7 +112,9 @@ class CommunityViewModel @Inject constructor(
                 val comments = withContext(Dispatchers.IO) { RetrofitClient.comicApiService.getChapterComments(chapterId) }
                 _chapterComments.value = comments
                 comments.forEach { repository.saveComment(it) }
-            } catch (e: Exception) { }
+            } catch (e: Exception) {
+                _communityState.update { it.copy(errorMessage = "Failed to fetch comments: ${e.message}") }
+            }
         }
     }
 
@@ -121,7 +125,9 @@ class CommunityViewModel @Inject constructor(
                 val request = CommentRequest(content, isSpoiler, muids, paid, shared?.id, shared?.type, shared?.title, shared?.previewText)
                 RetrofitClient.comicApiService.addPostComment(postId, request)
                 getPostComments(postId)
-            } catch (e: Exception) { }
+            } catch (e: Exception) {
+                _communityState.update { it.copy(errorMessage = "Failed to add comment: ${e.message}") }
+            }
         }
     }
 
@@ -132,7 +138,9 @@ class CommunityViewModel @Inject constructor(
                 val request = CommentRequest(content, isSpoiler, muids, paid, shared?.id, shared?.type, shared?.title, shared?.previewText)
                 RetrofitClient.comicApiService.addChapterComment(chapterId, request)
                 getChapterComments(chapterId)
-            } catch (e: Exception) { }
+            } catch (e: Exception) {
+                _communityState.update { it.copy(errorMessage = "Failed to add comment: ${e.message}") }
+            }
         }
     }
 
@@ -195,7 +203,9 @@ class CommunityViewModel @Inject constructor(
                     RetrofitClient.comicApiService.deletePost(postId)
                 }
                 getCommunityPosts()
-            } catch (e: Exception) { }
+            } catch (e: Exception) {
+                _communityState.update { it.copy(errorMessage = "Failed to delete post: ${e.message}") }
+            }
         }
     }
 
@@ -208,7 +218,9 @@ class CommunityViewModel @Inject constructor(
                     repository.deleteCommentById(commentId)
                 }
                 if (location == CommentLocation.ON_CHAPTER) getChapterComments(typeId) else getPostComments(typeId)
-            } catch (e: Exception) { }
+            } catch (e: Exception) {
+                _communityState.update { it.copy(errorMessage = "Failed to delete comment: ${e.message}") }
+            }
         }
     }
 
@@ -223,7 +235,7 @@ class CommunityViewModel @Inject constructor(
                 withContext(Dispatchers.IO) { RetrofitClient.comicApiService.submitReport(request) }
                 onSuccess()
             } catch (e: Exception) {
-                _communityState.update { it.copy(errorMessage = "Report failed") }
+                _communityState.update { it.copy(errorMessage = "Report failed: ${e.message}") }
             }
         }
     }

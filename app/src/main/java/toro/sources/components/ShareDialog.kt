@@ -78,12 +78,12 @@ fun ShareDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             DefaultAvatar(
-                                avatarUrl = conversation.otherUserAvatarUrl,
+                                avatarUrl = conversation.otherUser.avatarUrl,
                                 size = 48
                             )
                             Spacer(modifier = Modifier.width(16.dp))
                             Text(
-                                text = conversation.otherUserName,
+                                text = conversation.otherUser.username,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold
                             )

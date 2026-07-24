@@ -62,7 +62,6 @@ class AuthViewModel @Inject constructor(
 
     fun logoutUser(onLogoutComplete: () -> Unit) {
         viewModelScope.launch {
-            val userId = sessionManager.userProfile.value?.id
             try {
                 val refreshToken = RetrofitClient.preferenceManager.getRefreshTokenSync()
                 if (refreshToken != null) {
@@ -71,7 +70,7 @@ class AuthViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Logout failed", e)
             } finally {
-                sessionManager.clearSession(userId)
+                sessionManager.clearSession()
                 sessionManager.updateUserProfile(null)
                 chatConnectionManager.disconnect()
                 _authState.update { AuthUiState() }

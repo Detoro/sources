@@ -583,6 +583,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 val chatViewModel: ChatViewModel = hiltViewModel()
                 ChatInboxPage(
                     chatViewModel = chatViewModel,
+                    sessionViewModel = sessionViewModel,
                     onChatClick = { cId ->
                         navController.navigate(Screen.Chat.createRoute(cId))
                     },
