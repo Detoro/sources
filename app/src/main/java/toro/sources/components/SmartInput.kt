@@ -26,9 +26,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
-import toro.sources.AppViewModel
 import com.toro.models.*
+import toro.sources.viewmodel.SessionViewModel
+import toro.sources.viewmodel.ComicsViewModel
+import toro.sources.viewmodel.CommunityViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +45,9 @@ fun SmartInput(
     initialText: String = "",
     placeholder: String = "Type a message...",
     supportUpload: Boolean = false,
-    viewModel: AppViewModel,
+    communityViewModel: CommunityViewModel = hiltViewModel(),
+    comicsViewModel: ComicsViewModel = hiltViewModel(),
+    sessionViewModel: SessionViewModel,
     onValueChange: ((String?, String) -> Unit)? = null,
     maxChars: Int = 1000
 ) {
@@ -56,10 +61,10 @@ fun SmartInput(
         onValueChange?.invoke(titleText, inputText)
     }
 
-    val userSuggestions by viewModel.userSuggestions.collectAsState()
-    val comicSuggestions by viewModel.onlineLibrary.collectAsState()
-    val comic by viewModel.currentComic.collectAsState()
-    val sharedContent by viewModel.sharedContent.collectAsState()
+    val userSuggestions by communityViewModel.userSuggestions.collectAsState()
+    val comicSuggestions by comicsViewModel.onlineLibrary.collectAsState()
+    val comic by comicsViewModel.currentComic.collectAsState()
+    val sharedContent by sessionViewModel.sharedContent.collectAsState()
 
     var showMentions by remember { mutableStateOf(false) }
     var showComicSearch by remember { mutableStateOf(false) }
@@ -70,7 +75,7 @@ fun SmartInput(
     LaunchedEffect(sharedContent) {
         sharedContent?.let { content ->
             if (content.type == ShareType.COMIC) {
-                viewModel.loadComicById(content.id)
+                comicsViewModel.setCurrentComic(Comic(id = content.id, title = content.title, description = "", coverImageUrl = ""))
             }
         }
     }
@@ -84,7 +89,7 @@ fun SmartInput(
         val lastWord = inputText.substringAfterLast(' ', inputText)
         if (lastWord.startsWith("@")) {
             val searchQuery = lastWord.removePrefix("@")
-            viewModel.searchUsers(searchQuery)
+            communityViewModel.searchUsers(searchQuery)
             showMentions = true
             showComicSearch = false
         } else {
@@ -142,7 +147,7 @@ fun SmartInput(
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
 
-                // 1. Attachments Preview Area
+                // Attachments Preview Area
                 if (sharedContent != null || selectedUri != null) {
                     Row(
                         modifier = Modifier
@@ -187,19 +192,19 @@ fun SmartInput(
                             } else {
                                 SharedContentPlaceholder(
                                     type = sharedContent!!.type,
-                                    title = "Nothing",
-                                    previewText = "Next to nothing",
+                                    title = sharedContent!!.title,
+                                    previewText = sharedContent!!.previewText,
                                     onClick = { },
                                     modifier = Modifier.weight(1f))
                             }
-                            IconButton(onClick = { viewModel.setSharedContent(null) }) {
+                            IconButton(onClick = { sessionViewModel.setSharedContent(null) }) {
                                 Icon(Icons.Default.Close, contentDescription = "Remove")
                             }
                         }
                     }
                 }
 
-                // 2. Title Field (If needed)
+                // Title Field
                 if (supportTitle) {
                     TextField(
                         value = titleText,
@@ -217,7 +222,7 @@ fun SmartInput(
                     )
                 }
 
-                // 3. Main Text Body
+                // Main Text Body
                 TextField(
                     value = inputText,
                     onValueChange = { if (it.length <= maxChars) inputText = it },
@@ -235,7 +240,7 @@ fun SmartInput(
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default)
                 )
 
-                // 4. Action Toolbar
+                // Action Toolbar
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -279,7 +284,7 @@ fun SmartInput(
                                 mentionedUserIds.clear()
                                 sharedComicIds.clear()
                                 isSpoiler = false
-                                viewModel.setSharedContent(null)
+                                sessionViewModel.setSharedContent(null)
                             }
                         },
                         colors = IconButtonDefaults.iconButtonColors(
@@ -295,7 +300,11 @@ fun SmartInput(
         }
 
         if (showAttachComicSheet) {
-            ComicSearchBottomSheet(viewModel, onDismiss = { showAttachComicSheet = false })
+            ComicSearchBottomSheet(
+                comicsViewModel = comicsViewModel,
+                sessionViewModel = sessionViewModel,
+                onDismiss = { showAttachComicSheet = false }
+            )
         }
     }
 }

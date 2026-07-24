@@ -23,7 +23,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -31,56 +30,65 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.toro.models.ChatMessage
 import com.toro.models.ShareType
-import kotlinx.coroutines.launch
-import toro.sources.AppViewModel
 import toro.sources.Screen
-import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.text.style.TextOverflow
+import toro.sources.viewmodel.ChatViewModel
+import toro.sources.viewmodel.ComicsViewModel
+import toro.sources.viewmodel.ProfileViewModel
+import toro.sources.viewmodel.SessionViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatBubble(
     message: ChatMessage,
     isFromMe: Boolean,
-    viewModel: AppViewModel,
+    chatViewModel: ChatViewModel,
+    comicsViewModel: ComicsViewModel,
+    sessionViewModel: SessionViewModel,
+    profileViewModel: ProfileViewModel,
     showStatus: Boolean = false,
+    repliedMessage: ChatMessage? = null,
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
     val actualSharedId = message.sharedId ?: message.sharedComicId
     val actualSharedType = if (message.sharedId != null) message.sharedType else if (message.sharedComicId != null) ShareType.COMIC else null
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
-    val coroutineScope = rememberCoroutineScope()
 
-    val text = remember(message.content, message.isEncrypted) {
-        if (message.isEncrypted) viewModel.decryptMessage(message.content) else message.content
+    val text = remember(message.content) {
+        message.content
     }
 
-    val dismissState = rememberSwipeToDismissBoxState(
-        positionalThreshold = { totalDistance -> totalDistance * 0.2f }
-    )
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    LaunchedEffect(dismissState.currentValue) {
+        when (dismissState.currentValue) {
+            SwipeToDismissBoxValue.StartToEnd -> {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                chatViewModel.setReplyTarget(message)
+            }
+            SwipeToDismissBoxValue.EndToStart -> {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                chatViewModel.setReplyTarget(message)
+            }
+            SwipeToDismissBoxValue.Settled -> {}
+        }
+    }
 
     SwipeToDismissBox(
         state = dismissState,
+        enableDismissFromStartToEnd = true,
         enableDismissFromEndToStart = false,
-        onDismiss = { dismissValue ->
-            if (dismissValue == SwipeToDismissBoxValue.StartToEnd) {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                viewModel.setReplyTarget(message)
-
-                coroutineScope.launch {
-                    dismissState.reset()
-                }
-            }
-        },
         backgroundContent = {}
-    ){
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -109,18 +117,18 @@ fun ChatBubble(
                             onClick = {
                                 if (actualSharedId != null && actualSharedType != null) {
                                     when (actualSharedType) {
-                                        ShareType.COMIC -> viewModel.loadAndNavigateToComic(
+                                        ShareType.COMIC -> comicsViewModel.loadAndNavigateToComic(
                                             actualSharedId
                                         )
 
-                                        ShareType.POST -> viewModel.handleNavigation(
+                                        ShareType.POST -> sessionViewModel.handleNavigation(
                                             Screen.PostComments.createRoute(
                                                 actualSharedId
                                             )
                                         )
 
-                                        ShareType.COMMENT -> viewModel.handleNavigation(Screen.Engagement.route)
-                                        ShareType.USER -> viewModel.handleNavigation(
+                                        ShareType.COMMENT -> sessionViewModel.handleNavigation(Screen.Engagement.route)
+                                        ShareType.USER -> sessionViewModel.handleNavigation(
                                             Screen.Profile.createRoute(
                                                 actualSharedId
                                             )
@@ -134,10 +142,8 @@ fun ChatBubble(
                 ) {
                     Column {
                         if (message.replyToMessageId != null) {
-                            val repliedMessage = viewModel.chatMessages.collectAsState().value.find { it.id == message.replyToMessageId }
-
                             if (repliedMessage != null) {
-                                val rawDecrypted = if (repliedMessage.isEncrypted) viewModel.decryptMessage(repliedMessage.content) else repliedMessage.content
+                                val rawDecrypted = repliedMessage.content
                                 val cleanDecryptedText = rawDecrypted.replace("\u0000", "").trim()
 
                                 val repliedSharedType = if (repliedMessage.sharedId != null) repliedMessage.sharedType else if (repliedMessage.sharedComicId != null) ShareType.COMIC else null
@@ -152,7 +158,7 @@ fun ChatBubble(
                                     else -> "Attachment"
                                 }
 
-                                val myUserId = viewModel.userProfile.collectAsState().value?.id
+                                val myUserId = sessionViewModel.userProfile.collectAsState().value?.id
                                 val isReplyToMe = repliedMessage.senderId == myUserId
 
                                 Row(
@@ -194,7 +200,7 @@ fun ChatBubble(
                                 Text(
                                     text = "Message deleted",
                                     style = MaterialTheme.typography.labelSmall,
-                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                                    fontStyle = FontStyle.Italic,
                                     modifier = Modifier.padding(bottom = 8.dp)
                                 )
                             }
@@ -202,30 +208,29 @@ fun ChatBubble(
                         if (actualSharedType != null && actualSharedId != null) {
                             SharedContentPlaceholder(
                                 type = actualSharedType,
-                                title = message.sharedType?.name
-                                    ?: "Shared ${actualSharedType.name.lowercase()}",
+                                title = "Shared ${actualSharedType.name.lowercase().replaceFirstChar { it.uppercase() }}",
                                 previewText = message.mediaType ?: "Tap to view details",
                                 imageUrl = message.imageUrls.firstOrNull(),
                                 modifier = Modifier.padding(bottom = 8.dp),
                                 onClick = {
                                     when (actualSharedType) {
-                                        ShareType.COMIC -> viewModel.loadAndNavigateToComic(
+                                        ShareType.COMIC -> comicsViewModel.loadAndNavigateToComic(
                                             actualSharedId
                                         )
 
-                                        ShareType.POST -> viewModel.handleNavigation(
+                                        ShareType.POST -> sessionViewModel.handleNavigation(
                                             Screen.PostComments.createRoute(
                                                 actualSharedId
                                             )
                                         )
 
-                                        ShareType.COMMENT -> viewModel.handleNavigation(
+                                        ShareType.COMMENT -> sessionViewModel.handleNavigation(
                                             Screen.PostComments.createRoute(
                                                 actualSharedId
                                             )
                                         )
 
-                                        ShareType.USER -> viewModel.handleNavigation(
+                                        ShareType.USER -> sessionViewModel.handleNavigation(
                                             Screen.Profile.createRoute(
                                                 actualSharedId
                                             )
@@ -343,10 +348,10 @@ fun ChatBubble(
                                                             offset
                                                         )
                                                             .firstOrNull()?.let { annotation ->
-                                                                viewModel.findUserByUsername(
+                                                                profileViewModel.findUserByUsername(
                                                                     annotation.item
                                                                 ) { userId ->
-                                                                    viewModel.handleNavigation(
+                                                                    sessionViewModel.handleNavigation(
                                                                         Screen.Profile.createRoute(
                                                                             userId
                                                                         )
@@ -358,21 +363,21 @@ fun ChatBubble(
 
                                                     if (actualSharedId != null && actualSharedType != null) {
                                                         when (actualSharedType) {
-                                                            ShareType.COMIC -> viewModel.loadAndNavigateToComic(
+                                                            ShareType.COMIC -> comicsViewModel.loadAndNavigateToComic(
                                                                 actualSharedId
                                                             )
 
-                                                            ShareType.POST -> viewModel.handleNavigation(
+                                                            ShareType.POST -> sessionViewModel.handleNavigation(
                                                                 Screen.PostComments.createRoute(
                                                                     actualSharedId
                                                                 )
                                                             )
 
-                                                            ShareType.COMMENT -> viewModel.handleNavigation(
+                                                            ShareType.COMMENT -> sessionViewModel.handleNavigation(
                                                                 Screen.Engagement.route
                                                             )
 
-                                                            ShareType.USER -> viewModel.handleNavigation(
+                                                            ShareType.USER -> sessionViewModel.handleNavigation(
                                                                 Screen.Profile.createRoute(
                                                                     actualSharedId
                                                                 )
@@ -409,21 +414,23 @@ fun ChatBubble(
                                 )
                             }
                         )
-                        DropdownMenuItem(
-                            text = { Text("Edit") },
-                            onClick = {
-                                showOptionsMenu = false
-                                viewModel.setEditingMessage(message)
-                            }
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
-                        DropdownMenuItem(
-                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
-                            onClick = {
-                                showOptionsMenu = false
-                                viewModel.deleteMessage(message.conversationId, message.id)
-                            }
-                        )
+                        if (isFromMe) {
+                            DropdownMenuItem(
+                                text = { Text("Edit") },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    chatViewModel.setEditingMessage(message)
+                                }
+                            )
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+                            DropdownMenuItem(
+                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showOptionsMenu = false
+                                    chatViewModel.deleteMessage(message.conversationId, message.id)
+                                }
+                            )
+                        }
                     }
                 }
                 if (isFromMe && showStatus) {
@@ -431,11 +438,7 @@ fun ChatBubble(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(top = 4.dp, end = 8.dp)
                     ) {
-                        val icon = when {
-                            message.isRead -> Icons.Default.DoneAll
-                            message.isDelivered -> Icons.Default.DoneAll
-                            else -> Icons.Default.Done
-                        }
+                        val icon = if (message.isRead) Icons.Default.DoneAll else Icons.Default.Done
                         val tint = when {
                             message.isRead -> MaterialTheme.colorScheme.primary
                             else -> MaterialTheme.colorScheme.outline
