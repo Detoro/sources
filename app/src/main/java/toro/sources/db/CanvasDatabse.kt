@@ -49,8 +49,6 @@ abstract class CanvasDatabase : RoomDatabase() {
             INSTANCE?.let { return it }
 
             synchronized(this) {
-                // Re-check inside the lock: another thread may have already
-                // built the instance while we were waiting for the lock.
                 INSTANCE?.let { return it }
 
                 val prefs = PreferenceManager(context)

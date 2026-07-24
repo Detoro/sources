@@ -14,7 +14,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import toro.sources.AppViewModel
+import toro.sources.viewmodel.ComicsViewModel
+import toro.sources.viewmodel.SessionViewModel
 import com.toro.models.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -190,7 +191,8 @@ fun ContinueReadingCarousel(
 fun ComicCarousel(
     title: String,
     comics: List<Comic>,
-    viewModel: AppViewModel,
+    comicsViewModel: ComicsViewModel,
+    sessionViewModel: SessionViewModel,
     onComicClick: (Comic) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -207,7 +209,8 @@ fun ComicCarousel(
             items(comics) { comic ->
                 ComicCoverCard(
                     comic = comic,
-                    viewModel = viewModel,
+                    comicsViewModel = comicsViewModel,
+                    sessionViewModel = sessionViewModel,
                     modifier = Modifier.width(120.dp),
                     onClick = { onComicClick(comic) }
                 )

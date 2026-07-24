@@ -10,37 +10,33 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material3.*
-import androidx.compose.material3.SecondaryScrollableTabRow
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import toro.sources.AppViewModel
-import toro.sources.R
-import toro.sources.components.ComicRow
 import com.toro.models.*
 import kotlinx.coroutines.launch
+import toro.sources.R
 import toro.sources.Screen
+import toro.sources.viewmodel.SessionViewModel
+import toro.sources.viewmodel.CommunityViewModel
+import toro.sources.components.ComicRow
+import toro.sources.viewmodel.ComicsViewModel
 
 @Composable
 fun ActivityPage(
-    viewModel: AppViewModel,
+    comicsViewModel: ComicsViewModel,
+    sessionViewModel: SessionViewModel,
+    communityViewModel: CommunityViewModel,
     onComicClick: (Comic) -> Unit,
     onAddComic: () -> Unit,
 ) {
-    val subscribed by viewModel.subscribedComics.collectAsState()
-    val recentlyRead by viewModel.recentlyReadComics.collectAsState()
-    val comments by viewModel.combinedComments.collectAsStateWithLifecycle()
+    val subscribed by comicsViewModel.subscribedComics.collectAsState()
+    val recentlyRead by comicsViewModel.recentlyReadComics.collectAsState()
+    val comments by communityViewModel.postComments.collectAsState()
 
     ActivityContent(
         subscribedComics = subscribed,
@@ -48,7 +44,7 @@ fun ActivityPage(
         comments = comments,
         onComicClick = onComicClick,
         onAddComic = onAddComic,
-        viewModel = viewModel
+        sessionViewModel = sessionViewModel
     )
 }
 
@@ -60,7 +56,7 @@ fun ActivityContent(
     comments: List<Comment>,
     onComicClick: (Comic) -> Unit,
     onAddComic: () -> Unit,
-    viewModel: AppViewModel? = null
+    sessionViewModel: SessionViewModel
 ) {
     var expanded by remember { mutableStateOf(false) }
     var dropDownSelection by remember { mutableStateOf("Recently Updated") }
@@ -74,14 +70,14 @@ fun ActivityContent(
                 title = { Text(stringResource(R.string.activity_list)) },
                 windowInsets = WindowInsets(top = 3.dp),
                 actions = {
-                    IconButton(onClick = { viewModel?.handleNavigation(Screen.Engagement.route) }) {
-                        Icon(Icons.Default.DynamicFeed, contentDescription = "Search Inbox")
+                    IconButton(onClick = { sessionViewModel.handleNavigation(Screen.Engagement.route) }) {
+                        Icon(Icons.Default.DynamicFeed, contentDescription = "Social Feed")
                     }
                 }
             )},
         floatingActionButton = {
             FloatingActionButton(onClick = { onAddComic() }) {
-                Icon(Icons.Filled.Add, contentDescription = "Find a comic to subscribe to")
+                Icon(Icons.Filled.Add, contentDescription = "Find a comic")
             }
         }
     ) { paddingValues ->
@@ -169,7 +165,6 @@ fun ActivityContent(
                 state = pagerState,
                 modifier = Modifier.fillMaxWidth()
             ) { page ->
-                // The Content
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -184,16 +179,8 @@ fun ActivityContent(
                             }
 
                             items(sortedList) { comic ->
-                                if (viewModel != null) {
-                                    ComicRow(comic, onComicClick)
-                                    HorizontalDivider()
-                                } else {
-                                    ListItem(
-                                        headlineContent = { Text(comic.title) },
-                                        supportingContent = { Text(comic.writtenBy) }
-                                    )
-                                    HorizontalDivider()
-                                }
+                                ComicRow(comic, onComicClick)
+                                HorizontalDivider()
                             }
 
                             if (baseList.isEmpty()) {

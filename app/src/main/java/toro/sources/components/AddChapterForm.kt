@@ -15,50 +15,35 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.Icons.Filled
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import toro.sources.AppViewModel
+import toro.sources.viewmodel.ComicsViewModel
+import toro.sources.viewmodel.SessionViewModel
+import toro.sources.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddChapterForm(
-    viewModel: AppViewModel,
+    comicsViewModel: ComicsViewModel,
+    sessionViewModel: SessionViewModel,
+    profileViewModel: ProfileViewModel,
     onCancel: () -> Unit,
     onUploadComplete: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selectedChapterUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
-    val userWorks by viewModel.userWorks.collectAsState()
+    val userWorks by profileViewModel.userWorks.collectAsState()
     var selectedComicId by remember { mutableStateOf<String?>(null) }
     var selectedComicTitle by remember { mutableStateOf("") }
-    val isUploading by viewModel.isUploading.collectAsState()
-    val uploadSuccess by viewModel.uploadSuccess.collectAsState()
-    val currentUser by viewModel.userProfile.collectAsState()
+    val isUploading by comicsViewModel.isUploading.collectAsState()
+    val uploadSuccess by comicsViewModel.uploadSuccess.collectAsState()
+    val currentUser by sessionViewModel.userProfile.collectAsState()
     var selectedAudioUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
 
     val audioPickerLauncher = rememberLauncherForActivityResult(
@@ -66,13 +51,15 @@ fun AddChapterForm(
     ) { uris -> selectedAudioUris = uris }
 
     LaunchedEffect(Unit) {
-        viewModel.getUserWorks(currentUser?.id ?: "fallback-123")
+        if (currentUser != null) {
+            profileViewModel.getUserWorks(currentUser!!.id)
+        }
     }
 
     LaunchedEffect(uploadSuccess) {
         if (uploadSuccess) {
             onUploadComplete()
-            viewModel.resetUploadState()
+            comicsViewModel.resetUploadState()
         }
     }
 
@@ -96,7 +83,7 @@ fun AddChapterForm(
                         selectedComicId = null
                         selectedComicTitle = ""
                     }) {
-                        Icon(Filled.Close, contentDescription = "Post")
+                        Icon(Icons.Default.Close, contentDescription = "Clear")
                     }
                 }
             )
@@ -148,7 +135,7 @@ fun AddChapterForm(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = selectedComicId != null
             ) {
-                Icon(Icons.Default.CloudUpload, "Upload Chapter")
+                Icon(Icons.Default.CloudUpload, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text(if (selectedChapterUris.isNotEmpty()) "${selectedChapterUris.size} Chapters Selected" else "Select .cbz Files")
             }
@@ -158,7 +145,7 @@ fun AddChapterForm(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = selectedComicId != null
             ) {
-                Icon(Icons.Default.LibraryMusic, "Upload Audio")
+                Icon(Icons.Default.LibraryMusic, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text(if (selectedAudioUris.isNotEmpty()) "${selectedAudioUris.size} Songs Selected" else "Select Background Music (Optional)")
             }
@@ -166,7 +153,7 @@ fun AddChapterForm(
             val isValid = selectedComicId != null && selectedChapterUris.isNotEmpty() && !isUploading
             Button(
                 onClick = {
-                    viewModel.uploadNewChapters(
+                    comicsViewModel.uploadNewChapters(
                         comicId = selectedComicId,
                         chapterUris = selectedChapterUris,
                         audioUris = selectedAudioUris

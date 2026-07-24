@@ -34,15 +34,15 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import toro.sources.AppViewModel
+import toro.sources.viewmodel.ComicsViewModel
 
 @Composable
 fun AuthorsRow(
-    viewModel: AppViewModel,
+    comicsViewModel: ComicsViewModel,
     onAddAuthorClick: () -> Unit
 ) {
-    val authors by viewModel.subscribedAuthors.collectAsState()
-    val selectedAuthorIds by viewModel.selectedAuthorIds.collectAsState()
+    val authors by comicsViewModel.subscribedAuthors.collectAsState()
+    val selectedAuthorIds by comicsViewModel.selectedAuthorIds.collectAsState()
 
     val ringColors = listOf(
         Color.Red,
@@ -53,7 +53,7 @@ fun AuthorsRow(
     )
 
     LaunchedEffect(Unit) {
-        viewModel.getSubscribedAuthors()
+        comicsViewModel.getSubscribedAuthors()
     }
 
     LazyRow(
@@ -108,7 +108,7 @@ fun AuthorsRow(
                     modifier = Modifier
                         .size(64.dp)
                         .padding(2.dp)
-                        .clickable { viewModel.toggleAuthorFilter(user.id) },
+                        .clickable { comicsViewModel.toggleAuthorFilter(user.id) },
                     contentAlignment = Alignment.Center
                 ) {
                     // Ring
