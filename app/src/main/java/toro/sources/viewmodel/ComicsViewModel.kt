@@ -156,6 +156,7 @@ class ComicsViewModel @Inject constructor(
     val selectedAuthorIds = _selectedAuthorIds.asStateFlow()
 
     init {
+        clearComicsError()
         viewModelScope.launch {
             combine(_searchQuery, _searchSource) { query, source -> query to source }
                 .debounce(500.milliseconds)
@@ -506,5 +507,6 @@ class ComicsViewModel @Inject constructor(
 }
 
 data class ComicsUiState(
+    val isLoading: Boolean = false,
     val errorMessage: String? = null
 )

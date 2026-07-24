@@ -30,7 +30,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,12 +37,156 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.toro.models.ChatMessage
+import com.toro.models.MessageContent
 import com.toro.models.ShareType
+import com.toro.models.toContent
 import toro.sources.Screen
 import toro.sources.viewmodel.ChatViewModel
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.ProfileViewModel
 import toro.sources.viewmodel.SessionViewModel
+
+private fun handleSharedClick(
+    shared: MessageContent.Shared,
+    comicsViewModel: ComicsViewModel,
+    sessionViewModel: SessionViewModel
+) {
+    when (shared.type) {
+        ShareType.COMIC -> comicsViewModel.loadAndNavigateToComic(shared.id)
+        ShareType.POST -> sessionViewModel.handleNavigation(Screen.PostComments.createRoute(shared.id))
+        ShareType.COMMENT -> sessionViewModel.handleNavigation(Screen.Engagement.route)
+        ShareType.USER -> sessionViewModel.handleNavigation(Screen.Profile.createRoute(shared.id))
+    }
+}
+
+@Composable
+private fun ChatImage(imageUrl: String) {
+    AsyncImage(
+        model = imageUrl,
+        contentDescription = "Shared Image",
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .padding(bottom = 8.dp)
+    )
+}
+
+@Composable
+private fun ChatVideo(videoUrl: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.Black)
+            .padding(bottom = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        AsyncImage(
+            model = videoUrl,
+            contentDescription = "Shared Video",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+        Surface(
+            color = Color.Black.copy(alpha = 0.5f),
+            shape = CircleShape,
+            modifier = Modifier.size(48.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = "Play",
+                tint = Color.White,
+                modifier = Modifier.padding(12.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChatText(
+    text: String,
+    isFromMe: Boolean,
+    isSpoiler: Boolean,
+    content: MessageContent,
+    comicsViewModel: ComicsViewModel,
+    sessionViewModel: SessionViewModel,
+    profileViewModel: ProfileViewModel,
+    onLongPress: () -> Unit
+) {
+    val mentionColor = if (isFromMe) Color.White else MaterialTheme.colorScheme.primary
+    val annotatedString = buildAnnotatedString {
+        var lastIndex = 0
+        val mentionPattern = Regex("@(\\w+)")
+        mentionPattern.findAll(text).forEach { match ->
+            append(text.substring(lastIndex, match.range.first))
+            val matchValue = match.value
+            pushStringAnnotation(
+                tag = "USER",
+                annotation = matchValue.removePrefix("@")
+            )
+            withStyle(
+                style = SpanStyle(
+                    color = mentionColor,
+                    fontWeight = FontWeight.Bold,
+                    textDecoration = TextDecoration.Underline
+                )
+            ) {
+                append(matchValue)
+            }
+            pop()
+            lastIndex = match.range.last + 1
+        }
+        append(text.substring(lastIndex))
+    }
+
+    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+    SelectionContainer {
+        var isRevealed by remember { mutableStateOf(false) }
+        val blurRadius by animateFloatAsState(
+            targetValue = if (!isSpoiler || isRevealed) 0f else 12f,
+            label = "SpoilerBlur"
+        )
+
+        Text(
+            text = annotatedString,
+            style = MaterialTheme.typography.bodyLarge.copy(
+                color = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+            ),
+            onTextLayout = { textLayoutResult = it },
+            modifier = Modifier
+                .blur(blurRadius.dp)
+                .pointerInput(annotatedString) {
+                    detectTapGestures(
+                        onTap = { pos ->
+                            if (isSpoiler && !isRevealed) {
+                                isRevealed = true
+                                return@detectTapGestures
+                            }
+                            val offset = textLayoutResult?.getOffsetForPosition(pos) ?: -1
+                            if (offset != -1) {
+                                annotatedString.getStringAnnotations("USER", offset, offset)
+                                    .firstOrNull()?.let { annotation ->
+                                        profileViewModel.findUserByUsername(annotation.item) { userId ->
+                                            sessionViewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                        }
+                                        return@detectTapGestures
+                                    }
+                            }
+
+                            if (content is MessageContent.Shared) {
+                                handleSharedClick(content, comicsViewModel, sessionViewModel)
+                            } else if (isSpoiler) {
+                                isRevealed = false
+                            }
+                        },
+                        onLongPress = { _ -> onLongPress() }
+                    )
+                }
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,15 +201,14 @@ fun ChatBubble(
     repliedMessage: ChatMessage? = null,
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
-    val actualSharedId = message.sharedId ?: message.sharedComicId
-    val actualSharedType = if (message.sharedId != null) message.sharedType else if (message.sharedComicId != null) ShareType.COMIC else null
+    val content = remember(message) { message.toContent() }
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
 
     val text = remember(message.content) {
         message.content
     }
-
+    
     val dismissState = rememberSwipeToDismissBoxState()
 
     LaunchedEffect(dismissState.currentValue) {
@@ -115,25 +257,15 @@ fun ChatBubble(
                         )
                         .combinedClickable(
                             onClick = {
-                                if (actualSharedId != null && actualSharedType != null) {
-                                    when (actualSharedType) {
-                                        ShareType.COMIC -> comicsViewModel.loadAndNavigateToComic(
-                                            actualSharedId
-                                        )
-
-                                        ShareType.POST -> sessionViewModel.handleNavigation(
-                                            Screen.PostComments.createRoute(
-                                                actualSharedId
-                                            )
-                                        )
-
-                                        ShareType.COMMENT -> sessionViewModel.handleNavigation(Screen.Engagement.route)
-                                        ShareType.USER -> sessionViewModel.handleNavigation(
-                                            Screen.Profile.createRoute(
-                                                actualSharedId
-                                            )
-                                        )
-                                    }
+                                when (content) {
+                                    is MessageContent.Shared -> handleSharedClick(
+                                        content, comicsViewModel, sessionViewModel
+                                    )
+                                    is MessageContent.Text,
+                                    is MessageContent.TextWithMedia,
+                                    is MessageContent.Image,
+                                    is MessageContent.Video,
+                                    is MessageContent.System -> Unit
                                 }
                             },
                             onLongClick = { showOptionsMenu = true }
@@ -143,19 +275,10 @@ fun ChatBubble(
                     Column {
                         if (message.replyToMessageId != null) {
                             if (repliedMessage != null) {
-                                val rawDecrypted = repliedMessage.content
-                                val cleanDecryptedText = rawDecrypted.replace("\u0000", "").trim()
-
-                                val repliedSharedType = if (repliedMessage.sharedId != null) repliedMessage.sharedType else if (repliedMessage.sharedComicId != null) ShareType.COMIC else null
-
-                                val replyDisplay = when {
-                                    repliedMessage.isSpoiler -> "Spoiler detected"
-                                    cleanDecryptedText.isNotEmpty() && cleanDecryptedText != "null" -> cleanDecryptedText
-                                    repliedMessage.imageUrls.isNotEmpty() -> "Shared Image"
-                                    repliedMessage.videoUrls.isNotEmpty() -> "Shared Video"
-                                    repliedSharedType != null -> "Shared ${repliedSharedType.name.lowercase().replaceFirstChar { it.uppercase() }}"
-                                    repliedMessage.sharedId != null || repliedMessage.sharedComicId != null -> "Shared Content"
-                                    else -> "Attachment"
+                                val replyDisplay = if (repliedMessage.isSpoiler) {
+                                    "Spoiler detected"
+                                } else {
+                                    chatViewModel.conversationPreviewText(repliedMessage.toContent())
                                 }
 
                                 val myUserId = sessionViewModel.userProfile.collectAsState().value?.id
@@ -200,198 +323,61 @@ fun ChatBubble(
                                 Text(
                                     text = "Message deleted",
                                     style = MaterialTheme.typography.labelSmall,
-                                    fontStyle = FontStyle.Italic,
+                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
                                     modifier = Modifier.padding(bottom = 8.dp)
                                 )
                             }
                         }
-                        if (actualSharedType != null && actualSharedId != null) {
-                            SharedContentPlaceholder(
-                                type = actualSharedType,
-                                title = "Shared ${actualSharedType.name.lowercase().replaceFirstChar { it.uppercase() }}",
-                                previewText = message.mediaType ?: "Tap to view details",
-                                imageUrl = message.imageUrls.firstOrNull(),
-                                modifier = Modifier.padding(bottom = 8.dp),
-                                onClick = {
-                                    when (actualSharedType) {
-                                        ShareType.COMIC -> comicsViewModel.loadAndNavigateToComic(
-                                            actualSharedId
-                                        )
-
-                                        ShareType.POST -> sessionViewModel.handleNavigation(
-                                            Screen.PostComments.createRoute(
-                                                actualSharedId
-                                            )
-                                        )
-
-                                        ShareType.COMMENT -> sessionViewModel.handleNavigation(
-                                            Screen.PostComments.createRoute(
-                                                actualSharedId
-                                            )
-                                        )
-
-                                        ShareType.USER -> sessionViewModel.handleNavigation(
-                                            Screen.Profile.createRoute(
-                                                actualSharedId
-                                            )
-                                        )
-                                    }
-                                }
-                            )
-                        }
-
-                        message.imageUrls.forEach { imageUrl ->
-                            AsyncImage(
-                                model = imageUrl,
-                                contentDescription = "Shared Image",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .padding(bottom = 8.dp)
-                            )
-                        }
-
-                        message.videoUrls.forEach { videoUrl ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(Color.Black)
-                                    .padding(bottom = 8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                AsyncImage(
-                                    model = videoUrl,
-                                    contentDescription = "Shared Video",
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentScale = ContentScale.Crop
+                        when (content) {
+                            is MessageContent.Shared -> {
+                                SharedContentPlaceholder(
+                                    type = content.type,
+                                    title = "Shared ${content.type.name.lowercase().replaceFirstChar { it.uppercase() }}",
+                                    previewText = message.mediaType ?: "Tap to view details",
+                                    imageUrl = message.imageUrls.firstOrNull(),
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                    onClick = { handleSharedClick(content, comicsViewModel, sessionViewModel) }
                                 )
-                                Surface(
-                                    color = Color.Black.copy(alpha = 0.5f),
-                                    shape = CircleShape,
-                                    modifier = Modifier.size(48.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.PlayArrow,
-                                        contentDescription = "Play",
-                                        tint = Color.White,
-                                        modifier = Modifier.padding(12.dp)
+                            }
+                            is MessageContent.Image -> {
+                                content.urls.forEach { imageUrl ->
+                                    ChatImage(imageUrl)
+                                }
+                            }
+                            is MessageContent.Video -> {
+                                content.urls.forEach { videoUrl ->
+                                    ChatVideo(videoUrl)
+                                }
+                            }
+                            is MessageContent.TextWithMedia -> {
+                                content.imageUrls.forEach { ChatImage(it) }
+                                content.videoUrls.forEach { ChatVideo(it) }
+                                ChatText(
+                                    text = content.body,
+                                    isFromMe = isFromMe,
+                                    isSpoiler = message.isSpoiler,
+                                    content = content,
+                                    comicsViewModel = comicsViewModel,
+                                    sessionViewModel = sessionViewModel,
+                                    profileViewModel = profileViewModel,
+                                    onLongPress = { showOptionsMenu = true }
+                                )
+                            }
+                            is MessageContent.Text -> {
+                                if (content.body.isNotEmpty()) {
+                                    ChatText(
+                                        text = content.body,
+                                        isFromMe = isFromMe,
+                                        isSpoiler = message.isSpoiler,
+                                        content = content,
+                                        comicsViewModel = comicsViewModel,
+                                        sessionViewModel = sessionViewModel,
+                                        profileViewModel = profileViewModel,
+                                        onLongPress = { showOptionsMenu = true }
                                     )
                                 }
                             }
-                        }
-
-                        if (text.isNotEmpty()) {
-                            val mentionColor =
-                                if (isFromMe) Color.White else MaterialTheme.colorScheme.primary
-                            val annotatedString = buildAnnotatedString {
-                                var lastIndex = 0
-                                val mentionPattern = Regex("@(\\w+)")
-                                mentionPattern.findAll(text).forEach { match ->
-                                    append(text.substring(lastIndex, match.range.first))
-                                    val matchValue = match.value
-                                    pushStringAnnotation(
-                                        tag = "USER",
-                                        annotation = matchValue.removePrefix("@")
-                                    )
-                                    withStyle(
-                                        style = SpanStyle(
-                                            color = mentionColor,
-                                            fontWeight = FontWeight.Bold,
-                                            textDecoration = TextDecoration.Underline
-                                        )
-                                    ) {
-                                        append(matchValue)
-                                    }
-                                    pop()
-                                    lastIndex = match.range.last + 1
-                                }
-                                append(text.substring(lastIndex))
-                            }
-
-                            var textLayoutResult by remember {
-                                mutableStateOf<TextLayoutResult?>(
-                                    null
-                                )
-                            }
-
-                            SelectionContainer {
-                                var isRevealed by remember { mutableStateOf(false) }
-                                val blurRadius by animateFloatAsState(
-                                    targetValue = if (!message.isSpoiler || isRevealed) 0f else 12f,
-                                    label = "SpoilerBlur"
-                                )
-
-                                Text(
-                                    text = annotatedString,
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                                    ),
-                                    onTextLayout = { textLayoutResult = it },
-                                    modifier = Modifier
-                                        .blur(blurRadius.dp)
-                                        .pointerInput(annotatedString) {
-                                            detectTapGestures(
-                                                onTap = { pos ->
-                                                    if (message.isSpoiler && !isRevealed) {
-                                                        isRevealed = true
-                                                        return@detectTapGestures
-                                                    }
-                                                    val offset =
-                                                        textLayoutResult?.getOffsetForPosition(pos)
-                                                            ?: -1
-                                                    if (offset != -1) {
-                                                        annotatedString.getStringAnnotations(
-                                                            "USER",
-                                                            offset,
-                                                            offset
-                                                        )
-                                                            .firstOrNull()?.let { annotation ->
-                                                                profileViewModel.findUserByUsername(
-                                                                    annotation.item
-                                                                ) { userId ->
-                                                                    sessionViewModel.handleNavigation(
-                                                                        Screen.Profile.createRoute(
-                                                                            userId
-                                                                        )
-                                                                    )
-                                                                }
-                                                                return@detectTapGestures
-                                                            }
-                                                    }
-
-                                                    if (actualSharedId != null && actualSharedType != null) {
-                                                        when (actualSharedType) {
-                                                            ShareType.COMIC -> comicsViewModel.loadAndNavigateToComic(
-                                                                actualSharedId
-                                                            )
-
-                                                            ShareType.POST -> sessionViewModel.handleNavigation(
-                                                                Screen.PostComments.createRoute(
-                                                                    actualSharedId
-                                                                )
-                                                            )
-
-                                                            ShareType.COMMENT -> sessionViewModel.handleNavigation(
-                                                                Screen.Engagement.route
-                                                            )
-
-                                                            ShareType.USER -> sessionViewModel.handleNavigation(
-                                                                Screen.Profile.createRoute(
-                                                                    actualSharedId
-                                                                )
-                                                            )
-                                                        }
-                                                    } else if (message.isSpoiler) {
-                                                        isRevealed = false
-                                                    }
-                                                },
-                                                onLongPress = { showOptionsMenu = true }
-                                            )
-                                        }
-                                )
-                            }
+                            is MessageContent.System -> Unit
                         }
                     }
 

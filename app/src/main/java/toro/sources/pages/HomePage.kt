@@ -50,13 +50,15 @@ fun HomePage(
     
     val communityViewModel: CommunityViewModel = hiltViewModel()
     val communityState by communityViewModel.communityState.collectAsState()
+    val comicsState by comicsViewModel.comicsUiState.collectAsState()
     val communityPosts = communityState.posts
     
     val followedAuthors by comicsViewModel.subscribedAuthors.collectAsState()
     val followedAuthorIds = followedAuthors.map { it.id }.toSet()
     val me by sessionViewModel.userProfile.collectAsState()
 
-    val isLoading = communityState.isLoading
+    val isCommunityLoading = communityState.isLoading
+    val isComicsLoading = comicsState.isLoading
     
     val notificationsViewModel: NotificationsViewModel = hiltViewModel()
     val notifications by notificationsViewModel.notifications.collectAsState()
@@ -122,7 +124,7 @@ fun HomePage(
             )
         }
     ) { paddingValues ->
-        if (localCatalog.isEmpty() && onlineCatalog.isEmpty()) {
+        if (localCatalog.isEmpty() && onlineCatalog.isEmpty() && trending.isEmpty() && recentlyRead.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -142,7 +144,7 @@ fun HomePage(
                 contentPadding = paddingValues,
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                if (isLoading) {
+                if (isComicsLoading || isCommunityLoading) {
                     item { BillboardCarouselShimmer() }
                     item { ComicCarouselShimmer(title = "Continue Reading") }
                 } else {

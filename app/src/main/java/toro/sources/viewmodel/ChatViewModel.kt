@@ -1,8 +1,9 @@
 package toro.sources.viewmodel
 
+import android.app.Application
 import android.net.Uri
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.toro.models.*
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,6 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import toro.sources.MessageSyncWorker
 import toro.sources.db.ComicRepository
 import toro.sources.network.ChatConnectionManager
 import toro.sources.network.RetrofitClient
@@ -24,10 +26,11 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
+    application: Application,
     private val sessionManager: SessionManager,
     private val repository: ComicRepository,
     private val chatConnectionManager: ChatConnectionManager
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _chatUiState = MutableStateFlow(ChatUiState())
     val chatUiState = _chatUiState.asStateFlow()
@@ -77,14 +80,25 @@ class ChatViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
     val filteredInbox = combine(inbox, _inboxSearchQuery) { list, query ->
         if (query.isBlank()) list
-        else list.filter { it.otherUserName.contains(query, ignoreCase = true) || it.lastMessage?.contains(query, ignoreCase = true) == true }
+        else list.filter {
+            it.otherUser.username.contains(query, ignoreCase = true) ||
+                    it.lastMessage?.content?.contains(query, ignoreCase = true) == true
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         clearChatError()
+        resyncOfflineMessages()
         viewModelScope.launch {
             chatConnectionManager.incomingMessages.collect { message ->
                 handleIncomingMessage(message)
+            }
+        }
+        viewModelScope.launch {
+            chatConnectionManager.connectionState.collect { connected ->
+                if (connected == ChatConnectionManager.ConnectionState.CONNECTED) {
+                    resyncOfflineMessages()
+                }
             }
         }
         chatConnectionManager.connect()
@@ -113,18 +127,29 @@ class ChatViewModel @Inject constructor(
                 val pending = repository.getMessageById(message.id)
                 if (pending != null) {
                     repository.confirmPendingMessage(message.id, message.content)
-                    RetrofitClient.comicApiService.markMessageAsDelivered(message.id)
                 } else {
                     repository.saveMessage(message)
                     repository.updateMessageDeliveryStatus(message.id, true)
                 }
             } else {
                 repository.saveMessage(message)
+                RetrofitClient.comicApiService.markMessageAsDelivered(message.id)
                 repository.getConversationById(message.conversationId)?.let { convo ->
-                    repository.saveConversations(listOf(convo.copy(lastMessage = message.content, timestamp = message.timestamp)))
+                    val content = message.toContent()
+                    val summary = toMessageSummary(content, message.senderId, message.timestamp)
+                    val updatedConvo = convo.copy(
+                        lastMessage = summary,
+                        timestamp = message.timestamp,
+                        unreadCount = convo.unreadCount + 1
+                    )
+                    repository.saveConversations(listOf(updatedConvo))
                 }
             }
         }
+    }
+
+    private fun resyncOfflineMessages() {
+        MessageSyncWorker.enqueue(getApplication())
     }
 
     fun getChatMessages(conversationId: String) {
@@ -144,11 +169,8 @@ class ChatViewModel @Inject constructor(
 
     fun sendMessage(
         conversationId: String,
-        content: String,
+        content: MessageContent,
         isSpoiler: Boolean = false,
-        sharedId: String? = null,
-        sharedType: ShareType? = null,
-        sharedComicId: String? = null,
         receiverId: String? = null,
         receiverName: String? = null
     ) {
@@ -159,9 +181,10 @@ class ChatViewModel @Inject constructor(
                     repository.getConversationById(conversationId) ?: receiverId?.let { rid ->
                         val newConvo = Conversation(
                             conversationId = conversationId,
-                            otherUserId = rid,
-                            otherUserName = receiverName ?: "Chat",
-                            lastMessage = content,
+                            otherUser = ChatUser(
+                                userId = rid,
+                                username = receiverName ?: "Chat"
+                            ),
                             timestamp = System.currentTimeMillis()
                         )
                         repository.saveConversations(listOf(newConvo))
@@ -174,33 +197,72 @@ class ChatViewModel @Inject constructor(
                     return@launch
                 }
 
+                if (content is MessageContent.System) {
+                    _chatUiState.update { it.copy(errorMessage = "Can't send a system signal as a message") }
+                    return@launch
+                }
+
+                val fields = content.toChatMessageFields()
+
                 val newMessage = ChatMessage(
                     id = tempId,
                     conversationId = conversationId,
                     senderId = sessionManager.userProfile.value?.id ?: "",
-                    receiverId = convo.otherUserId,
-                    content = content,
+                    receiverId = convo.otherUser.userId,
+                    content = fields.content,
                     timestamp = System.currentTimeMillis(),
                     isSpoiler = isSpoiler,
                     replyToMessageId = _replyingToMessage.value?.id,
-                    sharedId = sharedId,
-                    sharedType = sharedType,
-                    sharedComicId = sharedComicId
+                    sharedId = fields.sharedId,
+                    sharedType = fields.sharedType,
+                    sharedComicId = fields.sharedComicId,
+                    imageUrls = fields.imageUrls,
+                    videoUrls = fields.videoUrls
                 )
 
                 withContext(Dispatchers.IO) {
                     repository.saveMessage(newMessage)
-                    repository.saveConversations(listOf(convo.copy(lastMessage = content, timestamp = newMessage.timestamp)))
+                    val summary = toMessageSummary(content, newMessage.senderId, newMessage.timestamp)
+                    repository.saveConversations(
+                        listOf(convo.copy(lastMessage = summary, timestamp = newMessage.timestamp))
+                    )
                 }
 
                 if (!chatConnectionManager.sendMessage(newMessage)) {
                     _chatUiState.update { it.copy(errorMessage = "Message queued offline") }
+                    resyncOfflineMessages()
                 }
                 _replyingToMessage.value = null
             } catch (e: Exception) {
                 _chatUiState.update { it.copy(errorMessage = "Failed to send message: ${e.message}") }
             }
         }
+    }
+
+    internal fun conversationPreviewText(content: MessageContent): String = when (content) {
+        is MessageContent.Text -> content.body
+        is MessageContent.TextWithMedia -> content.body
+        is MessageContent.Image -> "Photo"
+        is MessageContent.Video -> "Video"
+        is MessageContent.Shared -> "Shared a ${content.type.name.lowercase()}"
+        is MessageContent.System -> ""
+    }
+
+    private fun toMessageSummary(content: MessageContent, senderId: String, timestamp: Long): MessageSummary {
+        val type = when (content) {
+            is MessageContent.Text -> MessageType.TEXT
+            is MessageContent.TextWithMedia -> MessageType.TEXT
+            is MessageContent.Image -> MessageType.IMAGE
+            is MessageContent.Video -> MessageType.VIDEO
+            is MessageContent.Shared -> MessageType.SHARE
+            is MessageContent.System -> MessageType.SYSTEM
+        }
+        return MessageSummary(
+            content = conversationPreviewText(content),
+            senderId = senderId,
+            timestamp = timestamp,
+            type = type
+        )
     }
 
     fun deleteMessage(conversationId: String, messageId: String) {
@@ -279,7 +341,7 @@ class ChatViewModel @Inject constructor(
                 _chatRequests.update { it.filter { r -> r.id != requestId } }
                 getInbox()
             } catch (e: Exception) {
-                _chatUiState.update { it.copy(errorMessage = "Failed to accept: ${e.message}") }
+                Log.e("ChatViewModel", "Failed to accept friend: ${e.message}")
             }
         }
     }
@@ -290,7 +352,7 @@ class ChatViewModel @Inject constructor(
                 withContext(Dispatchers.IO) { RetrofitClient.comicApiService.declineChatRequest(requestId) }
                 _chatRequests.update { it.filter { r -> r.id != requestId } }
             } catch (e: Exception) {
-                _chatUiState.update { it.copy(errorMessage = "Failed to decline: ${e.message}") }
+                Log.e("ChatViewModel", "Failed to decline friend: ${e.message}")
             }
         }
     }
@@ -305,7 +367,7 @@ class ChatViewModel @Inject constructor(
                 }
                 resetChatState()
             } catch (e: Exception) {
-                _chatUiState.update { it.copy(errorMessage = "Failed to unfriend: ${e.message}") }
+                Log.e("ChatViewModel", "Failed to unfriend: ${e.message}")
             }
         }
     }
@@ -313,12 +375,16 @@ class ChatViewModel @Inject constructor(
     fun getInbox() {
         viewModelScope.launch {
             try {
+                val conversations = withContext(Dispatchers.IO) {
+                    RetrofitClient.comicApiService.getInbox()
+                }
+                val processed = conversations.map { convo ->
+                    convo.lastMessage?.let { last ->
+                        convo.copy(lastMessage = last.copy(content = chatConnectionManager.decryptContent(last.content)))
+                    } ?: convo
+                }
                 withContext(Dispatchers.IO) {
-                    val conversations = RetrofitClient.comicApiService.getInbox()
-                    for (convo in conversations) {
-                        if (convo.lastMessage != null) convo.lastMessage = chatConnectionManager.decryptContent(convo.lastMessage!!)
-                    }
-                    repository.saveConversations(conversations)
+                    repository.saveConversations(processed)
                 }
             } catch (e: Exception) {
                 _chatUiState.update { it.copy(errorMessage = "Failed to fetch inbox: ${e.message}") }
@@ -340,7 +406,7 @@ class ChatViewModel @Inject constructor(
                 }
                 onSuccess()
             } catch (e: Exception) {
-                _chatUiState.update { it.copy(errorMessage = "Failed to send request ${e.message}") }
+                _chatUiState.update { it.copy(errorMessage = "Failed to send request: ${e.message}") }
             }
         }
     }

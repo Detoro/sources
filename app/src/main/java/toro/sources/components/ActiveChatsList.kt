@@ -2,14 +2,7 @@ package toro.sources.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -18,15 +11,7 @@ import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.DoneAll
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -42,7 +27,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.toro.models.Conversation
+import com.toro.models.MessageSummary
 import toro.sources.viewmodel.ChatViewModel
+import toro.sources.viewmodel.SessionViewModel
 import java.util.concurrent.TimeUnit
 
 enum class ChatPreviewStatus { NONE, SENT, READ }
@@ -51,15 +39,15 @@ enum class ChatPreviewStatus { NONE, SENT, READ }
 @Composable
 fun ActiveChatsList(
     chatViewModel: ChatViewModel,
+    sessionViewModel: SessionViewModel,
     onChatClick: (String) -> Unit,
     onProfileClick: (String) -> Unit,
     onArchive: (String) -> Unit,
     onDelete: (String) -> Unit,
-    isUnread: (conversationId: String) -> Boolean = { false },
-    lastMessageStatus: (conversationId: String) -> ChatPreviewStatus = { ChatPreviewStatus.NONE },
-    isLastMessageFromMe: (conversationId: String) -> Boolean = { false }
+    lastMessageStatus: (conversationId: String) -> ChatPreviewStatus = { ChatPreviewStatus.NONE }
 ) {
     val activeChats by chatViewModel.filteredInbox.collectAsState()
+    val me by sessionViewModel.userProfile.collectAsState()
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(activeChats, key = { it.conversationId }) { chat ->
@@ -67,15 +55,9 @@ fun ActiveChatsList(
                 var removed by remember { mutableStateOf(false) }
                 if (!removed) {
                     ChatInboxRow(
-                        conversationId = chat.conversationId,
-                        username = chat.otherUserName,
-                        otherUserId = chat.otherUserId,
-                        avatarUrl = chat.otherUserAvatarUrl,
-                        lastMessage = chat.lastMessage,
-                        timestamp = chat.timestamp,
-                        isUnread = isUnread(chat.conversationId),
+                        chat = chat,
                         status = lastMessageStatus(chat.conversationId),
-                        isFromMe = isLastMessageFromMe(chat.conversationId),
+                        myUserId = me?.id,
                         onChatClick = onChatClick,
                         onProfileClick = onProfileClick,
                         onArchive = {
@@ -96,20 +78,15 @@ fun ActiveChatsList(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatInboxRow(
-    conversationId: String,
-    username: String,
-    otherUserId: String,
-    avatarUrl: String?,
-    lastMessage: String?,
-    timestamp: Long,
-    isUnread: Boolean,
+    chat: Conversation,
     status: ChatPreviewStatus,
-    isFromMe: Boolean,
+    myUserId: String?,
     onChatClick: (String) -> Unit,
     onProfileClick: (String) -> Unit,
     onArchive: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val isUnread = chat.unreadCount > 0
     val dismissState = rememberSwipeToDismissBoxState()
 
     LaunchedEffect(dismissState.currentValue) {
@@ -127,7 +104,7 @@ private fun ChatInboxRow(
             ListItem(
                 headlineContent = {
                     Text(
-                        text = username,
+                        text = chat.otherUser.username,
                         fontWeight = if (isUnread) FontWeight.SemiBold else FontWeight.Normal,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -135,22 +112,25 @@ private fun ChatInboxRow(
                 },
                 supportingContent = {
                     ChatPreviewLine(
-                        lastMessage = lastMessage,
+                        lastMessage = chat.lastMessage,
                         isUnread = isUnread,
                         status = status,
-                        isFromMe = isFromMe
+                        myUserId = myUserId
                     )
                 },
                 trailingContent = {
-                    ChatRowTrailing(timestamp = timestamp, isUnread = isUnread)
+                    ChatRowTrailing(
+                        timestamp = chat.timestamp,
+                        unreadCount = chat.unreadCount
+                    )
                 },
                 leadingContent = {
                     Box(
-                        modifier = Modifier.clickable { onProfileClick(otherUserId) }
+                        modifier = Modifier.clickable { onProfileClick(chat.otherUser.userId) }
                     ) {
                         UnreadRail(visible = isUnread)
                         DefaultAvatar(
-                            avatarUrl = avatarUrl,
+                            avatarUrl = chat.otherUser.avatarUrl,
                             modifier = Modifier
                                 .padding(start = if (isUnread) 6.dp else 0.dp)
                                 .clip(CircleShape)
@@ -162,7 +142,7 @@ private fun ChatInboxRow(
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onChatClick(conversationId) }
+                    .clickable { onChatClick(chat.conversationId) }
             )
         },
         modifier = Modifier.fillMaxWidth()
@@ -171,22 +151,23 @@ private fun ChatInboxRow(
 
 @Composable
 private fun ChatPreviewLine(
-    lastMessage: String?,
+    lastMessage: MessageSummary?,
     isUnread: Boolean,
     status: ChatPreviewStatus,
-    isFromMe: Boolean
+    myUserId: String?
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
+        val isFromMe = lastMessage?.senderId == myUserId
         if (isFromMe && status != ChatPreviewStatus.NONE) {
             ReadReceiptIcon(status = status)
         }
         Text(
             text = buildString {
                 if (isFromMe) append("You: ")
-                append(lastMessage.orEmpty())
+                append(lastMessage?.content.orEmpty())
             },
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -220,17 +201,31 @@ private fun ReadReceiptIcon(status: ChatPreviewStatus) {
 }
 
 @Composable
-private fun ChatRowTrailing(timestamp: Long, isUnread: Boolean) {
-    Text(
-        text = formatRelativeTimestamp(timestamp),
-        style = MaterialTheme.typography.labelSmall,
-        color = if (isUnread) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        },
-        fontWeight = if (isUnread) FontWeight.Medium else FontWeight.Normal
-    )
+private fun ChatRowTrailing(timestamp: Long, unreadCount: Int) {
+    val isUnread = unreadCount > 0
+    Column(
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = formatRelativeTimestamp(timestamp),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isUnread) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            fontWeight = if (isUnread) FontWeight.Medium else FontWeight.Normal
+        )
+        if (unreadCount > 0) {
+            Badge(
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Text(text = unreadCount.toString())
+            }
+        }
+    }
 }
 
 @Composable
