@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import toro.sources.R
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun SuccessfulTaskPage(
@@ -24,7 +25,7 @@ fun SuccessfulTaskPage(
     onTimeElapsed: () -> Unit
 ) {
     LaunchedEffect(Unit) {
-        delay(3000L)
+        delay(3000.milliseconds)
         onTimeElapsed()
     }
 

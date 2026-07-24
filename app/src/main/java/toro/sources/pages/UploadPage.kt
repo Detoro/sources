@@ -15,7 +15,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -26,18 +25,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import toro.sources.AppViewModel
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.material3.CenterAlignedTopAppBar
 import toro.sources.components.UploadMode
 import toro.sources.components.UploadModeSelection
+import toro.sources.viewmodel.ComicsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UploadPage(
-    viewModel: AppViewModel,
+    viewModel: ComicsViewModel,
     onBackClick: () -> Unit,
     onUploadNewComic: () -> Unit,
     onUploadNewChapter: () -> Unit,
@@ -57,7 +57,7 @@ fun UploadPage(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text("Creator Studio") },
                 navigationIcon = {
                     IconButton(

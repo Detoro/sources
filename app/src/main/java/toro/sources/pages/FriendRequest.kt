@@ -1,20 +1,26 @@
 package toro.sources.pages
 
 import androidx.compose.runtime.Composable
-import toro.sources.AppViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import toro.sources.components.UserSearchDialog
+import toro.sources.viewmodel.ChatViewModel
 
 @Composable
 fun FriendRequestPage(
-    viewModel: AppViewModel,
+    chatViewModel: ChatViewModel,
     onDismiss: () -> Unit
 ) {
+    val userSuggestions by chatViewModel.userSuggestions.collectAsState()
+    
     UserSearchDialog(
-        viewModel = viewModel,
+        userSuggestions = userSuggestions,
+        onSearch = { chatViewModel.searchUsers(it) },
+        onClearSuggestions = { chatViewModel.clearUserSuggestions() },
         title = "Find Friends",
         onDismiss = onDismiss,
         onUserSelected = { selectedUser, _ ->
-            viewModel.sendChatRequest(selectedUser.id) {
+            chatViewModel.sendChatRequest(selectedUser.id) {
                 onDismiss()
             }
         }

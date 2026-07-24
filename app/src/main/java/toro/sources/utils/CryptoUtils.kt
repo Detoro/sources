@@ -1,4 +1,4 @@
-package toro.sources.crypto
+package toro.sources.utils
 
 import android.util.Base64
 import java.security.SecureRandom

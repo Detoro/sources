@@ -7,11 +7,13 @@ import coil.ImageLoaderFactory
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import com.cloudinary.android.MediaManager
+import dagger.hilt.android.HiltAndroidApp
 import toro.sources.db.CanvasDatabase
 import toro.sources.network.RetrofitClient.comicApiService
 import toro.sources.db.ComicRepository
 
 
+@HiltAndroidApp
 class SourcesCanvas : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
@@ -47,10 +49,11 @@ class SourcesCanvas : Application(), ImageLoaderFactory {
 
     val apiService by lazy { comicApiService }
 
-    val repository: ComicRepository
-        get() = ComicRepository(
+    val repository: ComicRepository by lazy {
+        ComicRepository(
             context = this,
             cbzParser = cbzParser,
             apiService = apiService
         )
+    }
 }

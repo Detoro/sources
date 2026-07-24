@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import toro.sources.AppViewModel
 import toro.sources.Screen
 import toro.sources.components.AuthorsRow
 import toro.sources.components.PostCard
@@ -24,23 +23,28 @@ import toro.sources.components.PostCardShimmer
 import toro.sources.components.DefaultAvatar
 import com.toro.models.ShareType
 import com.toro.models.SharedContent
+import toro.sources.viewmodel.CommunityViewModel
+import toro.sources.viewmodel.SessionViewModel
+import toro.sources.viewmodel.ComicsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EngagementPage(
-    viewModel: AppViewModel,
+    communityViewModel: CommunityViewModel,
+    sessionViewModel: SessionViewModel,
+    comicsViewModel: ComicsViewModel,
     onCommentClick: (String) -> Unit,
     onMakePost: () -> Unit,
     onAddAuthorClick: () -> Unit,
 ) {
-    val communityState by viewModel.communityState.collectAsState()
+    val communityState by communityViewModel.communityState.collectAsState()
     val posts = communityState.posts
     val isLoading = communityState.isLoading
-    val me by viewModel.userProfile.collectAsState()
+    val me by sessionViewModel.userProfile.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     LaunchedEffect(Unit) {
-        viewModel.getCommunityPosts()
+        communityViewModel.getCommunityPosts()
     }
 
     Scaffold(
@@ -61,7 +65,7 @@ fun EngagementPage(
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = onMakePost) {
-                                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurface)
+                                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Make Post", tint = MaterialTheme.colorScheme.onSurface)
                             }
                             Spacer(modifier = Modifier.width(8.dp))
                             DefaultAvatar(
@@ -69,7 +73,7 @@ fun EngagementPage(
                                 size = 32,
                                 modifier = Modifier
                                     .background(Color.Gray.copy(alpha = 0.2f), CircleShape)
-                                    .clickable { viewModel.handleNavigation(Screen.Profile.createRoute(me?.id ?: "fallback-123")) }
+                                    .clickable { sessionViewModel.handleNavigation(Screen.Profile.createRoute(me?.id ?: "fallback-123")) }
                             )
                         }
                     }
@@ -93,7 +97,7 @@ fun EngagementPage(
         ) {
             item {
                 AuthorsRow(
-                    viewModel = viewModel,
+                    comicsViewModel = comicsViewModel,
                     onAddAuthorClick = onAddAuthorClick
                 )
                 HorizontalDivider(
@@ -109,14 +113,15 @@ fun EngagementPage(
             } else {
                 itemsIndexed(posts) { index, post ->
                     PostCard(
-                        viewModel = viewModel,
+                        communityViewModel = communityViewModel,
+                        sessionViewModel = sessionViewModel,
                         post = post,
                         onCommentClick = { onCommentClick(post.id) },
                         onAuthorClick = { userId ->
-                            viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                            sessionViewModel.handleNavigation(Screen.Profile.createRoute(userId))
                         },
                         onShareClick = {
-                            viewModel.setSharedContent(
+                            sessionViewModel.setSharedContent(
                                 SharedContent(
                                     id = it.id,
                                     type = ShareType.POST,
@@ -124,7 +129,7 @@ fun EngagementPage(
                                     previewText = it.content.take(50)
                                 )
                             )
-                            viewModel.showShareDialog(true)
+                            sessionViewModel.showShareDialog(true)
                         },
                         showAccentLine = index % 2 != 0,
                         modifier = Modifier.fillMaxWidth()

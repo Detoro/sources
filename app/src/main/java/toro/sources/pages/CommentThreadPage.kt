@@ -11,7 +11,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import toro.sources.AppViewModel
 import toro.sources.Screen
 import toro.sources.components.CommentItem
 import com.toro.models.ShareType
@@ -19,19 +18,22 @@ import toro.sources.components.SmartInput
 import com.toro.models.Comment
 import com.toro.models.CommentLocation
 import com.toro.models.SharedContent
+import toro.sources.viewmodel.CommunityViewModel
+import toro.sources.viewmodel.SessionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentThreadPage(
-    viewModel: AppViewModel,
+    communityViewModel: CommunityViewModel,
+    sessionViewModel: SessionViewModel,
     commentLocation: CommentLocation,
     targetId: String,
     commentId: String,
     onBackClick: () -> Unit
 ) {
     val comments by when (commentLocation) {
-        CommentLocation.ON_CHAPTER -> viewModel.chapterComments
-        CommentLocation.ON_POST -> viewModel.postComments
+        CommentLocation.ON_CHAPTER -> communityViewModel.chapterComments
+        CommentLocation.ON_POST -> communityViewModel.postComments
     }.collectAsState()
     val mainComment = remember(comments, commentId) { comments.find { it.id == commentId } }
     val replies = remember(comments, commentId) { comments.filter { it.parentId == commentId } }
@@ -41,8 +43,8 @@ fun CommentThreadPage(
 
     LaunchedEffect(targetId, commentLocation) {
         when (commentLocation) {
-            CommentLocation.ON_CHAPTER -> viewModel.getChapterComments(targetId)
-            CommentLocation.ON_POST -> viewModel.getPostComments(targetId)
+            CommentLocation.ON_CHAPTER -> communityViewModel.getChapterComments(targetId)
+            CommentLocation.ON_POST -> communityViewModel.getPostComments(targetId)
         }
     }
 
@@ -88,14 +90,14 @@ fun CommentThreadPage(
                     onSend = { _, text, mentions, _, _, isSpoiler ->
                         val targetParentId = replyingTo?.id ?: commentId
                         when (commentLocation) {
-                            CommentLocation.ON_CHAPTER -> viewModel.addChapterComment(
+                            CommentLocation.ON_CHAPTER -> communityViewModel.addChapterComment(
                                 targetId, 
                                 text, 
                                 isSpoiler,
                                 mentions, 
                                 targetParentId,
                             )
-                            CommentLocation.ON_POST -> viewModel.addPostComment(
+                            CommentLocation.ON_POST -> communityViewModel.addPostComment(
                                 targetId, 
                                 text, 
                                 isSpoiler,
@@ -109,7 +111,7 @@ fun CommentThreadPage(
                     },
                     initialText = initialText,
                     placeholder = "Write a reply...",
-                    viewModel = viewModel
+                    sessionViewModel = sessionViewModel
                 )
             }
         }
@@ -127,12 +129,12 @@ fun CommentThreadPage(
                         isReply = true,
                         isThreadHeader = true,
                         onReplyClick = {},
-                        onLikeClick = { viewModel.likeComment(it.id, commentLocation) },
+                        onLikeClick = { communityViewModel.likeComment(it.id, commentLocation) },
                         onAuthorClick = { userId ->
-                            viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                            sessionViewModel.handleNavigation(Screen.Profile.createRoute(userId))
                         },
                         onShareClick = {
-                            viewModel.setSharedContent(
+                            sessionViewModel.setSharedContent(
                                 SharedContent(
                                     id = it.id,
                                     type = ShareType.COMMENT,
@@ -141,9 +143,9 @@ fun CommentThreadPage(
                                     targetId = targetId
                                 )
                             )
-                            viewModel.showShareDialog(true)
+                            sessionViewModel.showShareDialog(true)
                         },
-                        viewModel = viewModel
+                        sessionViewModel = sessionViewModel
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     Text(
@@ -173,13 +175,13 @@ fun CommentThreadPage(
                             "@${it.authorName} "
                         },
                         isReply = true,
-                        onLikeClick = { viewModel.likeComment(it.id, commentLocation) },
+                        onLikeClick = { communityViewModel.likeComment(it.id, commentLocation) },
                         onCommentClick = { /* Already in thread. Don't want to do anything */ },
                         onAuthorClick = { userId ->
-                            viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                            sessionViewModel.handleNavigation(Screen.Profile.createRoute(userId))
                         },
                         onShareClick = {
-                            viewModel.setSharedContent(
+                            sessionViewModel.setSharedContent(
                                 SharedContent(
                                     id = it.id,
                                     type = ShareType.COMMENT,
@@ -188,9 +190,9 @@ fun CommentThreadPage(
                                     targetId = targetId
                                 )
                             )
-                            viewModel.showShareDialog(true)
+                            sessionViewModel.showShareDialog(true)
                         },
-                        viewModel = viewModel
+                        sessionViewModel = sessionViewModel
                     )
                 }
             }

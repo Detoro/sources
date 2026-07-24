@@ -18,24 +18,26 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import toro.sources.AppViewModel
+import toro.sources.viewmodel.SessionViewModel
 import toro.sources.Screen
 import com.toro.models.ShareType
 import com.toro.models.SharedContent
+import toro.sources.viewmodel.ChatViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShareDialog(
-    viewModel: AppViewModel,
+    sessionViewModel: SessionViewModel,
     sharedId: String,
     sharedType: ShareType,
     sharedTitle: String,
     sharedPreview: String,
     sharedTargetId: String? = null,
+    chatViewModel: ChatViewModel,
     onDismiss: () -> Unit
 ) {
     var showChatPicker by remember { mutableStateOf(false) }
-    val inbox by viewModel.filteredInbox.collectAsState()
+    val inbox by chatViewModel.filteredInbox.collectAsState()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
@@ -66,10 +68,10 @@ fun ShareDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    viewModel.setSharedContent(
+                                    sessionViewModel.setSharedContent(
                                         SharedContent(sharedId, sharedType, sharedTitle, sharedPreview, sharedTargetId)
                                     )
-                                    viewModel.handleNavigation(Screen.Chat.createRoute(conversation.conversationId))
+                                    sessionViewModel.handleNavigation(Screen.Chat.createRoute(conversation.conversationId))
                                     onDismiss()
                                 }
                                 .padding(horizontal = 24.dp, vertical = 12.dp),
@@ -95,7 +97,7 @@ fun ShareDialog(
                         label = "Direct Message",
                         description = "Send directly to a friend",
                         onClick = {
-                            viewModel.getInbox()
+                            chatViewModel.getInbox()
                             showChatPicker = true
                         }
                     )
@@ -104,10 +106,10 @@ fun ShareDialog(
                         label = "Community Post",
                         description = "Share to the main feed",
                         onClick = {
-                            viewModel.setSharedContent(
+                            sessionViewModel.setSharedContent(
                                 SharedContent(sharedId, sharedType, sharedTitle, sharedPreview, sharedTargetId)
                             )
-                            viewModel.handleNavigation(Screen.Post.route)
+                            sessionViewModel.handleNavigation(Screen.Post.route)
                             onDismiss()
                         }
                     )
@@ -116,10 +118,10 @@ fun ShareDialog(
                         label = "Engagement Thread",
                         description = "Drop into a comment section",
                         onClick = {
-                            viewModel.setSharedContent(
+                            sessionViewModel.setSharedContent(
                                 SharedContent(sharedId, sharedType, sharedTitle, sharedPreview, sharedTargetId)
                             )
-                            viewModel.handleNavigation(Screen.Engagement.route)
+                            sessionViewModel.handleNavigation(Screen.Engagement.route)
                             onDismiss()
                         }
                     )

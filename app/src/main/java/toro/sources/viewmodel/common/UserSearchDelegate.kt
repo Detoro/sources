@@ -1,0 +1,32 @@
+package toro.sources.viewmodel.common
+
+import com.toro.models.UserProfile
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import toro.sources.network.RetrofitClient
+
+class UserSearchDelegate(private val scope: CoroutineScope) {
+
+    private val _userSuggestions = MutableStateFlow<List<UserProfile>>(emptyList())
+    val userSuggestions = _userSuggestions.asStateFlow()
+
+    fun search(query: String) {
+        scope.launch {
+            try {
+                _userSuggestions.value = withContext(Dispatchers.IO) {
+                    RetrofitClient.comicApiService.searchUsers(query)
+                }
+            } catch (e: Exception) {
+                // tbd man
+            }
+        }
+    }
+
+    fun clear() {
+        _userSuggestions.value = emptyList()
+    }
+}

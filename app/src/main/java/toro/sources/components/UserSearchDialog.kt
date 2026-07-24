@@ -17,28 +17,28 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.toro.models.Role
-import toro.sources.AppViewModel
 import com.toro.models.UserProfile
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserSearchDialog(
-    viewModel: AppViewModel,
+    userSuggestions: List<UserProfile>,
+    onSearch: (String) -> Unit,
+    onClearSuggestions: () -> Unit,
     title: String,
     roles: List<Role> = emptyList(),
     onDismiss: () -> Unit,
     onUserSelected: (UserProfile, Role?) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    val userSuggestions by viewModel.userSuggestions.collectAsState()
     var selectedRole by remember { mutableStateOf(roles.firstOrNull()) }
     var roleDropdownExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(searchQuery) {
         if (searchQuery.length >= 2) {
-            viewModel.searchUsers(searchQuery)
+            onSearch(searchQuery)
         } else {
-            viewModel.clearUserSuggestions()
+            onClearSuggestions()
         }
     }
 
