@@ -49,26 +49,27 @@ import kotlinx.coroutines.launch
 import toro.sources.components.ChatRequestsList
 import toro.sources.components.ActiveChatsList
 import toro.sources.R
-import toro.sources.AppViewModel
+import toro.sources.viewmodel.ChatViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatInboxPage(
-    viewModel: AppViewModel,
+    chatViewModel: ChatViewModel,
     onChatClick: (String) -> Unit,
     onFriendRequest: () -> Unit,
     onProfileClick: (String) -> Unit
 ) {
-    val pendingRequestsCount by viewModel.pendingRequestsCount.collectAsState()
+    val pendingRequestsCount by chatViewModel.pendingRequestsCount.collectAsState()
     var isSearching by remember { mutableStateOf(false) }
-    val searchQuery by viewModel.inboxSearchQuery.collectAsState()
+    val searchQuery by chatViewModel.inboxSearchQuery.collectAsState()
     val focusManager = LocalFocusManager.current
     val tabs = listOf(stringResource(R.string.messages), stringResource(R.string.requests))
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        viewModel.getChatRequests()
+        chatViewModel.getChatRequests()
+        chatViewModel.getInbox()
     }
 
     Scaffold(
@@ -78,7 +79,7 @@ fun ChatInboxPage(
                     if (isSearching) {
                         TextField(
                             value = searchQuery,
-                            onValueChange = { viewModel.updateInboxSearchQuery(it) },
+                            onValueChange = { chatViewModel.updateInboxSearchQuery(it) },
                             placeholder = { Text("Search chats & names...") },
                             modifier = Modifier.fillMaxWidth(),
                             colors = TextFieldDefaults.colors(
@@ -93,7 +94,7 @@ fun ChatInboxPage(
                             keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                             trailingIcon = {
                                 IconButton(onClick = {
-                                    if (searchQuery.isNotEmpty()) viewModel.updateInboxSearchQuery("")
+                                    if (searchQuery.isNotEmpty()) chatViewModel.updateInboxSearchQuery("")
                                     else isSearching = false
                                 }) {
                                     Icon(Icons.Default.Close, contentDescription = "Close Search")
@@ -152,7 +153,7 @@ fun ChatInboxPage(
                                 }
                                 if (count > 0) {
                                     Spacer(Modifier.width(8.dp))
-                                    Badge(contentColor = Color.DarkGray) { Text(count.toString()) }
+                                    Badge(contentColor = Color.Red) { Text(count.toString()) }
                                 }
                             }
 
@@ -168,12 +169,14 @@ fun ChatInboxPage(
                 when (page) {
                     0 -> {
                         ActiveChatsList(
-                            viewModel,
-                            onChatClick,
-                            onProfileClick
+                            chatViewModel = chatViewModel,
+                            onChatClick = onChatClick,
+                            onProfileClick = onProfileClick,
+                            onArchive = {},
+                            onDelete = {}
                         )
                     }
-                    1 -> { ChatRequestsList(viewModel) }
+                    1 -> { ChatRequestsList(chatViewModel) }
                 }
             }
         }

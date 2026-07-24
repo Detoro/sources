@@ -11,7 +11,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import toro.sources.AppViewModel
 import toro.sources.Screen
 import toro.sources.components.CommentItem
 import com.toro.models.ShareType
@@ -19,26 +18,29 @@ import toro.sources.components.SmartInput
 import com.toro.models.Comment
 import com.toro.models.CommentLocation
 import com.toro.models.SharedContent
+import toro.sources.viewmodel.CommunityViewModel
+import toro.sources.viewmodel.SessionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentsPage(
-    viewModel: AppViewModel,
+    communityViewModel: CommunityViewModel,
+    sessionViewModel: SessionViewModel,
     commentLocation: CommentLocation,
     targetId: String,
     onBackClick: () -> Unit,
     onCommentClick: (Comment) -> Unit = {}
 ) {
     val comments by when (commentLocation) {
-        CommentLocation.ON_CHAPTER -> viewModel.chapterComments
-        CommentLocation.ON_POST -> viewModel.postComments
+        CommentLocation.ON_CHAPTER -> communityViewModel.chapterComments
+        CommentLocation.ON_POST -> communityViewModel.postComments
     }.collectAsState()
     var replyingTo by remember { mutableStateOf<Comment?>(null) }
 
     LaunchedEffect(targetId, commentLocation) {
         when (commentLocation) {
-            CommentLocation.ON_CHAPTER -> viewModel.getChapterComments(targetId)
-            CommentLocation.ON_POST -> viewModel.getPostComments(targetId)
+            CommentLocation.ON_CHAPTER -> communityViewModel.getChapterComments(targetId)
+            CommentLocation.ON_POST -> communityViewModel.getPostComments(targetId)
         }
     }
 
@@ -89,14 +91,14 @@ fun CommentsPage(
                 SmartInput(
                     onSend = { _, text, mentions, _, _, isSpoiler ->
                         when (commentLocation) {
-                            CommentLocation.ON_CHAPTER -> viewModel.addChapterComment(
+                            CommentLocation.ON_CHAPTER -> communityViewModel.addChapterComment(
                                 targetId, 
                                 text, 
                                 isSpoiler,
                                 mentions, 
                                 replyingTo?.id,
                             )
-                            CommentLocation.ON_POST -> viewModel.addPostComment(
+                            CommentLocation.ON_POST -> communityViewModel.addPostComment(
                                 targetId, 
                                 text, 
                                 isSpoiler,
@@ -109,7 +111,7 @@ fun CommentsPage(
                     },
                     initialText = initialText,
                     placeholder = if (replyingTo == null) "Add a comment..." else "Write a reply...",
-                    viewModel = viewModel
+                    sessionViewModel = sessionViewModel
                 )
             }
         }
@@ -135,13 +137,13 @@ fun CommentsPage(
                     CommentItem(
                         comment = comment,
                         onReplyClick = {onCommentClick(it)},
-                        onLikeClick = { viewModel.likeComment(it.id, commentLocation) },
+                        onLikeClick = { communityViewModel.likeComment(it.id, commentLocation) },
                         onCommentClick = { onCommentClick(it) },
                         onAuthorClick = { userId ->
-                            viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                            sessionViewModel.handleNavigation(Screen.Profile.createRoute(userId))
                         },
                         onShareClick = { c ->
-                            viewModel.setSharedContent(
+                            sessionViewModel.setSharedContent(
                                 SharedContent(
                                     id = c.id,
                                     type = ShareType.COMMENT,
@@ -150,16 +152,16 @@ fun CommentsPage(
                                     targetId = targetId
                                 )
                             )
-                            viewModel.showShareDialog(true)
+                            sessionViewModel.showShareDialog(true)
                         },
                         onDeleteClick = {
-                            viewModel.deleteComment(
+                            communityViewModel.deleteComment(
                                 comment.commentLocation,
                                 targetId,
                                 comment.id
                             )
                         },
-                        viewModel = viewModel
+                        sessionViewModel = sessionViewModel
                     )
                 }
             }

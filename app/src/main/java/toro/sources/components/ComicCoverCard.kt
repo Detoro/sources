@@ -17,7 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import toro.sources.AppViewModel
+import toro.sources.viewmodel.ComicsViewModel
+import toro.sources.viewmodel.SessionViewModel
 import com.toro.models.Comic
 import com.toro.models.ShareType
 import com.toro.models.SharedContent
@@ -29,7 +30,8 @@ import androidx.compose.material3.CardDefaults
 @Composable
 fun ComicCoverCard(
     comic: Comic,
-    viewModel: AppViewModel,
+    comicsViewModel: ComicsViewModel,
+    sessionViewModel: SessionViewModel,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
@@ -66,7 +68,7 @@ fun ComicCoverCard(
                 text = { Text("Share") },
                 onClick = {
                     showOptionsMenu = false
-                    viewModel.setSharedContent(
+                    sessionViewModel.setSharedContent(
                         SharedContent(
                             id = comic.id,
                             type = ShareType.COMIC,
@@ -74,7 +76,7 @@ fun ComicCoverCard(
                             previewText = "Comic"
                         )
                     )
-                    viewModel.showShareDialog(true)
+                    sessionViewModel.showShareDialog(true)
                 }
             )
 
@@ -82,7 +84,7 @@ fun ComicCoverCard(
                 text = { Text("Remove") },
                 onClick = {
                     showOptionsMenu = false
-                    viewModel.removeComicFromLibrary(comic.id)
+                    comicsViewModel.removeComicFromLibrary(comic.id)
                 }
             )
         }

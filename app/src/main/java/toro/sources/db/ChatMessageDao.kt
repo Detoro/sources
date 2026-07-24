@@ -15,6 +15,20 @@ interface ChatMessageDao {
     @Query("SELECT MAX(timestamp) FROM chat_messages WHERE conversationId = :conversationId")
     suspend fun getLastMessageTimestamp(conversationId: String): Long?
 
+    @Query("SELECT * FROM chat_messages WHERE id = :clientMessageId LIMIT 1")
+    suspend fun getMessageById(clientMessageId: String): ChatMessage?
+
+    @Query("""
+        UPDATE chat_messages
+        SET isDelivered = 1,
+            content = :serverContent
+        WHERE id = :clientMessageId
+    """)
+    suspend fun confirmPendingMessage(
+        clientMessageId: String,
+        serverContent: String
+    )
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMessages(messages: List<ChatMessage>)
 

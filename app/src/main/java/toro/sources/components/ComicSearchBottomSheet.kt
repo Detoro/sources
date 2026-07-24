@@ -13,16 +13,18 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import com.toro.models.ShareType
 import com.toro.models.SharedContent
-import toro.sources.AppViewModel
+import toro.sources.viewmodel.ComicsViewModel
+import toro.sources.viewmodel.SessionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComicSearchBottomSheet(
-    viewModel: AppViewModel,
+    comicsViewModel: ComicsViewModel,
+    sessionViewModel: SessionViewModel,
     onDismiss: () -> Unit,
 ) {
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val searchResults by viewModel.searchResults.collectAsState()
+    val searchQuery by comicsViewModel.searchQuery.collectAsState()
+    val searchResults by comicsViewModel.searchResults.collectAsState()
 
     var isSearchFocused by remember { mutableStateOf(false) }
     
@@ -47,7 +49,7 @@ fun ComicSearchBottomSheet(
             // The Search Bar
             OutlinedTextField(
                 value = searchQuery,
-                onValueChange = { viewModel.updateSearchQuery(it) },
+                onValueChange = { comicsViewModel.updateSearchQuery(it) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -58,7 +60,7 @@ fun ComicSearchBottomSheet(
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                        IconButton(onClick = { comicsViewModel.updateSearchQuery("") }) {
                             Icon(Icons.Default.Close, contentDescription = "Clear Search")
                         }
                     }
@@ -77,7 +79,7 @@ fun ComicSearchBottomSheet(
                     ComicRow(
                         comic = comic,
                         onClick = {
-                            viewModel.setSharedContent(
+                            sessionViewModel.setSharedContent(
                                 SharedContent(
                                     id = comic.id,
                                     type = ShareType.COMIC,

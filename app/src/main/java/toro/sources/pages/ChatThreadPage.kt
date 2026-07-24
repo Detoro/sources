@@ -1,6 +1,5 @@
 package toro.sources.pages
 
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -40,26 +39,31 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.toro.models.ShareType
 import kotlinx.coroutines.delay
-import toro.sources.AppViewModel
 import toro.sources.components.ChatBubble
 import toro.sources.components.SmartInput
 import toro.sources.components.TypingIndicator
+import toro.sources.viewmodel.ChatViewModel
+import toro.sources.viewmodel.SessionViewModel
+import toro.sources.viewmodel.ProfileViewModel
+import toro.sources.viewmodel.ComicsViewModel
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatThreadPage(
     conversationId: String,
-    viewModel: AppViewModel,
+    chatViewModel: ChatViewModel,
+    sessionViewModel: SessionViewModel,
+    comicsViewModel: ComicsViewModel,
+    profileViewModel: ProfileViewModel,
     onBackClick: () -> Unit,
     onProfileClick: (String) -> Unit
 ) {
-    val messages by viewModel.chatMessages.collectAsState()
-    Log.d("ChatThreadPage", "messages: $messages")
-    val me by viewModel.userProfile.collectAsState()
-    val inbox by viewModel.inbox.collectAsState()
-    val replyingToMessage by viewModel.replyingToMessage.collectAsState(null)
-    val typingUsers by viewModel.typingUsers.collectAsState()
+    val messages by chatViewModel.chatMessages.collectAsState()
+    val me by sessionViewModel.userProfile.collectAsState()
+    val inbox by chatViewModel.inbox.collectAsState()
+    val replyingToMessage by chatViewModel.replyingToMessage.collectAsState()
+    val typingUsers by chatViewModel.typingUsers.collectAsState()
 
     var expanded by remember { mutableStateOf(false) }
     var isSearching by remember { mutableStateOf(false) }
@@ -71,14 +75,18 @@ fun ChatThreadPage(
     }
     val targetUserId = activeChat?.otherUserId ?: ""
 
-    val filteredMessages = remember(messages, searchQuery, isSearching) {
-        if (!isSearching || searchQuery.isEmpty()) {
+    var debouncedSearchQuery by remember { mutableStateOf("") }
+    LaunchedEffect(searchQuery) {
+        delay(250.milliseconds)
+        debouncedSearchQuery = searchQuery
+    }
+
+    val filteredMessages = remember(messages, debouncedSearchQuery, isSearching) {
+        if (!isSearching || debouncedSearchQuery.isEmpty()) {
             messages
         } else {
             messages.filter { msg ->
-                val decrypted =
-                    if (msg.isEncrypted) viewModel.decryptMessage(msg.content) else msg.content
-                decrypted.contains(searchQuery, ignoreCase = true)
+                msg.content.contains(debouncedSearchQuery, ignoreCase = true)
             }
         }
     }
@@ -86,23 +94,23 @@ fun ChatThreadPage(
     val backgroundPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
-        viewModel.setChatBackground(conversationId, uri)
+        chatViewModel.setChatBackground(conversationId, uri)
     }
     val backgroundUri = activeChat?.backgroundImageUri
 
     LaunchedEffect(conversationId) {
-        viewModel.getChatMessages(conversationId)
+        chatViewModel.getChatMessages(conversationId)
     }
 
     LaunchedEffect(targetUserId) {
         if (targetUserId.isNotEmpty()) {
-            viewModel.getUserProfile(targetUserId)
+            profileViewModel.getUserProfile(targetUserId)
         }
     }
 
     DisposableEffect(conversationId) {
         onDispose {
-            viewModel.sendTypingIndicator(conversationId, false)
+            chatViewModel.sendTypingIndicator(conversationId, false)
         }
     }
 
@@ -172,7 +180,7 @@ fun ChatThreadPage(
                                         contentPadding = PaddingValues(horizontal = 8.dp)
                                     ) {
                                         Text(
-                                            text = activeChat?.otherUserName?.uppercase() ?: "Friend",
+                                            text = activeChat?.otherUserName ?: "Friend",
                                             style = MaterialTheme.typography.labelMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface
@@ -219,7 +227,7 @@ fun ChatThreadPage(
                                         text = { Text("Unadd Friend") },
                                         onClick = {
                                             expanded = false
-                                            viewModel.unAddFriend(targetUserId)
+                                            chatViewModel.unAddFriend(targetUserId)
                                             onBackClick()
                                         }
                                     )
@@ -236,7 +244,7 @@ fun ChatThreadPage(
                                             text = { Text("Remove Background") },
                                             onClick = {
                                                 expanded = false
-                                                viewModel.setChatBackground(conversationId, null)
+                                                chatViewModel.setChatBackground(conversationId, null)
                                             }
                                         )
                                     }
@@ -249,7 +257,7 @@ fun ChatThreadPage(
                                         },
                                         onClick = {
                                             expanded = false
-                                            viewModel.clearChatHistory(conversationId)
+                                            chatViewModel.clearChatHistory(conversationId)
                                         }
                                     )
                                 }
@@ -278,11 +286,7 @@ fun ChatThreadPage(
                                 modifier = Modifier.padding(start = 12.dp, end = 12.dp)
                             ) {
                                 replyingToMessage?.let { replyTarget ->
-                                    val rawDecrypted =
-                                        if (replyTarget.isEncrypted) viewModel.decryptMessage(
-                                            replyTarget.content
-                                        ) else replyTarget.content
-                                    val cleanDecryptedText = rawDecrypted.replace("\u0000", "").trim()
+                                    val cleanDecryptedText = replyTarget.content.replace("\u0000", "").trim()
                                     val repliedSharedType =
                                         if (replyTarget.sharedId != null) replyTarget.sharedType else if (replyTarget.sharedComicId != null) ShareType.COMIC else null
                                     val replyText = when {
@@ -330,7 +334,7 @@ fun ChatThreadPage(
                                             )
                                         }
 
-                                        IconButton(onClick = { viewModel.setReplyTarget(null) }) {
+                                        IconButton(onClick = { chatViewModel.setReplyTarget(null) }) {
                                             Icon(
                                                 imageVector = Icons.Default.Close,
                                                 contentDescription = "Cancel Reply",
@@ -340,15 +344,15 @@ fun ChatThreadPage(
                                     }
                                 }
                             }
-                            val sharedContent by viewModel.sharedContent.collectAsState()
-                            val editingMessage by viewModel.editingMessage.collectAsState()
+                            val sharedContent by sessionViewModel.sharedContent.collectAsState()
+                            val editingMessage by chatViewModel.editingMessage.collectAsState()
                             var isCurrentlyTyping by remember { mutableStateOf(false) }
                             LaunchedEffect(isCurrentlyTyping) {
                                 if (isCurrentlyTyping) {
-                                    viewModel.sendTypingIndicator(conversationId, true)
+                                    chatViewModel.sendTypingIndicator(conversationId, true)
                                     delay(3000.milliseconds)
                                     isCurrentlyTyping = false
-                                    viewModel.sendTypingIndicator(conversationId, false)
+                                    chatViewModel.sendTypingIndicator(conversationId, false)
                                 }
                             }
                             SmartInput(
@@ -358,38 +362,34 @@ fun ChatThreadPage(
                                         isCurrentlyTyping = true
                                     }
                                 },
-                                onSend = { _, text, _, _, attachment, isSpoiler ->
+                                onSend = { _, text, _, sharedComicIds, attachment, isSpoiler ->
                                     isCurrentlyTyping = false
-                                    viewModel.sendTypingIndicator(conversationId, false)
+                                    chatViewModel.sendTypingIndicator(conversationId, false)
                                     val currentEditingMessage = editingMessage
                                     if (currentEditingMessage != null) {
-                                        viewModel.editMessage(
+                                        chatViewModel.editMessage(
                                             currentEditingMessage.conversationId,
                                             currentEditingMessage.id,
                                             text
                                         )
-                                        viewModel.setEditingMessage(null)
+                                        chatViewModel.setEditingMessage(null)
                                     } else if (targetUserId.isNotEmpty()) {
-                                        viewModel.sendMessage(
+                                        chatViewModel.sendMessage(
                                             conversationId,
                                             text,
                                             isSpoiler = isSpoiler,
                                             sharedId = sharedContent?.id,
                                             sharedType = sharedContent?.type,
-                                            attachment = attachment,
+                                            sharedComicId = sharedComicIds.firstOrNull(),
                                             receiverId = targetUserId,
                                             receiverName = activeChat?.otherUserName
                                         )
                                     }
                                 },
-                                initialText = remember(editingMessage) {
-                                    editingMessage?.let { msg ->
-                                        if (msg.isEncrypted) viewModel.decryptMessage(msg.content) else msg.content
-                                    } ?: ""
-                                },
+                                initialText = editingMessage?.content ?: "",
                                 placeholder = if (editingMessage != null) "Edit message..." else "Type a message...",
                                 supportUpload = editingMessage == null,
-                                viewModel = viewModel
+                                sessionViewModel = sessionViewModel
                             )
                         }
                     }
@@ -403,6 +403,7 @@ fun ChatThreadPage(
             ) {
                 val lastUserMessageIndex = messages.indexOfFirst { it.senderId == me?.id }
                 val isTargetTyping = typingUsers.contains(targetUserId)
+                val messagesById = remember(messages) { messages.associateBy { it.id } }
 
                 LazyColumn(
                     modifier = Modifier
@@ -426,7 +427,7 @@ fun ChatThreadPage(
 
                         LaunchedEffect(msg.id) {
                             if (!isFromMe && !msg.isRead) {
-                                viewModel.markMessageAsRead(msg.id)
+                                chatViewModel.markMessageAsRead(msg.id)
                             }
                         }
 
@@ -434,7 +435,11 @@ fun ChatThreadPage(
                             message = msg,
                             isFromMe = isFromMe,
                             showStatus = isFromMe && index == lastUserMessageIndex,
-                            viewModel = viewModel
+                            repliedMessage = msg.replyToMessageId?.let { messagesById[it] },
+                            chatViewModel = chatViewModel,
+                            comicsViewModel = comicsViewModel,
+                            sessionViewModel = sessionViewModel,
+                            profileViewModel = profileViewModel,
                         )
                     }
 

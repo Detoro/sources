@@ -7,25 +7,26 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.toro.models.Comic
 import com.toro.models.*
-import toro.sources.AppViewModel
 import toro.sources.Screen
+import toro.sources.viewmodel.ProfileViewModel
+import toro.sources.viewmodel.SessionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComicInfoBottomSheet(
     comic: Comic,
-    viewModel: AppViewModel,
+    profileViewModel: ProfileViewModel,
+    sessionViewModel: SessionViewModel,
     onComicClick: (Comic) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val worksByAuthor by viewModel.targetUserWorks.collectAsState()
+    val worksByAuthor = profileViewModel.targetUserWorks.collectAsState().value
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -90,7 +91,7 @@ fun ComicInfoBottomSheet(
                         TextButton(
                             onClick = {
                                 onDismiss()
-                                viewModel.handleNavigation(Screen.Profile.createRoute(creator.id))
+                                sessionViewModel.handleNavigation(Screen.Profile.createRoute(creator.id))
                                       },
                             contentPadding = PaddingValues(0.dp),
                             modifier = Modifier.height(32.dp)

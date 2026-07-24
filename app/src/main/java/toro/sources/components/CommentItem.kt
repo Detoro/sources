@@ -23,10 +23,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import toro.sources.Screen
-import toro.sources.AppViewModel
-import toro.sources.convertTimestamp
+import toro.sources.utils.convertTimestamp
 import com.toro.models.Comment
 import com.toro.models.ShareType
+import toro.sources.viewmodel.SessionViewModel
 
 @Composable
 fun CommentItem(
@@ -39,7 +39,7 @@ fun CommentItem(
     onCommentClick: (Comment) -> Unit = {},
     onAuthorClick: (String) -> Unit = {},
     onShareClick: (Comment) -> Unit = {},
-    viewModel: AppViewModel? = null
+    sessionViewModel: SessionViewModel? = null
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showComment by remember { mutableStateOf(!comment.isSpoiler) }
@@ -115,7 +115,7 @@ fun CommentItem(
                             DropdownMenuItem(
                                 text = { Text("Report", color = MaterialTheme.colorScheme.error) },
                                 onClick = { showMenu = false
-                                    viewModel?.handleNavigation(Screen.Report.createRoute("COMMENT", comment.id))
+                                    sessionViewModel?.handleNavigation(Screen.Report.createRoute("COMMENT", comment.id))
                                 }
                             )
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
@@ -143,12 +143,12 @@ fun CommentItem(
                         imageUrl = comment.authorAvatarUrl,
                         modifier = Modifier.padding(bottom = 8.dp),
                         onClick = {
-                            if (viewModel != null) {
+                            if (sessionViewModel != null) {
                                 when (sharedType) {
-                                    ShareType.COMIC -> viewModel.handleNavigation(Screen.Overview.createRoute(sharedId))
-                                    ShareType.POST -> viewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
-                                    ShareType.COMMENT -> viewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
-                                    ShareType.USER -> viewModel.handleNavigation(Screen.Profile.createRoute(sharedId))
+                                    ShareType.COMIC -> sessionViewModel.handleNavigation(Screen.Overview.createRoute(sharedId))
+                                    ShareType.POST -> sessionViewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
+                                    ShareType.COMMENT -> sessionViewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
+                                    ShareType.USER -> sessionViewModel.handleNavigation(Screen.Profile.createRoute(sharedId))
                                 }
                             }
                         }

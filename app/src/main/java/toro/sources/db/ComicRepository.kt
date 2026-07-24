@@ -127,6 +127,7 @@ class ComicRepository(
         try {
             chapterDao.deleteAllChapters()
             comicDao.deleteAllComics()
+            conversationDao.deleteAllConversations()
             notificationDao.deleteAllNotifications()
             commentDao.deleteAllComments()
             postDao.deleteAllPosts()
@@ -271,6 +272,14 @@ class ComicRepository(
         return chatMessageDao.getLastMessageTimestamp(conversationId)
     }
 
+    suspend fun getMessageById(clientMessageId: String): ChatMessage? {
+        return chatMessageDao.getMessageById(clientMessageId)
+    }
+
+    suspend fun confirmPendingMessage(clientMessageId: String, serverContent: String) {
+        chatMessageDao.confirmPendingMessage(clientMessageId, serverContent)
+    }
+
     suspend fun deleteMessageById(messageId: String) {
         chatMessageDao.deleteMessageById(messageId)
     }
@@ -343,9 +352,5 @@ class ComicRepository(
 
     suspend fun saveAuthors(authors: List<UserProfile>) {
         authorDao.insertAuthors(authors)
-    }
-
-    suspend fun deleteAllAuthors() {
-        authorDao.deleteAllAuthors()
     }
 }

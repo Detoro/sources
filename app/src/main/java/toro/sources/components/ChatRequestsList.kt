@@ -17,13 +17,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import toro.sources.AppViewModel
+import toro.sources.viewmodel.ChatViewModel
 
 @Composable
 fun ChatRequestsList(
-    viewModel: AppViewModel
+    chatViewModel: ChatViewModel
 ) {
-    val requests by viewModel.chatRequests.collectAsState()
+    val requests by chatViewModel.chatRequests.collectAsState()
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(requests) { request ->
@@ -33,10 +33,10 @@ fun ChatRequestsList(
                 leadingContent = { DefaultAvatar() },
                 trailingContent = {
                     Row {
-                        IconButton(onClick = { viewModel.acceptFriend(request.id)}) {
+                        IconButton(onClick = { chatViewModel.acceptFriend(request.id)}) {
                             Icon(Icons.Default.Check, contentDescription = "Accept", tint = MaterialTheme.colorScheme.primary)
                         }
-                        IconButton(onClick = { viewModel.declineFriend(request.id) }) {
+                        IconButton(onClick = { chatViewModel.declineFriend(request.id) }) {
                             Icon(Icons.Default.Close, contentDescription = "Decline", tint = MaterialTheme.colorScheme.error)
                         }
                     }
