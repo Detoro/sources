@@ -3,64 +3,32 @@ package toro.sources.components
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import toro.sources.AppViewModel
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons.Filled
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import com.toro.models.Creator
-import com.toro.models.Genre
-import com.toro.models.PgRating
-import com.toro.models.Role
-import com.toro.models.ScrollDirection
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.toro.models.*
+import toro.sources.viewmodel.ComicsViewModel
+import toro.sources.viewmodel.SessionViewModel
+import toro.sources.viewmodel.CommunityViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewSeriesForm(
-    viewModel: AppViewModel,
+    comicsViewModel: ComicsViewModel,
+    sessionViewModel: SessionViewModel,
+    communityViewModel: CommunityViewModel,
     onCancel: () -> Unit,
     onUploadComplete: () -> Unit
 ) {
@@ -69,7 +37,7 @@ fun NewSeriesForm(
     var directionExpanded by remember { mutableStateOf(false) }
     var genreExpanded by remember { mutableStateOf(false) }
     var showAuthorSearch by remember { mutableStateOf(false) }
-    val currentUser by viewModel.userProfile.collectAsState()
+    val currentUser by sessionViewModel.userProfile.collectAsState()
     var description by remember { mutableStateOf("") }
     var selectedChapterUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var selectedAudioUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
@@ -77,8 +45,8 @@ fun NewSeriesForm(
     var selectedComicRating by remember { mutableStateOf(PgRating.ALL) }
     var selectedScrollDirection by remember { mutableStateOf(ScrollDirection.VERTICAL) }
     val selectedComicGenres = remember { mutableStateListOf<Genre>() }
-    val isUploading by viewModel.isUploading.collectAsState()
-    val uploadSuccess by viewModel.uploadSuccess.collectAsState()
+    val isUploading by comicsViewModel.isUploading.collectAsState()
+    val uploadSuccess by comicsViewModel.uploadSuccess.collectAsState()
     val ratingOptions = PgRating.entries
     val genreOptions = Genre.entries
     val roleOptions = Role.entries
@@ -110,7 +78,7 @@ fun NewSeriesForm(
     LaunchedEffect(uploadSuccess) {
         if (uploadSuccess) {
             onUploadComplete()
-            viewModel.resetUploadState()
+            comicsViewModel.resetUploadState()
         }
     }
 
@@ -151,7 +119,7 @@ fun NewSeriesForm(
                         selectedScrollDirection = ScrollDirection.VERTICAL
                         selectedComicGenres.clear()
                     }) {
-                        Icon(Filled.Close, contentDescription = "Post")
+                        Icon(Icons.Default.Close, contentDescription = "Clear")
                     }
                 }
             )
@@ -335,7 +303,7 @@ fun NewSeriesForm(
                 title.isNotBlank() && selectedChapterUris.isNotEmpty() && !isUploading
             Button(
                 onClick = {
-                    viewModel.uploadNewChapters(
+                    comicsViewModel.uploadNewChapters(
                         title = title,
                         authors = selectedAuthors,
                         scrollDirection = selectedScrollDirection,
@@ -356,8 +324,11 @@ fun NewSeriesForm(
             }
         }
         if (showAuthorSearch) {
+            val userSuggestions by communityViewModel.userSuggestions.collectAsState()
             UserSearchDialog(
-                viewModel = viewModel,
+                userSuggestions = userSuggestions,
+                onSearch = { communityViewModel.searchUsers(it) },
+                onClearSuggestions = { communityViewModel.clearUserSuggestions() },
                 title = "Add Co-Creator",
                 roles = roleOptions,
                 onDismiss = { showAuthorSearch = false },

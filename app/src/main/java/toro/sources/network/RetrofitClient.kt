@@ -49,7 +49,7 @@ object RetrofitClient {
             .addConverterFactory(networkJson.asConverterFactory("application/json".toMediaType()))
             .build()
     }
-    private val authApi by lazy { authRetrofit.create(AuthApi::class.java) }
+    val authApi: AuthApi by lazy { authRetrofit.create(AuthApi::class.java) }
 
     private val authInterceptor = Interceptor { chain ->
         val originalRequest = chain.request()
@@ -105,7 +105,7 @@ object RetrofitClient {
         }
     }
 
-    private val okHttpClient = OkHttpClient.Builder()
+   private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(authInterceptor)
         .authenticator(tokenAuthenticator)
         .connectTimeout(15, TimeUnit.SECONDS)

@@ -3,13 +3,14 @@ package toro.sources.pages
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.NotificationsNone
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -19,48 +20,64 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import toro.sources.AppViewModel
-import toro.sources.components.*
-import com.toro.models.Comic
-import toro.sources.Screen
-import com.toro.models.ShareType
-import com.toro.models.SharedContent
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.LaunchedEffect
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.toro.models.*
+import toro.sources.viewmodel.NotificationsViewModel
+import toro.sources.Screen
+import toro.sources.viewmodel.SessionViewModel
+import toro.sources.viewmodel.CommunityViewModel
+import toro.sources.components.*
+import toro.sources.viewmodel.ComicsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomePage(
-    viewModel: AppViewModel,
+    comicsViewModel: ComicsViewModel,
+    sessionViewModel: SessionViewModel = hiltViewModel(),
     onComicClick: (Comic) -> Unit,
     onAccountClick: () -> Unit,
     onNotificationsClick: () -> Unit
 ) {
-    val localCatalog by viewModel.localLibrary.collectAsState()
-    val onlineCatalog by viewModel.onlineLibrary.collectAsState()
-    val trending by viewModel.trending.collectAsState()
-    val recentlyRead by viewModel.recentlyReadComics.collectAsState()
-    val communityPosts by viewModel.communityPosts.collectAsState()
-    val followedAuthors by viewModel.subscribedAuthors.collectAsState()
+    val localCatalog by comicsViewModel.localLibrary.collectAsState()
+    val onlineCatalog by comicsViewModel.onlineLibrary.collectAsState()
+    val trending by comicsViewModel.trending.collectAsState()
+    val recentlyRead by comicsViewModel.recentlyReadComics.collectAsState()
+    
+    val communityViewModel: CommunityViewModel = hiltViewModel()
+    val communityState by communityViewModel.communityState.collectAsState()
+    val communityPosts = communityState.posts
+    
+    val followedAuthors by comicsViewModel.subscribedAuthors.collectAsState()
     val followedAuthorIds = followedAuthors.map { it.id }.toSet()
+    val me by sessionViewModel.userProfile.collectAsState()
 
-    val isLoading by viewModel.isLoading.collectAsState()
-    val notifications by viewModel.notifications.collectAsState()
+    val isLoading = communityState.isLoading
+    
+    val notificationsViewModel: NotificationsViewModel = hiltViewModel()
+    val notifications by notificationsViewModel.notifications.collectAsState()
     val unreadCount = notifications.count { !it.isRead }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            viewModel.importLocalComic(
+            comicsViewModel.importLocalComic(
                 title = "Imported Comic",
                 author = "Unknown",
                 description = "Imported from device",
-                comicUri = it
+                uri = it
             )
         }
+    }
+
+    LaunchedEffect(Unit) {
+        comicsViewModel.fetchTrendingAndRecommendations()
+        communityViewModel.getCommunityPosts()
     }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
@@ -85,9 +102,13 @@ fun HomePage(
                     IconButton(onClick = { filePickerLauncher.launch("application/*") }) {
                         Icon(Icons.Default.Add, contentDescription = "Import Comic")
                     }
-                    IconButton(onClick = { onAccountClick() }) {
-                        Icon(Icons.Default.Person, contentDescription = "Profile")
-                    }
+                    DefaultAvatar(
+                        avatarUrl = me?.avatarUrl,
+                        size = 32,
+                        modifier = Modifier
+                            .background(Color.Gray.copy(alpha = 0.2f), CircleShape)
+                            .clickable { onAccountClick() }
+                    )
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -146,7 +167,8 @@ fun HomePage(
                             ComicCarousel(
                                 title = "From Your Device",
                                 comics = localCatalog,
-                                viewModel = viewModel,
+                                comicsViewModel = comicsViewModel,
+                                sessionViewModel = sessionViewModel,
                                 onComicClick = onComicClick
                             )
                         }
@@ -176,14 +198,15 @@ fun HomePage(
                             ) { postIndex ->
                                 val post = followedPosts[postIndex]
                                 PostCard(
-                                    viewModel = viewModel,
+                                    communityViewModel = communityViewModel,
+                                    sessionViewModel = sessionViewModel,
                                     post = post,
                                     onCommentClick = { onNotificationsClick() },
                                     onAuthorClick = { userId ->
-                                        viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                        sessionViewModel.handleNavigation(Screen.Profile.createRoute(userId))
                                     },
                                     onShareClick = {
-                                        viewModel.setSharedContent(
+                                        sessionViewModel.setSharedContent(
                                             SharedContent(
                                                 id = it.id,
                                                 type = ShareType.POST,
@@ -191,7 +214,7 @@ fun HomePage(
                                                 previewText = it.content.take(50)
                                             )
                                         )
-                                        viewModel.showShareDialog(true)
+                                        sessionViewModel.showShareDialog(true)
                                     },
                                     modifier = Modifier
                                         .padding(horizontal = 16.dp)
@@ -211,22 +234,23 @@ fun HomePage(
                         }
                         items(announcements.take(2)) { post ->
                             PostCard(
-                                viewModel = viewModel,
+                                communityViewModel = communityViewModel,
+                                sessionViewModel = sessionViewModel,
                                 post = post,
                                 onCommentClick = { onNotificationsClick() },
                                 onAuthorClick = { userId ->
-                                    viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                    sessionViewModel.handleNavigation(Screen.Profile.createRoute(userId))
                                 },
                                 onShareClick = {
-                                    viewModel.setSharedContent(
+                                    sessionViewModel.setSharedContent(
                                         SharedContent(
                                             id = it.id,
                                             type = ShareType.POST,
-                                            title = it.title ?: "Announcement: ${null}",
+                                            title = it.title ?: "Announcement",
                                             previewText = it.content.take(50)
                                         )
                                     )
-                                    viewModel.showShareDialog(true)
+                                    sessionViewModel.showShareDialog(true)
                                 },
                                 modifier = Modifier
                                     .padding(horizontal = 16.dp)
@@ -238,7 +262,8 @@ fun HomePage(
                         ComicCarousel(
                             title = "For You",
                             comics = onlineCatalog,
-                            viewModel = viewModel,
+                            comicsViewModel = comicsViewModel,
+                            sessionViewModel = sessionViewModel,
                             onComicClick = onComicClick
                         )
                     }

@@ -39,7 +39,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import toro.sources.AppViewModel
 import toro.sources.components.CommentsSection
 import toro.sources.components.MuteToggleButton
 import toro.sources.components.ReaderNavigationBar
@@ -48,13 +47,18 @@ import toro.sources.components.ChapterBgmPlayer
 import toro.sources.components.ReaderHeaderBar
 import com.toro.models.Comic
 import com.toro.models.ScrollDirection
+import toro.sources.viewmodel.ComicsViewModel
+import toro.sources.viewmodel.CommunityViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import toro.sources.viewmodel.SessionViewModel
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun ReaderPage(
     pageCount: Int,
     comic: Comic,
-    viewModel: AppViewModel,
+    comicsViewModel: ComicsViewModel,
+    sessionViewModel: SessionViewModel,
     chapterId: String,
     startingIndex: Int = 0,
     onBack: () -> Unit = {},
@@ -67,16 +71,17 @@ fun ReaderPage(
 ) {
     if (pageCount == 0) return
 
-    val chapters by viewModel.chapters.collectAsState()
+    val chapters by comicsViewModel.chapters.collectAsState()
 
     val currentChapter = remember(chapters, chapterId) {
         chapters.find { it.id == chapterId }
     }
 
     var isMuted by remember { mutableStateOf(false) }
+    val communityViewModel: CommunityViewModel = hiltViewModel()
 
     LaunchedEffect(comic.id) {
-        viewModel.getChapterComments(chapterId)
+        communityViewModel.getChapterComments(chapterId)
     }
 
     val pagerState = rememberPagerState(
@@ -112,7 +117,7 @@ fun ReaderPage(
     LaunchedEffect(pagerState.currentPage) {
         if (pagerState.currentPage < pageCount) {
             onPageChanged(pagerState.currentPage)
-            viewModel.preloadAdjacentPages(pagerState.currentPage)
+            comicsViewModel.preloadAdjacentPages(pagerState.currentPage)
         }
     }
 
@@ -121,7 +126,7 @@ fun ReaderPage(
         snapshotFlow { listState.firstVisibleItemIndex }
             .collect {
                 if (comic.scrollDirection != ScrollDirection.HORIZONTAL.name) {
-                    viewModel.preloadAdjacentPages(listState.firstVisibleItemIndex)
+                    comicsViewModel.preloadAdjacentPages(listState.firstVisibleItemIndex)
                 }
             }
     }
@@ -211,12 +216,13 @@ fun ReaderPage(
                     modifier = Modifier.fillMaxSize()
                 ) { pageIndex ->
                     if (pageIndex < pageCount) {
-                        SmartContentPage(pageIndex, viewModel.getPageData(pageIndex))
+                        SmartContentPage(pageIndex, comicsViewModel.getPageData(pageIndex))
                         val chapter = chapters.find { it.id == chapterId }
                         chapter?.lastReadPageIndex = pageIndex
                     } else {
                         CommentsSection(
-                            viewModel = viewModel,
+                            communityViewModel = communityViewModel,
+                            sessionViewModel = sessionViewModel,
                             onViewAllClick = { onViewAllComments(chapterId) },
                             onMakeFirstComment = { onViewAllComments(chapterId) },
                             onCommentClick = { comment -> onCommentThreadClick(chapterId, comment.id) },
@@ -233,11 +239,12 @@ fun ReaderPage(
                         key = { index -> "${chapterId}_$index" },
                         contentType = { "page" }
                     ) { pageIndex ->
-                        SmartContentPage(pageIndex, viewModel.getPageData(pageIndex))
+                        SmartContentPage(pageIndex, comicsViewModel.getPageData(pageIndex))
                     }
                     item(key = "comments", contentType = "comments") {
                         CommentsSection(
-                            viewModel = viewModel,
+                            communityViewModel = communityViewModel,
+                            sessionViewModel = sessionViewModel,
                             onViewAllClick = { onViewAllComments(chapterId) },
                             onMakeFirstComment = { onViewAllComments(chapterId) },
                             onCommentClick = { comment -> onCommentThreadClick(chapterId, comment.id) },

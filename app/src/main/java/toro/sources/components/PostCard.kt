@@ -26,13 +26,15 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import toro.sources.AppViewModel
+import toro.sources.viewmodel.CommunityViewModel
+import toro.sources.viewmodel.SessionViewModel
 import toro.sources.Screen
 import com.toro.models.Post
 
 @Composable
 fun PostCard(
-    viewModel: AppViewModel,
+    communityViewModel: CommunityViewModel,
+    sessionViewModel: SessionViewModel,
     post: Post,
     onCommentClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -116,8 +118,8 @@ fun PostCard(
                             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest)
                         ) {
                             DropdownMenuItem(text = { Text("Share") }, onClick = { showMenu = false; onShareClick(post) })
-                            DropdownMenuItem(text = { Text("Report", color = MaterialTheme.colorScheme.error) }, onClick = { showMenu = false; viewModel.handleNavigation(Screen.Report.createRoute("POST", post.id)) })
-                            DropdownMenuItem(text = { Text("Delete") }, onClick = { showMenu = false; viewModel.deletePost(post.id) })
+                            DropdownMenuItem(text = { Text("Report", color = MaterialTheme.colorScheme.error) }, onClick = { showMenu = false; sessionViewModel.handleNavigation(Screen.Report.createRoute("POST", post.id)) })
+                            DropdownMenuItem(text = { Text("Delete") }, onClick = { showMenu = false; communityViewModel.deletePost(post.id) })
                         }
                     }
                 }
@@ -183,7 +185,7 @@ fun PostCard(
                     LikeButton(
                         likeCount = post.likesCount,
                         isLiked = post.isLiked,
-                        onLike = { viewModel.likePost(post.id) }
+                        onLike = { communityViewModel.likePost(post.id) }
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     CommentButton(
@@ -192,7 +194,7 @@ fun PostCard(
                     Spacer(modifier = Modifier.weight(1f))
                     BookmarkButton(
                         isBookmarked = post.isBookmarked,
-                        onBookmark = { viewModel.bookmarkPost(post.id) },
+                        onBookmark = { communityViewModel.bookmarkPost(post.id) },
                     )
                 }
             }

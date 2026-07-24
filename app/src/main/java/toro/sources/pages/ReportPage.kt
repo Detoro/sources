@@ -20,7 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import toro.sources.AppViewModel
+import toro.sources.viewmodel.CommunityViewModel
 
 enum class ReportTargetType {
     APP, POST, COMMENT, USER
@@ -29,7 +29,7 @@ enum class ReportTargetType {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReportPage(
-    viewModel: AppViewModel,
+    communityViewModel: CommunityViewModel,
     targetType: ReportTargetType,
     targetId: String? = null,
     onBackClick: () -> Unit,
@@ -74,7 +74,7 @@ fun ReportPage(
                     onClick = {
                         if (selectedReason != null) {
                             isSubmitting = true
-                            viewModel.submitReport(
+                            communityViewModel.submitReport(
                                 targetType = targetType.name,
                                 targetId = targetId,
                                 reason = selectedReason!!,

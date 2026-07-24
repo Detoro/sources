@@ -17,20 +17,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import toro.sources.AppViewModel
 import toro.sources.components.SmartInput
 import toro.sources.components.SharedContentPlaceholder
+import toro.sources.viewmodel.CommunityViewModel
+import toro.sources.viewmodel.SessionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PostPage(
-    viewModel: AppViewModel,
+    communityViewModel: CommunityViewModel,
+    sessionViewModel: SessionViewModel,
     onBackClick: () -> Unit
 ) {
     var postTitle by remember { mutableStateOf("") }
     var postText by remember { mutableStateOf("") }
-    val currentUser by viewModel.userProfile.collectAsState()
-    val sharedContent by viewModel.sharedContent.collectAsState()
+    val currentUser by sessionViewModel.userProfile.collectAsState()
+    val sharedContent by sessionViewModel.sharedContent.collectAsState()
 
     Scaffold(
         topBar = {
@@ -48,12 +50,13 @@ fun PostPage(
             SmartInput(
                 supportTitle = true,
                 supportUpload = true,
-                viewModel = viewModel,
+                communityViewModel = communityViewModel,
+                sessionViewModel = sessionViewModel,
                 onSend = { title, text, mentions, _, attachment, isSpoiler ->
-                    viewModel.makePost(
+                    communityViewModel.makePost(
                         title = title,
                         isSpoiler = isSpoiler,
-                        postContent = text,
+                        content = text,
                         tags = mentions,
                         attachment = attachment
                     )
@@ -100,11 +103,11 @@ fun PostPage(
                                 .background(Color.LightGray),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(currentUser?.username?.take(1)?.uppercase() ?: "Default text", fontSize = 14.sp, color = Color.Black)
+                            Text(currentUser?.username?.take(1)?.uppercase() ?: "U", fontSize = 14.sp, color = Color.Black)
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
-                            Text(text = currentUser?.username ?: "Default text", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
+                            Text(text = currentUser?.username ?: "User", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
                             Text(text = "Just now", color = Color.Gray, fontSize = 12.sp)
                         }
                     }
@@ -122,8 +125,8 @@ fun PostPage(
                     if (sharedContent != null) {
                         SharedContentPlaceholder(
                             type = sharedContent!!.type,
-                            title = "Nothing",
-                            previewText = "Next to nothing",
+                            title = sharedContent!!.title,
+                            previewText = sharedContent!!.previewText,
                             onClick = { /* No-op in post preview */ }
                         )
                         Spacer(modifier = Modifier.height(8.dp))

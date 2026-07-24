@@ -9,20 +9,22 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import toro.sources.AppViewModel
 import toro.sources.Screen
-import toro.sources.convertTimestamp
+import toro.sources.utils.convertTimestamp
+import toro.sources.viewmodel.NotificationsViewModel
+import toro.sources.viewmodel.SessionViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsPage(
-    viewModel: AppViewModel,
+    viewModel: NotificationsViewModel,
+    sessionViewModel: SessionViewModel = hiltViewModel(),
     onBackClick: () -> Unit
 ) {
     val notifications by viewModel.notifications.collectAsState()
@@ -68,10 +70,7 @@ fun NotificationsPage(
                 modifier = Modifier.fillMaxSize().padding(paddingValues)
             ) {
                 items(notifications, key = { it.id }) { notification ->
-                    val dismissState = rememberSwipeToDismissBoxState(
-                        SwipeToDismissBoxValue.Settled,
-                        SwipeToDismissBoxDefaults.positionalThreshold
-                    )
+                    val dismissState = rememberSwipeToDismissBoxState()
 
                     SwipeToDismissBox(
                         state = dismissState,
@@ -81,10 +80,10 @@ fun NotificationsPage(
                                 Modifier.fillMaxSize().padding(horizontal = 20.dp),
                                 contentAlignment = Alignment.CenterEnd
                             ) {
-                                Text("Don't do this to me")
+                                Text("Delete", color = MaterialTheme.colorScheme.onErrorContainer)
                             }
                         },
-                        onDismiss = {viewModel.deleteNotification(notification.id)}
+                        onDismiss = { viewModel.deleteNotification(notification.id) }
                     ) {
                         ListItem(
                             headlineContent = { Text(notification.message) },
@@ -102,7 +101,7 @@ fun NotificationsPage(
                                 .graphicsLayer(alpha = if (notification.isRead) 0.5f else 1.0f)
                                 .clickable {
                                     viewModel.markNotificationAsRead(notification.id)
-                                    viewModel.handleNavigation(Screen.Chat.createRoute(notification.relatedId ?: ""))
+                                    sessionViewModel.handleNavigation(Screen.Chat.createRoute(notification.relatedId ?: ""))
                             }
                         )
                     }

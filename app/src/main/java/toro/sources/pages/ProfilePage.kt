@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.rounded.Message
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.rounded.Person
@@ -32,36 +33,42 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.AsyncImage
-import com.toro.models.Conversation
-import toro.sources.Screen
-import toro.sources.AppViewModel
-import toro.sources.components.PostCard
-import toro.sources.components.ComicCoverCard
-import com.toro.models.SharedContent
-import com.toro.models.ShareType
+import com.toro.models.*
 import kotlinx.coroutines.launch
+import toro.sources.viewmodel.ProfileViewModel
+import toro.sources.Screen
+import toro.sources.viewmodel.SessionViewModel
+import toro.sources.viewmodel.ChatViewModel
+import toro.sources.viewmodel.CommunityViewModel
+import toro.sources.components.ComicCoverCard
+import toro.sources.components.PostCard
+import toro.sources.viewmodel.ComicsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
 fun ProfilePage(
-    viewModel: AppViewModel,
+    profileViewModel: ProfileViewModel,
+    sessionViewModel: SessionViewModel,
+    communityViewModel: CommunityViewModel,
+    chatViewModel: ChatViewModel,
     userId: String? = null,
     onSettingsClick: () -> Unit,
+    onLogoutClick: () -> Unit,
     onBackClick: (() -> Unit)? = null
 ) {
-    val me by viewModel.userProfile.collectAsState()
+    val me by sessionViewModel.userProfile.collectAsState()
     val targetUserId = userId ?: me?.id
     val isMyProfile = targetUserId == me?.id
 
-    val userProfile by (if (isMyProfile) viewModel.userProfile else viewModel.targetUserProfile).collectAsState()
-    val userPosts by (if (isMyProfile) viewModel.userPosts else viewModel.targetUserPosts).collectAsState()
-    val userPostsCount = userPosts.size
-    val userWorks by (if (isMyProfile) viewModel.userWorks else viewModel.targetUserWorks).collectAsState()
-    val userWorksCount = userWorks.size
-    val userFriends by viewModel.inbox.collectAsState()
-    val userFriendsCount = userFriends.size
+    val userProfile by (if (isMyProfile) sessionViewModel.userProfile else profileViewModel.targetUserProfile).collectAsState()
+    val userPosts by (if (isMyProfile) communityViewModel.communityState.collectAsState().value.posts.filter {
+        it.authorId == me?.id }.let { mutableStateOf(it)
+        } else profileViewModel.targetUserPosts.collectAsState())
+    val userWorks by (if (isMyProfile) profileViewModel.userWorks else profileViewModel.targetUserWorks).collectAsState()
+    val userFriends by chatViewModel.inbox.collectAsState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var showBioDialog by remember { mutableStateOf(false) }
@@ -69,14 +76,14 @@ fun ProfilePage(
 
     LaunchedEffect(targetUserId) {
         if (targetUserId?.isNotEmpty() == true) {
-            viewModel.getUserProfile(targetUserId)
+            profileViewModel.getUserProfile(targetUserId)
         }
     }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri ->
-            uri?.let { viewModel.uploadAvatar(it) }
+            uri?.let { profileViewModel.uploadAvatar(it) }
         }
     )
 
@@ -98,8 +105,7 @@ fun ProfilePage(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    userProfile?.bio = newBio
-                    viewModel.updateBio(newBio)
+                    profileViewModel.updateBio(newBio)
                     showBioDialog = false
                 }) { Text("Save") }
             },
@@ -114,7 +120,7 @@ fun ProfilePage(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text(if (isMyProfile) "My Profile" else "Profile") },
                 navigationIcon = {
                     if (onBackClick != null) {
@@ -125,9 +131,12 @@ fun ProfilePage(
                 },
                 actions = {
                     if (isMyProfile) {
-                        IconButton(onClick = { onSettingsClick() }) {
+                        IconButton(onClick = onSettingsClick) {
                             Icon(Icons.Default.Settings, contentDescription = "Settings")
                         }
+                    }
+                    IconButton(onClick = onLogoutClick) {
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout")
                     }
                 },
                 scrollBehavior = scrollBehavior,
@@ -265,7 +274,7 @@ fun ProfilePage(
                             ) {
                                 ProfileStat("Posts", profile.postsCount)
                                 if (profile.isAuthor) ProfileStat("Followers", profile.followersCount)
-                                ProfileStat("Friends", userFriendsCount)
+                                ProfileStat("Friends", userFriends.size)
                                 if (profile.isAuthor) ProfileStat("Works", profile.worksCount)
                             }
                         }
@@ -301,9 +310,9 @@ fun ProfilePage(
                                         )
                                         Spacer(Modifier.width(10.dp))
                                         val count = when (index) {
-                                            0 -> userPostsCount
-                                            1 -> userFriendsCount
-                                            2 -> userWorksCount
+                                            0 -> userPosts.size
+                                            1 -> userFriends.size
+                                            2 -> userWorks.size
                                             else -> 0
                                         }
 
@@ -336,14 +345,15 @@ fun ProfilePage(
                                     ) {
                                         items(userPosts) { post ->
                                             PostCard(
-                                                viewModel = viewModel,
+                                                communityViewModel = communityViewModel,
+                                                sessionViewModel = sessionViewModel,
                                                 post = post,
-                                                onCommentClick = { viewModel.handleNavigation(Screen.PostComments.createRoute(post.id)) },
-                                                onAuthorClick = { userId ->
-                                                    if (userId != targetUserId) viewModel.handleNavigation(Screen.Profile.createRoute(userId))
+                                                onCommentClick = { sessionViewModel.handleNavigation(Screen.PostComments.createRoute(post.id)) },
+                                                onAuthorClick = { uId ->
+                                                    if (uId != targetUserId) sessionViewModel.handleNavigation(Screen.Profile.createRoute(uId))
                                                 },
                                                 onShareClick = { p ->
-                                                    viewModel.setSharedContent(
+                                                    sessionViewModel.setSharedContent(
                                                         SharedContent(
                                                             id = p.id,
                                                             type = ShareType.POST,
@@ -351,7 +361,7 @@ fun ProfilePage(
                                                             previewText = p.content.take(50)
                                                         )
                                                     )
-                                                    viewModel.showShareDialog(true)
+                                                    sessionViewModel.showShareDialog(true)
                                                 }
                                             )
                                         }
@@ -369,15 +379,15 @@ fun ProfilePage(
                                         items(userFriends) { chat ->
                                             FriendCard(
                                                 friend = chat,
-                                                onChatClick = { viewModel.handleNavigation(Screen.Chat.createRoute(chat.conversationId)) },
-                                                onProfileClick = { viewModel.getUserProfile(chat.otherUserId) },
-                                                viewModel = viewModel
+                                                onChatClick = { sessionViewModel.handleNavigation(Screen.Chat.createRoute(chat.conversationId)) },
+                                                onProfileClick = { profileViewModel.getUserProfile(chat.otherUserId) }
                                             )
                                         }
                                     }
                                 }
                             }
                             2 -> {
+                                val comicsViewModel: ComicsViewModel = hiltViewModel()
                                 if (userWorks.isEmpty()) {
                                     EmptyState("No works published yet.")
                                 } else {
@@ -388,7 +398,7 @@ fun ProfilePage(
                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                     ) {
                                         items(userWorks) { comic ->
-                                            ComicCoverCard(comic, viewModel, onClick = {})
+                                            ComicCoverCard(comic, comicsViewModel, sessionViewModel, onClick = {})
                                         }
                                     }
                                 }
@@ -428,12 +438,12 @@ fun EmptyState(message: String) {
         }
     }
 }
+
 @Composable
 private fun FriendCard(
     friend: Conversation,
     onProfileClick: () -> Unit,
     onChatClick: () -> Unit,
-    viewModel: AppViewModel,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -486,7 +496,7 @@ private fun FriendCard(
 
                 if (!friend.lastMessage.isNullOrBlank()) {
                     Text(
-                        text = viewModel.decryptMessage(friend.lastMessage ?: "Start a conversation"),
+                        text = friend.lastMessage ?: "Start a conversation",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,

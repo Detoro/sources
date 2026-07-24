@@ -35,21 +35,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import toro.sources.AppViewModel
-import toro.sources.SearchSource
+import toro.sources.viewmodel.SessionViewModel
 import com.toro.models.*
 import toro.sources.components.ComicCoverCard
+import toro.sources.viewmodel.ComicsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchPage(
-    viewModel: AppViewModel,
+    comicsViewModel: ComicsViewModel,
+    sessionViewModel: SessionViewModel,
     onComicClick: (Comic) -> Unit
 ) {
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val searchResults by viewModel.searchResults.collectAsState()
-    val searchSource by viewModel.searchSource.collectAsState()
-    val currentFilter by viewModel.searchFilter.collectAsState()
+    val searchQuery by comicsViewModel.searchQuery.collectAsState()
+    val searchResults by comicsViewModel.searchResults.collectAsState()
+    val searchSource by comicsViewModel.searchSource.collectAsState()
+    val currentFilter by comicsViewModel.searchFilter.collectAsState()
 
     var isGridView by remember { mutableStateOf(true) }
     val searchFilters = listOf("All", "Comics", "Authors", "Tags")
@@ -59,7 +60,7 @@ fun SearchPage(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text("Search") },
                 actions = {
                     IconButton(onClick = { isGridView = !isGridView }) {
@@ -77,7 +78,7 @@ fun SearchPage(
                     titleContentColor = Color.Unspecified,
                     actionIconContentColor = Color.Unspecified
                 ),
-                windowInsets = WindowInsets(top = 0.dp)
+                windowInsets = WindowInsets(top = 8.dp)
             )
         }
     ) { paddingValues ->
@@ -88,7 +89,7 @@ fun SearchPage(
         ) {
             TextField(
                 value = searchQuery,
-                onValueChange = { viewModel.updateSearchQuery(it) },
+                onValueChange = { comicsViewModel.updateSearchQuery(it) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -97,7 +98,7 @@ fun SearchPage(
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon", tint = MaterialTheme.colorScheme.primary) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                        IconButton(onClick = { comicsViewModel.updateSearchQuery("") }) {
                             Icon(Icons.Default.Close, contentDescription = "Clear Search")
                         }
                     }
@@ -138,7 +139,7 @@ fun SearchPage(
                             .weight(1f)
                             .clip(CircleShape)
                             .background(backgroundColor)
-                            .clickable { viewModel.updateSearchSource(source) }
+                            .clickable { comicsViewModel.updateSearchSource(source) }
                             .padding(vertical = 8.dp)
                             .animateContentSize(),
                         contentAlignment = Alignment.Center
@@ -153,7 +154,7 @@ fun SearchPage(
                 }
             }
 
-            // 3. Filter Tags Row (All, Comics, Authors, Tags)
+            // Filter Tags Row (All, Comics, Authors, Tags)
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -162,7 +163,7 @@ fun SearchPage(
                 items(searchFilters) { filter ->
                     FilterChip(
                         selected = currentFilter == filter,
-                        onClick = { viewModel.updateSearchFilter(filter) },
+                        onClick = { comicsViewModel.updateSearchFilter(filter) },
                         label = { Text(filter) },
                         shape = CircleShape,
                         colors = FilterChipDefaults.filterChipColors(
@@ -173,7 +174,7 @@ fun SearchPage(
                 }
             }
 
-            // 4. The Results Area (Animated Grid/List Toggle)
+            // The Results Area (Animated Grid/List Toggle)
             AnimatedContent(
                 targetState = searchQuery.isBlank() to searchResults.isEmpty(),
                 transitionSpec = { fadeIn() togetherWith fadeOut() },
@@ -187,10 +188,6 @@ fun SearchPage(
                         EmptySearchState("No results found for \"$searchQuery\"")
                     }
                     else -> {
-                        // Apply client-side filter mock (You can move this to your ViewModel later)
-                        // This assumes your ViewModel currently returns a generic list of comics.
-                        // If selectedFilter is "Authors", you would map authors here.
-
                         AnimatedContent(
                             targetState = isGridView,
                             transitionSpec = { fadeIn() togetherWith fadeOut() },
@@ -205,7 +202,7 @@ fun SearchPage(
                                     modifier = Modifier.fillMaxSize()
                                 ) {
                                     items(searchResults) { comic ->
-                                        ComicCoverCard(comic = comic, viewModel = viewModel, onClick = { onComicClick(comic) })
+                                        ComicCoverCard(comic = comic, comicsViewModel = comicsViewModel, sessionViewModel = sessionViewModel, onClick = { onComicClick(comic) })
                                     }
                                 }
                             } else {

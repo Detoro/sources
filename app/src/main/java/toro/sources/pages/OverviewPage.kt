@@ -22,23 +22,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import toro.sources.AppViewModel
 import toro.sources.components.*
 import com.toro.models.ShareType
 import com.toro.models.Chapter
 import com.toro.models.*
+import toro.sources.viewmodel.ChatViewModel
+import toro.sources.viewmodel.ComicsViewModel
+import toro.sources.viewmodel.ProfileViewModel
+import toro.sources.viewmodel.SessionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OverviewPage(
-    viewModel: AppViewModel,
+    comicsViewModel: ComicsViewModel,
+    profileViewModel: ProfileViewModel,
+    sessionViewModel: SessionViewModel,
+    chatViewModel: ChatViewModel,
     onBackClick: () -> Unit,
     onAuthorClick: (String) -> Unit,
     onComicClick: (Comic) -> Unit,
     onChapterClick: (Chapter) -> Unit
 ) {
-    val comic by viewModel.currentComic.collectAsState()
-    val chapters by viewModel.chapters.collectAsState()
+    val comic by comicsViewModel.currentComic.collectAsState()
+    val chapters by comicsViewModel.chapters.collectAsState()
     val userRating = comic?.rating ?: 0f
     var expanded by remember { mutableStateOf(false) }
     var dropDownSelection by remember { mutableStateOf("Latest First") }
@@ -59,7 +65,7 @@ fun OverviewPage(
 
     LaunchedEffect(comic?.id) {
         comic?.let { comic ->
-            viewModel.getChaptersForComic(comic)
+            comicsViewModel.getChaptersForComic(comic)
         }
     }
 
@@ -82,8 +88,8 @@ fun OverviewPage(
                     comic?.let { currentComic ->
                         IconButton(
                             onClick = {
+                                profileViewModel.getUserProfile(currentComic.authorId)
                                 showInfoSheet = true
-                                viewModel.getUserWorks(currentComic.authorId)
                             },
                             modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), shape = RoundedCornerShape(50))
                         ) {
@@ -213,7 +219,7 @@ fun OverviewPage(
                                 InteractiveRatingStars(
                                     initialRating = userRating,
                                     onRatingSelected = { rating ->
-                                        viewModel.rateComic(safeComic.id, rating)
+                                        comicsViewModel.rateComic(safeComic.id, rating)
                                     }
                                 )
                             }
@@ -223,8 +229,8 @@ fun OverviewPage(
                             SubscribeButton(
                                 isComicSubscribed = safeComic.isSubscribed,
                                 isLocalSideload = safeComic.isLocalSideload,
-                                onSubscribeToComic = { viewModel.toggleComicSubscription(safeComic.id) },
-                                onSubscribeToAuthor = { viewModel.subscribeToAuthor(safeComic.authorId) }
+                                onSubscribeToComic = { comicsViewModel.toggleComicSubscription(safeComic.id) },
+                                onSubscribeToAuthor = { comicsViewModel.subscribeToAuthor(safeComic.authorId) }
                             )
                         }
                     }
@@ -291,14 +297,12 @@ fun OverviewPage(
                 }
 
                 items(sortedChapters, key = {chapter -> chapter.id}) { chapter ->
-                    Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                        ChapterRow(
-                            chapter = chapter,
-                            onClick = {
-                                onChapterClick(chapter)
-                            }
-                        )
-                    }
+                    ChapterRow(
+                        chapter = chapter,
+                        onClick = {
+                            onChapterClick(chapter)
+                        }
+                    )
                 }
             }
 
@@ -307,7 +311,7 @@ fun OverviewPage(
                     onDismiss = { showActionSheet = false },
                     onShare = { showShareDialog = true },
                     onRemove = {
-                        viewModel.removeComicFromLibrary(safeComic.id, onRemoved = onBackClick)
+                        comicsViewModel.removeComicFromLibrary(safeComic.id)
                     }
                 )
             }
@@ -315,7 +319,8 @@ fun OverviewPage(
             if (showInfoSheet) {
                 ComicInfoBottomSheet(
                     comic = safeComic,
-                    viewModel = viewModel,
+                    profileViewModel = profileViewModel,
+                    sessionViewModel = sessionViewModel,
                     onComicClick = onComicClick,
                     onDismiss = { showInfoSheet = false }
                 )
@@ -323,7 +328,8 @@ fun OverviewPage(
 
             if (showShareDialog) {
                 ShareDialog(
-                    viewModel = viewModel,
+                    sessionViewModel = sessionViewModel,
+                    chatViewModel = chatViewModel,
                     sharedId = safeComic.id,
                     sharedType = ShareType.COMIC,
                     sharedTitle = safeComic.title,

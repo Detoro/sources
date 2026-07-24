@@ -2,53 +2,16 @@ package toro.sources.pages
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.BubbleChart
-import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.Code
-import androidx.compose.material.icons.filled.ColorLens
-import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.DeleteOutline
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Password
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import toro.sources.R
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -59,20 +22,24 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
-import toro.sources.AppViewModel
+import toro.sources.R
 import toro.sources.Screen
+import toro.sources.viewmodel.SessionViewModel
+import toro.sources.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalCoilApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsPage(
-    viewModel: AppViewModel,
+    sessionViewModel: SessionViewModel,
+    profileViewModel: ProfileViewModel,
     onLogoutClick: () -> Unit,
+    onDeleteAccountClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val userProfile by viewModel.userProfile.collectAsState()
-    val isDarkTheme by viewModel.isDarkTheme.collectAsState()
+    val userProfile by sessionViewModel.userProfile.collectAsState()
+    val isDarkTheme by sessionViewModel.isDarkTheme.collectAsState()
     var showResetPasswordDialog by remember { mutableStateOf(false) }
     var showStorageDialog by remember { mutableStateOf(false) }
     var showUsernameDialog by remember { mutableStateOf(false) }
@@ -93,17 +60,14 @@ fun SettingsPage(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.logoutUser(onLogoutClick) }) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Profile")
+                    IconButton(onClick = onLogoutClick) {
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout")
                     }
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    navigationIconContentColor = Color.Unspecified,
-                    titleContentColor = Color.Unspecified,
-                    actionIconContentColor = Color.Unspecified
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
                 windowInsets = WindowInsets(top = 3.dp)
             )
@@ -119,7 +83,6 @@ fun SettingsPage(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 3. Grouped Cards for Settings
             SettingsGroup(title = "Profile Privacy") {
                 ListItem(
                     headlineContent = { Text("Private Profile") },
@@ -128,7 +91,7 @@ fun SettingsPage(
                     trailingContent = {
                         Switch(
                             checked = userProfile?.isPrivate ?: false,
-                            onCheckedChange = { viewModel.toggleProfilePrivacy(userProfile!!.id) }
+                            onCheckedChange = { profileViewModel.toggleProfilePrivacy(userProfile!!.id) }
                         )
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
@@ -140,7 +103,7 @@ fun SettingsPage(
                     headlineContent = { Text("Dark Theme") },
                     leadingContent = { Icon(Icons.Default.ColorLens, contentDescription = null) },
                     trailingContent = {
-                        Switch(checked = isDarkTheme, onCheckedChange = { viewModel.toggleDarkTheme(it) })
+                        Switch(checked = isDarkTheme, onCheckedChange = { sessionViewModel.toggleDarkTheme(it) })
                     },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
@@ -184,7 +147,7 @@ fun SettingsPage(
                 ListItem(
                     headlineContent = { Text("About") },
                     leadingContent = { Icon(Icons.Default.BubbleChart, contentDescription = null) },
-                    modifier = Modifier.clickable { viewModel.handleNavigation(Screen.About.route) },
+                    modifier = Modifier.clickable { sessionViewModel.handleNavigation(Screen.About.route) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
                 ListItem(
@@ -199,7 +162,7 @@ fun SettingsPage(
                 ListItem(
                     headlineContent = { Text("Report") },
                     leadingContent = { Icon(Icons.Default.BugReport, contentDescription = null) },
-                    modifier = Modifier.clickable { viewModel.handleNavigation(Screen.Report.createRoute("USER", userProfile?.id ?: "")) },
+                    modifier = Modifier.clickable { sessionViewModel.handleNavigation(Screen.Report.createRoute("USER", userProfile?.id ?: "")) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
             }
@@ -230,7 +193,7 @@ fun SettingsPage(
                 confirmButton = {
                     TextButton(onClick = {
                         showDeleteDialog = false
-                        viewModel.deleteAccount()
+                        onDeleteAccountClick()
                     }) { Text("Yes") }
                 }
             )
@@ -270,8 +233,7 @@ fun SettingsPage(
                 confirmButton = {
                     TextButton(onClick = {
                         if (newUsername.isNotBlank()) {
-                            userProfile?.username = newUsername
-                            viewModel.updateUsername(newUsername)
+                            profileViewModel.updateUsername(newUsername)
                         }
                         showUsernameDialog = false
                     }) { Text("Save") }
@@ -293,8 +255,8 @@ fun SettingsPage(
                 confirmButton = {
                     TextButton(
                         onClick = {
-                            viewModel.deleteUserLocalData()
                             showClearDbDialog = false
+                            sessionViewModel.deleteUserLocalData()
                         },
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                     ) {

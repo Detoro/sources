@@ -6,12 +6,13 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
+import dagger.hilt.android.AndroidEntryPoint
+import androidx.hilt.navigation.compose.hiltViewModel
+import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -43,9 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -58,6 +56,9 @@ import toro.sources.pages.ChatThreadPage
 import toro.sources.pages.CommentThreadPage
 import toro.sources.pages.CommentsPage
 import com.toro.models.*
+import toro.sources.viewmodel.AuthViewModel
+import toro.sources.viewmodel.ChatViewModel
+import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.components.AddChapterForm
 import toro.sources.components.NewSeriesForm
 import toro.sources.pages.EngagementPage
@@ -77,11 +78,15 @@ import toro.sources.pages.UploadPage
 import toro.sources.pages.WelcomePage
 import toro.sources.ui.theme.SourcesTheme
 import toro.sources.components.ShareDialog
+import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.pages.AboutPage
 import toro.sources.pages.InterestsPage
 import toro.sources.pages.ReportPage
 import toro.sources.pages.ReportTargetType
 import toro.sources.pages.SuccessfulTaskPage
+import toro.sources.viewmodel.NotificationsViewModel
+import toro.sources.viewmodel.ProfileViewModel
+import toro.sources.viewmodel.SessionViewModel
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -134,6 +139,7 @@ sealed class Screen(val route: String) {
     }
 }
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -161,63 +167,19 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
     }
 
-    private fun handleIntent(intent: Intent?, viewModel: AppViewModel) {
-        intent?.let {
-            val routingType = it.getStringExtra("type")
-            val id = it.getStringExtra("id")
-
-            when (routingType) {
-                NotificationType.CHAT.name -> {
-                    if (id != null) {
-                        viewModel.handleNavigation(Screen.Chat.createRoute(id))
-                    }
-                }
-                NotificationType.LIKE.name -> {
-                    viewModel.handleNavigation(Screen.Engagement.route)
-                }
-                NotificationType.COMMENT.name, NotificationType.FOLLOW.name -> {
-                    if (id != null) {
-                        viewModel.handleNavigation(Screen.PostComments.createRoute(id))
-                    } else {
-                        viewModel.handleNavigation(Screen.Notifications.route)
-                    }
-                }
-                NotificationType.FRIEND_REQUEST.name -> {
-                    viewModel.handleNavigation(Screen.FriendRequest.route)
-                }
-            }
-            it.removeExtra("type")
-            it.removeExtra("id")
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         requestNotificationPermission()
 
-        val preferenceManager = PreferenceManager(this)
-        RetrofitClient.initialize(preferenceManager)
-
-        val appContainer = application as SourcesCanvas
-        val appRepository = appContainer.repository
-
-        val factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                if (modelClass.isAssignableFrom(AppViewModel::class.java)) {
-                    return AppViewModel(application, appRepository) as T
-                }
-                throw IllegalArgumentException("Unknown ViewModel class")
-            }
-        }
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
         setContent {
-            val viewModel: AppViewModel = viewModel(factory = factory)
+            val sessionViewModel: SessionViewModel = hiltViewModel()
+            val isDarkTheme by sessionViewModel.isDarkTheme.collectAsState()
 
             SourcesTheme(
-                darkTheme = isSystemInDarkTheme(),
+                darkTheme = isDarkTheme,
                 dynamicColor = true
             ) {
                 Surface(
@@ -225,10 +187,10 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     LaunchedEffect(intent) {
-                        handleIntent(intent, viewModel)
+                        sessionViewModel.handleIntent(intent)
                     }
 
-                    AppNavigation(viewModel)
+                    AppNavigation(sessionViewModel = sessionViewModel)
                 }
             }
         }
@@ -236,11 +198,11 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppNavigation(viewModel: AppViewModel) {
+fun AppNavigation(sessionViewModel: SessionViewModel) {
     val navController = rememberNavController()
-
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val context = LocalContext.current
 
     val bottomNavRoutes = listOf(
         Screen.Home.route,
@@ -249,22 +211,23 @@ fun AppNavigation(viewModel: AppViewModel) {
         Screen.Inbox.route,
         Screen.Activity.route
     )
-    val context = LocalContext.current
-    val currentUser by viewModel.userProfile.collectAsState()
-    val pendingNav by viewModel.pendingNavigation.collectAsState()
-    val showShareDialog by viewModel.showShareDialog.collectAsState()
-    val sharedContent by viewModel.sharedContent.collectAsState()
-    val error by viewModel.errorMessage.collectAsState()
+
+    val currentUser by sessionViewModel.userProfile.collectAsState()
+    val pendingNav by sessionViewModel.pendingNavigation.collectAsState()
+    val showShareDialog by sessionViewModel.showShareDialog.collectAsState()
+    val sharedContent by sessionViewModel.sharedContent.collectAsState()
+    val chatViewModel: ChatViewModel = hiltViewModel()
 
     if (showShareDialog && sharedContent != null) {
         ShareDialog(
-            viewModel = viewModel,
+            sessionViewModel = sessionViewModel,
+            chatViewModel = chatViewModel,
             sharedId = sharedContent!!.id,
             sharedType = sharedContent!!.type,
             sharedTitle = sharedContent!!.title,
             sharedPreview = sharedContent!!.previewText,
             sharedTargetId = sharedContent!!.targetId,
-            onDismiss = { viewModel.showShareDialog(false) }
+            onDismiss = { sessionViewModel.showShareDialog(false) }
         )
     }
 
@@ -279,7 +242,7 @@ fun AppNavigation(viewModel: AppViewModel) {
     LaunchedEffect(pendingNav) {
         pendingNav?.let { route ->
             navController.navigate(route)
-            viewModel.onNavigationHandled()
+            sessionViewModel.onNavigationHandled()
         }
     }
 
@@ -292,7 +255,7 @@ fun AppNavigation(viewModel: AppViewModel) {
                         label = { Text("Home") },
                         selected = currentRoute == Screen.Home.route,
                         onClick = {
-                            navController.navigate("home/${currentUser?.username}") {
+                            navController.navigate("home/${currentUser?.id}") {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
@@ -364,52 +327,43 @@ fun AppNavigation(viewModel: AppViewModel) {
             startDestination = startDestination,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Activity.route) {
-                ActivityPage(
-                    viewModel = viewModel,
-                    onComicClick = { comic ->
-                        navController.navigate(Screen.Overview.createRoute(comic.id))
-                    },
-                    onAddComic = { navController.navigate(Screen.Search.route) }
-                )
-            }
             composable(Screen.Login.route) {
+                val authViewModel: AuthViewModel = hiltViewModel()
+                val authState by authViewModel.authState.collectAsState()
                 LoginPage(
                     onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
                     onLoginSubmit = { credentials ->
-                        viewModel.loginUser(credentials, onSuccess = {
-                            navController.navigate("home/${currentUser?.username}") {
+                        authViewModel.loginUser(credentials, onSuccess = {
+                            navController.navigate("home/${currentUser?.id}") {
                                 popUpTo(Screen.Login.route) { inclusive = true }
                             }
                         })
                     },
-                    loginError = error
+                    loginError = authState.errorMessage
                 )
             }
             composable(Screen.SignUp.route) {
+                val authViewModel: AuthViewModel = hiltViewModel()
+                val authState by authViewModel.authState.collectAsState()
                 SignUpPage (
                     onNavigateBack = { navController.navigate((Screen.Login.route)) },
                     onSignUpSuccess = {newUser ->
-                        viewModel.registerNewUser(newUser, onSuccess = {
+                        authViewModel.registerNewUser(newUser, onSuccess = {
                             navController.navigate(Screen.Welcome.route) {
                                 popUpTo(Screen.Login.route) { inclusive = true }
                             }
                         })
                     },
-                    signError = error
-                )
-            }
-            composable(Screen.About.route) {
-                AboutPage (
-                    onBackClick = { navController.popBackStack() },
+                    signError = authState.errorMessage
                 )
             }
             composable(Screen.Welcome.route) {
+                val profileViewModel: ProfileViewModel = hiltViewModel()
                 WelcomePage(
                     username = currentUser?.username ?: "User",
                     onComplete = { selectedUri ->
                         if (selectedUri != null) {
-                            viewModel.uploadAvatar(selectedUri)
+                            profileViewModel.uploadAvatar(selectedUri)
                         }
                     },
                     onProceed = {
@@ -420,10 +374,11 @@ fun AppNavigation(viewModel: AppViewModel) {
                 )
             }
             composable(Screen.Interests.route) {
+                val profileViewModel: ProfileViewModel = hiltViewModel()
                 InterestsPage(
                     username = currentUser?.username ?: "User",
                     onComplete = { selectedGenres ->
-                        viewModel.updateInterests(selectedGenres.map { it.name })
+                        profileViewModel.updateInterests(selectedGenres.map { it.name })
                     },
                     onProceed = {
                         navController.navigate(Screen.Home.route) {
@@ -432,15 +387,70 @@ fun AppNavigation(viewModel: AppViewModel) {
                     }
                 )
             }
+            composable(Screen.Settings.route) {
+                val authViewModel: AuthViewModel = hiltViewModel()
+                val profileViewModel: ProfileViewModel = hiltViewModel()
+                SettingsPage(
+                    sessionViewModel = sessionViewModel,
+                    profileViewModel = profileViewModel,
+                    onLogoutClick = {
+                        authViewModel.logoutUser(onLogoutComplete = {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        })
+                    },
+                    onDeleteAccountClick = {
+                        authViewModel.deleteAccount(onComplete = {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        })
+                    },
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Profile.route) { backStackEntry ->
+                val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+                val profileViewModel: ProfileViewModel = hiltViewModel()
+                val chatViewModel: ChatViewModel = hiltViewModel()
+                val authViewModel: AuthViewModel = hiltViewModel()
+                val communityViewModel: CommunityViewModel = hiltViewModel()
+                ProfilePage(
+                    profileViewModel = profileViewModel,
+                    sessionViewModel = sessionViewModel,
+                    communityViewModel = communityViewModel,
+                    chatViewModel = chatViewModel,
+                    userId = userId,
+                    onSettingsClick = {
+                        navController.navigate(Screen.Settings.route)
+                    },
+                    onLogoutClick = {
+                        authViewModel.logoutUser(onLogoutComplete = {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        })
+                    },
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
             composable(Screen.Home.route) {
+                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 HomePage(
-                    viewModel = viewModel,
+                    comicsViewModel = comicsViewModel,
+                    sessionViewModel = sessionViewModel,
                     onComicClick = { comic ->
                         navController.navigate(Screen.Overview.createRoute(comic.id))
                     },
                     onAccountClick = {
-                        navController.navigate(Screen.Profile.createRoute(currentUser?.id ?: "fallback-123")) {
-                            launchSingleTop = true
+                        currentUser?.id?.let { id ->
+                            navController.navigate(Screen.Profile.createRoute(id)) {
+                                launchSingleTop = true
+                            }
                         }
                     },
                     onNotificationsClick = {
@@ -448,16 +458,68 @@ fun AppNavigation(viewModel: AppViewModel) {
                     },
                 )
             }
+            composable(Screen.Search.route) {
+                val comicsViewModel: ComicsViewModel = hiltViewModel()
+                SearchPage(
+                    comicsViewModel = comicsViewModel,
+                    sessionViewModel = sessionViewModel,
+                    onComicClick = { comic ->
+                        comicsViewModel.setCurrentComic(comic)
+                        navController.navigate(Screen.Overview.createRoute(comic.id))
+                    }
+                )
+            }
+            composable(Screen.Activity.route) {
+                val comicsViewModel: ComicsViewModel = hiltViewModel()
+                val communityViewModel: CommunityViewModel = hiltViewModel()
+                ActivityPage(
+                    comicsViewModel = comicsViewModel,
+                    communityViewModel = communityViewModel,
+                    sessionViewModel = sessionViewModel,
+                    onComicClick = { comic ->
+                        navController.navigate(Screen.Overview.createRoute(comic.id))
+                    },
+                    onAddComic = { navController.navigate(Screen.Search.route) }
+                )
+            }
+            composable(Screen.Overview.route) { backStackEntry ->
+                val comicId = backStackEntry.arguments?.getString("comicId") ?: return@composable
+                val comicsViewModel: ComicsViewModel = hiltViewModel()
+                val chatViewModel: ChatViewModel = hiltViewModel()
+                val profileViewModel: ProfileViewModel = hiltViewModel()
+
+                LaunchedEffect(comicId) {
+                    comicsViewModel.setCurrentComic(Comic(id = comicId, title = "", description = "", coverImageUrl = ""))
+                }
+
+                OverviewPage(
+                    comicsViewModel = comicsViewModel,
+                    sessionViewModel = sessionViewModel,
+                    chatViewModel = chatViewModel,
+                    profileViewModel = profileViewModel,
+                    onBackClick = { navController.popBackStack() },
+                    onAuthorClick = { authorId ->
+                        navController.navigate(Screen.Profile.createRoute(authorId))
+                    },
+                    onComicClick = {
+                        navController.navigate(Screen.Reader.createRoute(comicsViewModel.chapters.value.firstOrNull()?.id ?: ""))
+                    },
+                    onChapterClick = { chapter ->
+                        navController.navigate(Screen.Reader.createRoute(chapter.id))
+                        comicsViewModel.markChapterAsRead(comicId, chapter.id)
+                    }
+                )
+            }
             composable(Screen.Reader.route) { backStackEntry ->
-                val chapterId = backStackEntry.arguments?.getString("chapterId")
-                val comic by viewModel.currentComic.collectAsState()
-                val pageCount by viewModel.pageCount.collectAsState()
-                val chapters by viewModel.chapters.collectAsState()
+                val chapterId = backStackEntry.arguments?.getString("chapterId") ?: ""
+                val comicsViewModel: ComicsViewModel = hiltViewModel()
+                val comic by comicsViewModel.currentComic.collectAsState()
+                val pageCount by comicsViewModel.pageCount.collectAsState()
+                val chapters by comicsViewModel.chapters.collectAsState()
 
                 LaunchedEffect(chapterId, comic) {
-                    if (chapterId != null && comic != null) {
-                        viewModel.openChapter(comic!!, chapterId)
-                        viewModel.getPostComments(chapterId)
+                    if (chapterId.isNotEmpty() && comic != null) {
+                        comicsViewModel.openChapter(comic!!, chapterId)
                     }
                 }
 
@@ -472,14 +534,13 @@ fun AppNavigation(viewModel: AppViewModel) {
                         ReaderPage(
                             pageCount = pageCount,
                             comic = comic!!,
-                            viewModel = viewModel,
-                            chapterId = chapterId ?: "",
+                            comicsViewModel = comicsViewModel,
+                            sessionViewModel = sessionViewModel,
+                            chapterId = chapterId,
                             startingIndex = 0,
                             onBack = { navController.popBackStack() },
                             onPageChanged = { newPageIndex ->
-                                if (chapterId != null) {
-                                     viewModel.onPageTurned(chapterId, newPageIndex)
-                                }
+                                comicsViewModel.onPageTurned(chapterId, newPageIndex)
                             },
                             onNextChapter = {
                                 if (currentChapterIndex != -1 && currentChapterIndex < chapters.size - 1) {
@@ -498,15 +559,13 @@ fun AppNavigation(viewModel: AppViewModel) {
                                 }
                             },
                             onLikeChapter = {
-                                if (chapterId != null) {
-                                    viewModel.likeChapter(comic!!.id, chapterId)
-                                }
+                                comicsViewModel.likeChapter(comic!!.id, chapterId)
                             },
                             onViewAllComments = { _ ->
-                                navController.navigate(Screen.ChapterComments.createRoute(chapterId ?: ""))
+                                navController.navigate(Screen.ChapterComments.createRoute(chapterId))
                             },
-                            onCommentThreadClick = { chapterId, commentId ->
-                                navController.navigate(Screen.ChapterCommentThread.createRoute(chapterId, commentId))
+                            onCommentThreadClick = { cId, commentId ->
+                                navController.navigate(Screen.ChapterCommentThread.createRoute(cId, commentId))
                             }
                         )
                     } else {
@@ -520,9 +579,61 @@ fun AppNavigation(viewModel: AppViewModel) {
                     }
                 }
             }
+            composable(Screen.Inbox.route) {
+                val chatViewModel: ChatViewModel = hiltViewModel()
+                ChatInboxPage(
+                    chatViewModel = chatViewModel,
+                    onChatClick = { cId ->
+                        navController.navigate(Screen.Chat.createRoute(cId))
+                    },
+                    onFriendRequest = {
+                        navController.navigate(Screen.FriendRequest.route)
+                    },
+                    onProfileClick = { userId ->
+                        navController.navigate(Screen.Profile.createRoute(userId))
+                    }
+                )
+            }
+            composable(Screen.Chat.route) { backStackEntry ->
+                val conversationId = backStackEntry.arguments?.getString("conversationId") ?: return@composable
+                val chatViewModel: ChatViewModel = hiltViewModel()
+                val profileViewModel: ProfileViewModel = hiltViewModel()
+                val comicsViewModel: ComicsViewModel = hiltViewModel()
+                ChatThreadPage(
+                    conversationId = conversationId,
+                    chatViewModel = chatViewModel,
+                    comicsViewModel = comicsViewModel,
+                    profileViewModel = profileViewModel,
+                    sessionViewModel = sessionViewModel,
+                    onBackClick = { navController.popBackStack() },
+                    onProfileClick = { userId ->
+                        navController.navigate(Screen.Profile.createRoute(userId))
+                    }
+                )
+            }
+            composable(Screen.FriendRequest.route) {
+                val chatViewModel: ChatViewModel = hiltViewModel()
+                FriendRequestPage(
+                    chatViewModel = chatViewModel,
+                    onDismiss = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.AuthorSearch.route) {
+                val communityViewModel: CommunityViewModel = hiltViewModel()
+                val comicsViewModel: ComicsViewModel = hiltViewModel()
+                AuthorSearchPage(
+                    communityViewModel = communityViewModel,
+                    comicsViewModel = comicsViewModel,
+                    onDismiss = { navController.popBackStack() }
+                )
+            }
             composable(Screen.Engagement.route) {
+                val communityViewModel: CommunityViewModel = hiltViewModel()
+                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 EngagementPage(
-                    viewModel = viewModel,
+                    communityViewModel = communityViewModel,
+                    sessionViewModel = sessionViewModel,
+                    comicsViewModel = comicsViewModel,
                     onCommentClick = { postId ->
                         navController.navigate(Screen.PostComments.createRoute(postId))
                     },
@@ -531,20 +642,23 @@ fun AppNavigation(viewModel: AppViewModel) {
                     },
                     onAddAuthorClick = {
                         navController.navigate(Screen.AuthorSearch.route)
-                    },
-                    onBackClick = { navController.popBackStack() }
+                    }
                 )
             }
-            composable(Screen.Notifications.route) {
-                NotificationsPage(
-                    viewModel = viewModel,
+            composable(Screen.Post.route) {
+                val communityViewModel: CommunityViewModel = hiltViewModel()
+                PostPage(
+                    communityViewModel = communityViewModel,
+                    sessionViewModel = sessionViewModel,
                     onBackClick = { navController.popBackStack() }
                 )
             }
             composable(Screen.PostComments.route) { backStackEntry ->
                 val targetId = backStackEntry.arguments?.getString("targetId") ?: return@composable
+                val communityViewModel: CommunityViewModel = hiltViewModel()
                 CommentsPage(
-                    viewModel = viewModel,
+                    communityViewModel = communityViewModel,
+                    sessionViewModel = sessionViewModel,
                     commentLocation = CommentLocation.ON_POST,
                     targetId = targetId,
                     onBackClick = { navController.popBackStack() },
@@ -556,8 +670,10 @@ fun AppNavigation(viewModel: AppViewModel) {
             composable(Screen.PostCommentThread.route) { backStackEntry ->
                 val targetId = backStackEntry.arguments?.getString("targetId") ?: return@composable
                 val commentId = backStackEntry.arguments?.getString("commentId") ?: return@composable
+                val communityViewModel: CommunityViewModel = hiltViewModel()
                 CommentThreadPage(
-                    viewModel = viewModel,
+                    communityViewModel = communityViewModel,
+                    sessionViewModel = sessionViewModel,
                     commentLocation = CommentLocation.ON_POST,
                     targetId = targetId,
                     commentId = commentId,
@@ -566,8 +682,10 @@ fun AppNavigation(viewModel: AppViewModel) {
             }
             composable(Screen.ChapterComments.route) { backStackEntry ->
                 val targetId = backStackEntry.arguments?.getString("targetId") ?: return@composable
+                val communityViewModel: CommunityViewModel = hiltViewModel()
                 CommentsPage(
-                    viewModel = viewModel,
+                    communityViewModel = communityViewModel,
+                    sessionViewModel = sessionViewModel,
                     commentLocation = CommentLocation.ON_CHAPTER,
                     targetId = targetId,
                     onBackClick = { navController.popBackStack() },
@@ -579,45 +697,37 @@ fun AppNavigation(viewModel: AppViewModel) {
             composable(Screen.ChapterCommentThread.route) { backStackEntry ->
                 val targetId = backStackEntry.arguments?.getString("targetId") ?: return@composable
                 val commentId = backStackEntry.arguments?.getString("commentId") ?: return@composable
+                val communityViewModel: CommunityViewModel = hiltViewModel()
                 CommentThreadPage(
-                    viewModel = viewModel,
+                    communityViewModel = communityViewModel,
+                    sessionViewModel = sessionViewModel,
                     commentLocation = CommentLocation.ON_CHAPTER,
                     targetId = targetId,
                     commentId = commentId,
                     onBackClick = { navController.popBackStack() }
                 )
             }
-            composable(Screen.Post.route) {
-                PostPage(
-                    viewModel = viewModel,
-                    onBackClick = { navController.popBackStack() }
-                )
-            }
-            composable(Screen.Overview.route) { backStackEntry ->
-                val comicId = backStackEntry.arguments?.getString("comicId") ?: return@composable
+            composable(Screen.Report.route) { backStackEntry ->
+                val typeString = backStackEntry.arguments?.getString("targetType") ?: "APP"
+                val targetId = backStackEntry.arguments?.getString("targetId")?.takeIf { it != "none" }
+                val communityViewModel: CommunityViewModel = hiltViewModel()
+                val targetType = ReportTargetType.valueOf(typeString)
 
-                LaunchedEffect(comicId) {
-                    viewModel.loadComicById(comicId)
-                }
-
-                OverviewPage(
-                    viewModel = viewModel,
+                ReportPage(
+                    communityViewModel = communityViewModel,
+                    targetType = targetType,
+                    targetId = targetId,
                     onBackClick = { navController.popBackStack() },
-                    onAuthorClick = { authorId ->
-                        navController.navigate(Screen.Profile.createRoute(authorId))
-                    },
-                    onComicClick = {
-                        viewModel.loadAndNavigateToComic(comicId)
-                    },
-                    onChapterClick = { chapter ->
-                        navController.navigate(Screen.Reader.createRoute(chapter.id))
-                        viewModel.markChapterAsRead(comicId, chapter.id)
+                    onSubmitSuccess = {
+                        navController.popBackStack()
+                        Toast.makeText(context, "Successfully sent", Toast.LENGTH_SHORT).show()
                     }
                 )
             }
             composable(Screen.Upload.route) {
+                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 UploadPage(
-                    viewModel = viewModel,
+                    viewModel = comicsViewModel,
                     onBackClick = { navController.popBackStack() },
                     onUploadNewComic = {
                         navController.navigate(Screen.AddComic.route)
@@ -632,20 +742,13 @@ fun AppNavigation(viewModel: AppViewModel) {
                     }
                 )
             }
-            composable(Screen.Success.route) { backStackEntry ->
-                val successMessage = backStackEntry.arguments?.getString("successMessage") ?: return@composable
-                SuccessfulTaskPage(
-                    successMessage,
-                    onTimeElapsed = {
-                        navController.navigate("home/${currentUser?.username}") {
-                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
-                        }
-                    }
-                )
-            }
             composable(Screen.AddComic.route) {
+                val comicsViewModel: ComicsViewModel = hiltViewModel()
+                val communityViewModel: CommunityViewModel = hiltViewModel()
                 NewSeriesForm(
-                    viewModel = viewModel,
+                    comicsViewModel = comicsViewModel,
+                    communityViewModel = communityViewModel,
+                    sessionViewModel = sessionViewModel,
                     onCancel = { navController.popBackStack() },
                     onUploadComplete = {
                         navController.navigate(Screen.Success.createRoute("Upload Successful!")) {
@@ -657,8 +760,12 @@ fun AppNavigation(viewModel: AppViewModel) {
                 )
             }
             composable(Screen.AddChapter.route) {
+                val comicsViewModel: ComicsViewModel = hiltViewModel()
+                val profileViewModel: ProfileViewModel = hiltViewModel()
                 AddChapterForm(
-                    viewModel = viewModel,
+                    comicsViewModel = comicsViewModel,
+                    profileViewModel = profileViewModel,
+                    sessionViewModel = sessionViewModel,
                     onCancel = { navController.popBackStack() },
                     onUploadComplete = {
                         navController.navigate(Screen.Success.createRoute("Upload Successful!")) {
@@ -667,91 +774,27 @@ fun AppNavigation(viewModel: AppViewModel) {
                     }
                 )
             }
-            composable(Screen.Search.route) {
-                SearchPage(
-                    viewModel = viewModel,
-                    onComicClick = { comic ->
-                        viewModel.setCurrentComic(comic)
-                        navController.navigate(Screen.Overview.createRoute(comic.id))
-                    }
-                )
-            }
-            composable(Screen.Settings.route) {
-                SettingsPage(
-                    viewModel = viewModel,
-                    onLogoutClick = {
-                        viewModel.logoutUser(onLogoutComplete = {
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(0) { inclusive = true }
-                                launchSingleTop = true
-                            }
-                        })
-                    },
+            composable(Screen.Notifications.route) {
+                val notificationsViewModel: NotificationsViewModel = hiltViewModel()
+                NotificationsPage(
+                    viewModel = notificationsViewModel,
+                    sessionViewModel = sessionViewModel,
                     onBackClick = { navController.popBackStack() }
                 )
             }
-            composable(Screen.Inbox.route) {
-                ChatInboxPage(
-                    viewModel = viewModel,
-                    onChatClick = { userId ->
-                        navController.navigate(Screen.Chat.createRoute(userId))
-                    },
-                    onFriendRequest = {
-                        navController.navigate(Screen.FriendRequest.route)
-                    },
-                    onProfileClick = { userId ->
-                        navController.navigate(Screen.Profile.createRoute(userId))
-                    }
-                )
-            }
-            composable(Screen.FriendRequest.route) {
-                FriendRequestPage(
-                    viewModel = viewModel,
-                    onDismiss = { navController.popBackStack() }
-                )
-            }
-            composable(Screen.AuthorSearch.route) {
-                AuthorSearchPage(
-                    viewModel = viewModel,
-                    onDismiss = { navController.popBackStack() }
-                )
-            }
-            composable(Screen.Chat.route) { backStackEntry ->
-                val conversationId = backStackEntry.arguments?.getString("conversationId") ?: return@composable
-                ChatThreadPage(
-                    conversationId = conversationId,
-                    viewModel = viewModel,
+            composable(Screen.About.route) {
+                AboutPage (
                     onBackClick = { navController.popBackStack() },
-                    onProfileClick = { userId ->
-                        navController.navigate(Screen.Profile.createRoute(userId))
-                    }
                 )
             }
-            composable(Screen.Profile.route) { backStackEntry ->
-                val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
-                ProfilePage(
-                    viewModel = viewModel,
-                    userId = userId,
-                    onSettingsClick = {
-                        navController.navigate(Screen.Settings.route)
-                    },
-                    onBackClick = { navController.popBackStack() }
-                )
-            }
-            composable(Screen.Report.route) { backStackEntry ->
-                val typeString = backStackEntry.arguments?.getString("targetType") ?: "APP"
-                val targetId = backStackEntry.arguments?.getString("targetId")?.takeIf { it != "none" }
-
-                val targetType = ReportTargetType.valueOf(typeString)
-
-                ReportPage(
-                    viewModel = viewModel,
-                    targetType = targetType,
-                    targetId = targetId,
-                    onBackClick = { navController.popBackStack() },
-                    onSubmitSuccess = {
-                        navController.popBackStack()
-                        Toast.makeText(context, "Successfully sent", Toast.LENGTH_SHORT).show()
+            composable(Screen.Success.route) { backStackEntry ->
+                val successMessage = backStackEntry.arguments?.getString("successMessage") ?: ""
+                SuccessfulTaskPage(
+                    successMessage,
+                    onTimeElapsed = {
+                        navController.navigate("home/${currentUser?.id}") {
+                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                        }
                     }
                 )
             }
