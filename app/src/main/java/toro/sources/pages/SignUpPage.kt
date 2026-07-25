@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.PersonPinCircle
 import androidx.compose.material.icons.rounded.PersonAdd
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DisplayMode
@@ -49,6 +51,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -62,8 +66,9 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun SignUpPage(
     onNavigateBack: () -> Unit,
-    onSignUpSuccess: (AuthRequest) -> Unit,
-    signError: String? = null
+    onSignUpSubmit: (AuthRequest) -> Unit,
+    signError: String? = null,
+    isLoading: Boolean = false
 ) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -71,12 +76,31 @@ fun SignUpPage(
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
-    var isError by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var selectedDateText by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
-    val errorMessage = stringResource(id = R.string.error_message)
+
+    var usernameError by remember { mutableStateOf(false) }
+    var emailError by remember { mutableStateOf(false) }
+    var passwordError by remember { mutableStateOf(false) }
+    var serverErrorDismissed by remember { mutableStateOf(false) }
+
+    val blankFieldMessage = stringResource(id = R.string.error_message)
+    val passwordMismatchMessage = "Passwords don't match"
     val scrollState = rememberScrollState()
+
+    LaunchedEffect(signError) {
+        serverErrorDismissed = false
+    }
+
+    fun dismissErrors() {
+        usernameError = false
+        emailError = false
+        passwordError = false
+        serverErrorDismissed = true
+    }
+
+    val showServerError = signError != null && !serverErrorDismissed
 
     Box(
         modifier = Modifier
@@ -128,25 +152,66 @@ fun SignUpPage(
                     modifier = Modifier.padding(top = 4.dp)
                 )
 
+                if (showServerError) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = signError,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(32.dp))
 
                 OutlinedTextField(
                     value = username,
-                    onValueChange = { username = it },
+                    onValueChange = {
+                        username = it
+                        dismissErrors()
+                    },
                     label = { Text(stringResource(R.string.username)) },
                     leadingIcon = { Icon(Icons.Outlined.PersonPinCircle, contentDescription = null) },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    singleLine = true,
+                    isError = usernameError,
+                    enabled = !isLoading,
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = signError != null
+                    supportingText = {
+                        if (usernameError) {
+                            Text(
+                                text = blankFieldMessage,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { email = it },
+                    onValueChange = {
+                        email = it
+                        dismissErrors()
+                    },
                     label = { Text(stringResource(R.string.email)) },
                     leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                    singleLine = true,
+                    isError = emailError,
+                    enabled = !isLoading,
                     shape = RoundedCornerShape(16.dp),
+                    supportingText = {
+                        if (emailError) {
+                            Text(
+                                text = blankFieldMessage,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
@@ -154,7 +219,7 @@ fun SignUpPage(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { showDatePicker = true }
+                        .clickable(enabled = !isLoading) { showDatePicker = true }
                 ) {
                     OutlinedTextField(
                         value = selectedDateText,
@@ -191,8 +256,12 @@ fun SignUpPage(
                 Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(
                     value = password,
-                    onValueChange = { password = it },
+                    onValueChange = {
+                        password = it
+                        dismissErrors()
+                    },
                     label = { Text(stringResource(R.string.password)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Next),
                     singleLine = true,
                     shape = RoundedCornerShape(16.dp),
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -204,23 +273,20 @@ fun SignUpPage(
                             Icon(imageVector = image, contentDescription = description)
                         }
                     },
-                    isError = isError,
-                    supportingText = {
-                        if (isError) {
-                            Text(
-                                text = errorMessage,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                    },
+                    isError = passwordError,
+                    enabled = !isLoading,
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(16.dp))
 
                 OutlinedTextField(
                     value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
+                    onValueChange = {
+                        confirmPassword = it
+                        dismissErrors()
+                    },
                     label = { Text(stringResource(R.string.confirm_password)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                     singleLine = true,
                     shape = RoundedCornerShape(16.dp),
                     visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -232,11 +298,12 @@ fun SignUpPage(
                             Icon(imageVector = image, contentDescription = description)
                         }
                     },
-                    isError = isError,
+                    isError = passwordError,
+                    enabled = !isLoading,
                     supportingText = {
-                        if (isError) {
+                        if (passwordError) {
                             Text(
-                                text = errorMessage,
+                                text = if (password.isEmpty()) blankFieldMessage else passwordMismatchMessage,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.fillMaxWidth()
                             )
@@ -249,35 +316,49 @@ fun SignUpPage(
 
                 Button(
                     onClick = {
-                        val newUser = AuthRequest(
-                            username = username,
-                            email = email,
-                            birthday = selectedDate,
-                            password = password,
-                            avatarUrl = null
-                        )
-                        if (password.isNotEmpty() && password == confirmPassword && username.isNotEmpty()) {
-                            isError = false
-                            onSignUpSuccess(newUser)
-                        } else {
-                            isError = true
+                        val trimmedUsername = username.trim()
+                        val trimmedEmail = email.trim()
+
+                        usernameError = trimmedUsername.isEmpty()
+                        emailError = trimmedEmail.isEmpty()
+                        passwordError = password.isEmpty() || password != confirmPassword
+
+                        if (!usernameError && !emailError && !passwordError) {
+                            onSignUpSubmit(
+                                AuthRequest(
+                                    username = trimmedUsername,
+                                    email = trimmedEmail,
+                                    birthday = selectedDate,
+                                    password = password,
+                                    avatarUrl = null
+                                )
+                            )
                         }
                     },
+                    enabled = !isLoading,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.signup),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.signup),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                TextButton(onClick = onNavigateBack) {
+                TextButton(onClick = onNavigateBack, enabled = !isLoading) {
                     Text(
                         text = stringResource(R.string.login_recommendation),
                         fontWeight = FontWeight.SemiBold

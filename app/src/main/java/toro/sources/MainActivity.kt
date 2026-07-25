@@ -101,8 +101,8 @@ sealed class Screen(val route: String) {
     }
     object Inbox : Screen("inbox")
     object Search : Screen("search")
-    object Reader : Screen("reader/{chapterId}") {
-        fun createRoute(chapterId: String) = "reader/$chapterId"
+    object Reader : Screen("reader/{comicId}/{chapterId}") {
+        fun createRoute(comicId: String, chapterId: String) = "reader/$comicId/$chapterId"
     }
     object Overview : Screen("overview/{comicId}") {
         fun createRoute(comicId: String) = "overview/$comicId"
@@ -339,7 +339,8 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                             }
                         })
                     },
-                    loginError = authState.errorMessage
+                    loginError = authState.errorMessage,
+                    isLoading = authState.isLoading
                 )
             }
             composable(Screen.SignUp.route) {
@@ -347,14 +348,15 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 val authState by authViewModel.authState.collectAsState()
                 SignUpPage (
                     onNavigateBack = { navController.navigate((Screen.Login.route)) },
-                    onSignUpSuccess = {newUser ->
+                    onSignUpSubmit = { newUser ->
                         authViewModel.registerNewUser(newUser, onSuccess = {
                             navController.navigate(Screen.Welcome.route) {
                                 popUpTo(Screen.Login.route) { inclusive = true }
                             }
                         })
                     },
-                    signError = authState.errorMessage
+                    signError = authState.errorMessage,
+                    isLoading = authState.isLoading
                 )
             }
             composable(Screen.Welcome.route) {
@@ -444,7 +446,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                     comicsViewModel = comicsViewModel,
                     sessionViewModel = sessionViewModel,
                     onComicClick = { comic ->
-                        navController.navigate(Screen.Overview.createRoute(comic.id))
+                        comicsViewModel.loadAndNavigateToComic(comic.id)
                     },
                     onAccountClick = {
                         currentUser?.id?.let { id ->
@@ -464,8 +466,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                     comicsViewModel = comicsViewModel,
                     sessionViewModel = sessionViewModel,
                     onComicClick = { comic ->
-                        comicsViewModel.setCurrentComic(comic)
-                        navController.navigate(Screen.Overview.createRoute(comic.id))
+                        comicsViewModel.loadAndNavigateToComic(comic.id)
                     }
                 )
             }
@@ -477,7 +478,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                     communityViewModel = communityViewModel,
                     sessionViewModel = sessionViewModel,
                     onComicClick = { comic ->
-                        navController.navigate(Screen.Overview.createRoute(comic.id))
+                        comicsViewModel.loadAndNavigateToComic(comic.id)
                     },
                     onAddComic = { navController.navigate(Screen.Search.route) }
                 )
@@ -502,16 +503,17 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                         navController.navigate(Screen.Profile.createRoute(authorId))
                     },
                     onComicClick = {
-                        navController.navigate(Screen.Reader.createRoute(comicsViewModel.chapters.value.firstOrNull()?.id ?: ""))
+                        comicsViewModel.loadAndNavigateToComic(comicId)
                     },
                     onChapterClick = { chapter ->
-                        navController.navigate(Screen.Reader.createRoute(chapter.id))
+                        navController.navigate(Screen.Reader.createRoute(comicId, chapter.id))
                         comicsViewModel.markChapterAsRead(comicId, chapter.id)
                     }
                 )
             }
             composable(Screen.Reader.route) { backStackEntry ->
                 val chapterId = backStackEntry.arguments?.getString("chapterId") ?: ""
+                val comicId = backStackEntry.arguments?.getString("comicId") ?: ""
                 val comicsViewModel: ComicsViewModel = hiltViewModel()
                 val comic by comicsViewModel.currentComic.collectAsState()
                 val pageCount by comicsViewModel.pageCount.collectAsState()
@@ -521,6 +523,9 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                     if (chapterId.isNotEmpty() && comic != null) {
                         comicsViewModel.openChapter(comic!!, chapterId)
                     }
+                }
+                LaunchedEffect(comicId) {
+                    comicsViewModel.loadComicById(comicId)
                 }
 
                 if (comic == null) {
@@ -545,7 +550,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                             onNextChapter = {
                                 if (currentChapterIndex != -1 && currentChapterIndex < chapters.size - 1) {
                                     val nextId = chapters[currentChapterIndex + 1].id
-                                    navController.navigate(Screen.Reader.createRoute(nextId)) {
+                                    navController.navigate(Screen.Reader.createRoute(comicId, nextId)) {
                                         popUpTo(Screen.Reader.route) { inclusive = true }
                                     }
                                 }
@@ -553,7 +558,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                             onPreviousChapter = {
                                 if (currentChapterIndex > 0) {
                                     val prevId = chapters[currentChapterIndex - 1].id
-                                    navController.navigate(Screen.Reader.createRoute(prevId)) {
+                                    navController.navigate(Screen.Reader.createRoute(comicId, prevId)) {
                                         popUpTo(Screen.Reader.route) { inclusive = true }
                                     }
                                 }

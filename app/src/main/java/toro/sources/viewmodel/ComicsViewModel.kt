@@ -217,7 +217,6 @@ class ComicsViewModel @Inject constructor(
                         RetrofitClient.comicApiService.getChaptersForComic(comic.id)
                     }
                     _chapters.value = remoteChapters
-                    withContext(Dispatchers.IO) { repository.syncRemoteChaptersForComic(comic) }
                 } catch (e: Exception) {
                     if (e !is CancellationException) Log.e("ComicsViewModel", "Failed to sync chapters: ${e.message}")
                 }
