@@ -31,13 +31,14 @@ fun SharedContentPlaceholder(
     previewText: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    imageUrl: String? = null
+    imageUrl: String? = null,
+    clickable: Boolean = true
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick),
+            .then(if (clickable) Modifier.clickable(onClick = onClick) else Modifier),
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
         shape = RoundedCornerShape(16.dp)
     ) {

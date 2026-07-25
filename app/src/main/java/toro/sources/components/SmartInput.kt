@@ -29,9 +29,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.toro.models.*
+import kotlinx.coroutines.delay
 import toro.sources.viewmodel.SessionViewModel
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.CommunityViewModel
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,14 +71,15 @@ fun SmartInput(
     var showMentions by remember { mutableStateOf(false) }
     var showComicSearch by remember { mutableStateOf(false) }
 
-    val mentionedUserIds = remember { mutableStateListOf<String>() }
+    val mentionedUsers = remember { mutableStateListOf<Pair<String, String>>() }
     val sharedComicIds = remember { mutableStateListOf<String>() }
 
     LaunchedEffect(sharedContent) {
-        sharedContent?.let { content ->
-            if (content.type == ShareType.COMIC) {
-                comicsViewModel.setCurrentComic(Comic(id = content.id, title = content.title, description = "", coverImageUrl = ""))
-            }
+        val content = sharedContent
+        if (content?.type == ShareType.COMIC) {
+            comicsViewModel.setCurrentComic(Comic(id = content.id, title = content.title, description = "", coverImageUrl = ""))
+        } else {
+            comicsViewModel.clearCurrentComic()
         }
     }
 
@@ -86,12 +89,15 @@ fun SmartInput(
 
     LaunchedEffect(inputText) {
         onTextChange?.invoke(inputText)
+        mentionedUsers.removeAll { (_, username) -> !inputText.contains("@$username") }
+
         val lastWord = inputText.substringAfterLast(' ', inputText)
         if (lastWord.startsWith("@")) {
             val searchQuery = lastWord.removePrefix("@")
-            communityViewModel.searchUsers(searchQuery)
             showMentions = true
             showComicSearch = false
+            delay(250.milliseconds)
+            communityViewModel.searchUsers(searchQuery)
         } else {
             showMentions = false
             showComicSearch = false
@@ -113,7 +119,7 @@ fun SmartInput(
                             val lastSpace = inputText.lastIndexOf(' ')
                             val prefix = if (lastSpace == -1) "" else inputText.substring(0, lastSpace + 1)
                             inputText = "$prefix@${user.username} "
-                            if (!mentionedUserIds.contains(user.id)) mentionedUserIds.add(user.id)
+                            if (mentionedUsers.none { it.first == user.id }) mentionedUsers.add(user.id to user.username)
                             showMentions = false
                         }
                     }
@@ -160,7 +166,7 @@ fun SmartInput(
                     ) {
                         if (selectedUri != null) {
                             val isVideo = selectedUri?.toString()?.contains("video") == true || selectedUri?.toString()?.endsWith(".mp4") == true
-                            
+
                             AsyncImage(
                                 model = selectedUri,
                                 contentDescription = "Attachment",
@@ -195,6 +201,7 @@ fun SmartInput(
                                     title = sharedContent!!.title,
                                     previewText = sharedContent!!.previewText,
                                     onClick = { },
+                                    clickable = false,
                                     modifier = Modifier.weight(1f))
                             }
                             IconButton(onClick = { sessionViewModel.setSharedContent(null) }) {
@@ -246,8 +253,8 @@ fun SmartInput(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (supportUpload) {
-                        IconButton(onClick = { 
-                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)) 
+                        IconButton(onClick = {
+                            launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
                         }) {
                             Icon(Icons.Default.AddPhotoAlternate, contentDescription = "Upload Media", tint = MaterialTheme.colorScheme.primary)
                         }
@@ -277,11 +284,11 @@ fun SmartInput(
                     IconButton(
                         onClick = {
                             if (canSend) {
-                                onSend(if (supportTitle) titleText else null, inputText, mentionedUserIds.toList(), sharedComicIds.toList(), selectedUri, isSpoiler)
+                                onSend(if (supportTitle) titleText else null, inputText, mentionedUsers.map { it.first }, sharedComicIds.toList(), selectedUri, isSpoiler)
                                 inputText = ""
                                 titleText = ""
                                 selectedUri = null
-                                mentionedUserIds.clear()
+                                mentionedUsers.clear()
                                 sharedComicIds.clear()
                                 isSpoiler = false
                                 sessionViewModel.setSharedContent(null)

@@ -51,6 +51,7 @@ class AuthViewModel @Inject constructor(
 
                 val profile = RetrofitClient.comicApiService.getUserProfile(res.userId)
                 sessionManager.updateUserProfile(profile)
+                sessionManager.registerFcmToken()
 
                 _authState.update { it.copy(isLoading = false, isAuthenticated = true) }
                 onSuccess()

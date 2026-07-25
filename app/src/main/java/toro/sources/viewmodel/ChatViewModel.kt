@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import toro.sources.MessageSyncWorker
 import toro.sources.db.ComicRepository
+import toro.sources.media.MediaUploadManager
 import toro.sources.network.ChatConnectionManager
 import toro.sources.network.RetrofitClient
 import toro.sources.session.SessionManager
@@ -29,7 +30,8 @@ class ChatViewModel @Inject constructor(
     application: Application,
     private val sessionManager: SessionManager,
     private val repository: ComicRepository,
-    private val chatConnectionManager: ChatConnectionManager
+    private val chatConnectionManager: ChatConnectionManager,
+    private val mediaUploadManager: MediaUploadManager
 ) : AndroidViewModel(application) {
 
     private val _chatUiState = MutableStateFlow(ChatUiState())
@@ -158,8 +160,8 @@ class ChatViewModel @Inject constructor(
             try {
                 withContext(Dispatchers.IO) {
                     val lastTs = repository.getLastMessageTimestamp(conversationId)
-                    val msgs = RetrofitClient.comicApiService.getChatMessages(conversationId, lastTs)
-                    if (msgs.isNotEmpty()) repository.saveMessages(msgs)
+                    val messages = RetrofitClient.comicApiService.getChatMessages(conversationId, lastTs)
+                    if (messages.isNotEmpty()) repository.saveMessages(messages)
                 }
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Failed to fetch messages: ${e.message}")
@@ -167,15 +169,41 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    private suspend fun uploadAttachment(uri: Uri): Pair<String, Boolean> = withContext(Dispatchers.IO) {
+        val mimeType = getApplication<Application>().contentResolver.getType(uri) ?: ""
+        val isVideo = mimeType.startsWith("video")
+        val url = mediaUploadManager.uploadFileToCloudinary(uri)
+        url to isVideo
+    }
+
     fun sendMessage(
         conversationId: String,
         content: MessageContent,
         isSpoiler: Boolean = false,
         receiverId: String? = null,
-        receiverName: String? = null
+        receiverName: String? = null,
+        attachment: Uri? = null
     ) {
         viewModelScope.launch {
             try {
+                val resolvedContent = if (attachment != null && content is MessageContent.Text) {
+                    try {
+                        val (url, isVideo) = uploadAttachment(attachment)
+                        val body = content.body
+                        when {
+                            body.isNotBlank() && isVideo -> MessageContent.TextWithMedia(body, emptyList(), listOf(url))
+                            body.isNotBlank() -> MessageContent.TextWithMedia(body, listOf(url), emptyList())
+                            isVideo -> MessageContent.Video(listOf(url))
+                            else -> MessageContent.Image(listOf(url))
+                        }
+                    } catch (e: Exception) {
+                        _chatUiState.update { it.copy(errorMessage = "Failed to upload attachment: ${e.message}") }
+                        return@launch
+                    }
+                } else {
+                    content
+                }
+
                 val tempId = UUID.randomUUID().toString()
                 val convo = withContext(Dispatchers.IO) {
                     repository.getConversationById(conversationId) ?: receiverId?.let { rid ->
@@ -197,12 +225,12 @@ class ChatViewModel @Inject constructor(
                     return@launch
                 }
 
-                if (content is MessageContent.System) {
+                if (resolvedContent is MessageContent.System) {
                     _chatUiState.update { it.copy(errorMessage = "Can't send a system signal as a message") }
                     return@launch
                 }
 
-                val fields = content.toChatMessageFields()
+                val fields = resolvedContent.toChatMessageFields()
 
                 val newMessage = ChatMessage(
                     id = tempId,
@@ -222,7 +250,7 @@ class ChatViewModel @Inject constructor(
 
                 withContext(Dispatchers.IO) {
                     repository.saveMessage(newMessage)
-                    val summary = toMessageSummary(content, newMessage.senderId, newMessage.timestamp)
+                    val summary = toMessageSummary(resolvedContent, newMessage.senderId, newMessage.timestamp)
                     repository.saveConversations(
                         listOf(convo.copy(lastMessage = summary, timestamp = newMessage.timestamp))
                     )

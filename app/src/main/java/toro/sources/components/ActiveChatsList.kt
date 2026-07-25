@@ -29,9 +29,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.toro.models.Conversation
 import com.toro.models.MessageSummary
+import toro.sources.utils.formatRelativeTimestamp
 import toro.sources.viewmodel.ChatViewModel
 import toro.sources.viewmodel.SessionViewModel
-import java.util.concurrent.TimeUnit
 
 enum class ChatPreviewStatus { NONE, SENT, READ }
 
@@ -277,26 +277,5 @@ private fun SwipeBackground(direction: SwipeToDismissBoxValue?) {
                 }
             )
         }
-    }
-}
-
-private fun formatRelativeTimestamp(timestampMillis: Long): String {
-    val now = System.currentTimeMillis()
-    val diff = now - timestampMillis
-    if (diff < 0) return ""
-
-    val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
-    val hours = TimeUnit.MILLISECONDS.toHours(diff)
-    val days = TimeUnit.MILLISECONDS.toDays(diff)
-
-    return when {
-        minutes < 1 -> "now"
-        minutes < 60 -> "${minutes}m"
-        hours < 24 -> "${hours}h"
-        days == 1L -> "Yesterday"
-        days < 7 -> java.text.SimpleDateFormat("EEE", java.util.Locale.getDefault())
-            .format(java.util.Date(timestampMillis))
-        else -> java.text.SimpleDateFormat("MMM d", java.util.Locale.getDefault())
-            .format(java.util.Date(timestampMillis))
     }
 }

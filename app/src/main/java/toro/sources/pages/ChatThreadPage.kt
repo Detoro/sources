@@ -391,7 +391,8 @@ fun ChatThreadPage(
                                             content = content,
                                             isSpoiler = isSpoiler,
                                             receiverId = targetUserId,
-                                            receiverName = activeChat?.otherUser?.username
+                                            receiverName = activeChat?.otherUser?.username,
+                                            attachment = attachment
                                         )
                                         sessionViewModel.setSharedContent(null)
                                     }

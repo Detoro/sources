@@ -503,6 +503,10 @@ class ComicsViewModel @Inject constructor(
         }
     }
 
+    fun clearCurrentComic() {
+        _currentComic.value = null
+        _chapters.value = emptyList()
+    }
     fun clearComicsError() { _comicsUiState.update { it.copy(errorMessage = null) } }
 }
 
