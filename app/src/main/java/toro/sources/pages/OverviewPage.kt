@@ -93,7 +93,7 @@ fun OverviewPage(
                             },
                             modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f), shape = RoundedCornerShape(50))
                         ) {
-                            Icon(Icons.Outlined.Info, contentDescription = "Actions")
+                            Icon(Icons.Outlined.Info, contentDescription = "Author info")
                         }
                         Spacer(modifier = Modifier.width(4.dp))
                         IconButton(
@@ -120,11 +120,6 @@ fun OverviewPage(
         } else {
             val safeComic = comic!!
             val artists = safeComic.artBy
-
-
-            if (safeComic.artBy.isNotEmpty()) {
-                Text(text = "Art by $artists")
-            }
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -184,7 +179,7 @@ fun OverviewPage(
                                     color = MaterialTheme.colorScheme.onBackground
                                 )
 
-                                val writers = safeComic.authors.filter { it.role == Role.WRITER || it.role.name.lowercase() == "AUTHOR" }
+                                val writers = safeComic.authors.filter { it.role == Role.WRITER || it.role.name.equals("AUTHOR", ignoreCase = true) }
                                 writers.forEachIndexed { index, writer ->
                                     TextButton(
                                         onClick = { onAuthorClick(writer.id) },
@@ -250,6 +245,17 @@ fun OverviewPage(
                             style = MaterialTheme.typography.bodyLarge,
                             lineHeight = 24.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                if (artists.isNotEmpty()) {
+                    item {
+                        Text(
+                            text = "Art by $artists",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 24.dp)
                         )
                     }
                 }
