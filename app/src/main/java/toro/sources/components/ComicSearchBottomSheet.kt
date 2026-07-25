@@ -13,8 +13,10 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
 import com.toro.models.ShareType
 import com.toro.models.SharedContent
+import kotlinx.coroutines.delay
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.SessionViewModel
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,9 +29,14 @@ fun ComicSearchBottomSheet(
     val searchResults by comicsViewModel.searchResults.collectAsState()
 
     var isSearchFocused by remember { mutableStateOf(false) }
-    
+
+    LaunchedEffect(searchQuery) {
+        delay(250.milliseconds)
+        comicsViewModel.updateSearchQuery(searchQuery)
+    }
+
     val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = false 
+        skipPartiallyExpanded = false
     )
 
     ModalBottomSheet(
@@ -53,8 +60,8 @@ fun ComicSearchBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .onFocusChanged { 
-                        isSearchFocused = it.isFocused 
+                    .onFocusChanged {
+                        isSearchFocused = it.isFocused
                     },
                 placeholder = { Text("Search by title or author...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search Icon") },
