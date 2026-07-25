@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -45,13 +48,26 @@ import toro.sources.R
 fun LoginPage(
     onNavigateToSignUp: () -> Unit,
     onLoginSubmit: (LoginCredentials) -> Unit,
-    loginError: String? = null
+    loginError: String? = null,
+    isLoading: Boolean = false
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var isError by remember { mutableStateOf(false) }
-    val errorMessage = stringResource(id = R.string.error_message)
+    var isBlankFieldError by remember { mutableStateOf(false) }
+    var serverErrorDismissed by remember { mutableStateOf(false) }
+    val blankFieldErrorMessage = stringResource(id = R.string.error_message)
+
+    LaunchedEffect(loginError) {
+        serverErrorDismissed = false
+    }
+
+    val activeErrorMessage = when {
+        isBlankFieldError -> blankFieldErrorMessage
+        loginError != null && !serverErrorDismissed -> loginError
+        else -> null
+    }
+    val hasError = activeErrorMessage != null
 
     Box(
         modifier = Modifier
@@ -89,7 +105,7 @@ fun LoginPage(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                    text = if (email.isBlank()) "Welcome Back" else stringResource(id = R.string.welcome_user, email),
+                    text = "Welcome Back",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -105,11 +121,17 @@ fun LoginPage(
 
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { email = it },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    onValueChange = {
+                        email = it
+                        isBlankFieldError = false
+                        serverErrorDismissed = true
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                     placeholder = { Text(stringResource(R.string.email)) },
                     leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                     singleLine = true,
+                    isError = hasError,
+                    enabled = !isLoading,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -119,10 +141,14 @@ fun LoginPage(
                     value = password,
                     onValueChange = {
                         password = it
-                        isError = false
+                        isBlankFieldError = false
+                        serverErrorDismissed = true
                     },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                     placeholder = { Text(stringResource(R.string.password)) },
                     singleLine = true,
+                    isError = hasError,
+                    enabled = !isLoading,
                     shape = RoundedCornerShape(16.dp),
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
@@ -134,21 +160,12 @@ fun LoginPage(
                         }
                     },
                     supportingText = {
-                        if (isError) {
-                            Text(
-                                text = errorMessage,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        } else {
-                            Text(
-                                text = stringResource(R.string.password_warning),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
+                        Text(
+                            text = activeErrorMessage ?: stringResource(R.string.password_warning),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -158,7 +175,7 @@ fun LoginPage(
                 Button(
                     onClick = {
                         if (email.isBlank() || password.isBlank()) {
-                            isError = true
+                            isBlankFieldError = true
                         } else {
                             val credentials = LoginCredentials(
                                 email = email.trim(),
@@ -167,21 +184,30 @@ fun LoginPage(
                             onLoginSubmit(credentials)
                         }
                     },
+                    enabled = !isLoading,
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.login),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.login),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                TextButton(onClick = onNavigateToSignUp) {
+                TextButton(onClick = onNavigateToSignUp, enabled = !isLoading) {
                     Text(
                         text = stringResource(R.string.signup_recommendation),
                         fontWeight = FontWeight.SemiBold
