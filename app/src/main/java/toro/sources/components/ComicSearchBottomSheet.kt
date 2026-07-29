@@ -11,12 +11,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
+import com.toro.models.SearchSource
 import com.toro.models.ShareType
 import com.toro.models.SharedContent
-import kotlinx.coroutines.delay
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.SessionViewModel
-import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,13 +26,10 @@ fun ComicSearchBottomSheet(
 ) {
     val searchQuery by comicsViewModel.searchQuery.collectAsState()
     val searchResults by comicsViewModel.searchResults.collectAsState()
+    comicsViewModel.updateSearchFilter("ALL")
+    comicsViewModel.updateSearchSource(SearchSource.ONLINE)
 
     var isSearchFocused by remember { mutableStateOf(false) }
-
-    LaunchedEffect(searchQuery) {
-        delay(250.milliseconds)
-        comicsViewModel.updateSearchQuery(searchQuery)
-    }
 
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = false
@@ -80,7 +76,7 @@ fun ComicSearchBottomSheet(
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.weight(1f)
             ) {
                 items(searchResults) { comic ->
                     ComicRow(

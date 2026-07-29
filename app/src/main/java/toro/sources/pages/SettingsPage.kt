@@ -52,7 +52,7 @@ fun SettingsPage(
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            LargeTopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text("Settings") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
