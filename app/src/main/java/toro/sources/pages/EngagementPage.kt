@@ -53,7 +53,6 @@ fun EngagementPage(
 
     LaunchedEffect(Unit) {
         communityViewModel.getCommunityPosts()
-        comicsViewModel.clearSelectedAuthorIds()
     }
 
     Scaffold(

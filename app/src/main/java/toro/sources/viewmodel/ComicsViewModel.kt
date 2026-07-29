@@ -165,6 +165,7 @@ class ComicsViewModel @Inject constructor(
 
     init {
         clearComicsError()
+        clearSelectedAuthorIds()
         viewModelScope.launch {
             combine(_searchQuery, _searchSource) { query, source -> query to source }
                 .debounce(500.milliseconds)
