@@ -1,5 +1,6 @@
 package toro.sources.notifications
 
+import android.annotation.SuppressLint
 import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -14,14 +15,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
+@SuppressLint("MissingFirebaseInstanceTokenRefresh")
 class SourcesFirebaseMessagingService: FirebaseMessagingService() {
 
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.IO + job)
 
-    @Deprecated("Deprecated in Java")
-    override fun onNewToken(token: String) {
-        super.onRegistered(token)
+    override fun onRegistered(token: String) {
         scope.launch {
             try {
                 RetrofitClient.comicApiService.registerFcmToken(FcmTokenRequest(token))
