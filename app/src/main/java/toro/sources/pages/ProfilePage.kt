@@ -46,6 +46,7 @@ import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.components.ComicCoverCard
 import toro.sources.components.PostCard
 import toro.sources.viewmodel.ComicsViewModel
+import androidx.compose.runtime.collectAsState
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable
@@ -60,13 +61,20 @@ fun ProfilePage(
     onBackClick: (() -> Unit)? = null
 ) {
     val me by sessionViewModel.userProfile.collectAsState()
+    val communityState by communityViewModel.communityState.collectAsState()
+    val targetPosts by profileViewModel.targetUserPosts.collectAsState()
     val targetUserId = userId ?: me?.id
     val isMyProfile = targetUserId == me?.id
 
     val userProfile by (if (isMyProfile) sessionViewModel.userProfile else profileViewModel.targetUserProfile).collectAsState()
-    val userPosts by (if (isMyProfile) communityViewModel.communityState.collectAsState().value.posts.filter {
-        it.authorId == me?.id }.let { mutableStateOf(it)
-        } else profileViewModel.targetUserPosts.collectAsState())
+
+    val userPosts = remember(isMyProfile, communityState.posts, targetPosts, me?.id) {
+        if (isMyProfile) {
+            communityState.posts.filter { it.authorId == me?.id }
+        } else {
+            targetPosts
+        }
+    }
     val userWorks by (if (isMyProfile) profileViewModel.userWorks else profileViewModel.targetUserWorks).collectAsState()
     val userFriends by chatViewModel.inbox.collectAsState()
 
@@ -77,6 +85,8 @@ fun ProfilePage(
     LaunchedEffect(targetUserId) {
         if (targetUserId?.isNotEmpty() == true) {
             profileViewModel.getUserProfile(targetUserId)
+            chatViewModel.getInbox()
+            communityViewModel.getCommunityPosts()
         }
     }
 
@@ -398,7 +408,7 @@ fun ProfilePage(
                                         verticalArrangement = Arrangement.spacedBy(16.dp)
                                     ) {
                                         items(userWorks) { comic ->
-                                            ComicCoverCard(comic, comicsViewModel, sessionViewModel, onClick = {})
+                                            ComicCoverCard(comic, comicsViewModel, sessionViewModel)
                                         }
                                     }
                                 }

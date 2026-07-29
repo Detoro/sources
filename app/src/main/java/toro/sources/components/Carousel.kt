@@ -193,7 +193,6 @@ fun ComicCarousel(
     comics: List<Comic>,
     comicsViewModel: ComicsViewModel,
     sessionViewModel: SessionViewModel,
-    onComicClick: (Comic) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (comics.isEmpty()) return
@@ -211,8 +210,7 @@ fun ComicCarousel(
                     comic = comic,
                     comicsViewModel = comicsViewModel,
                     sessionViewModel = sessionViewModel,
-                    modifier = Modifier.width(120.dp),
-                    onClick = { onComicClick(comic) }
+                    modifier = Modifier.width(120.dp)
                 )
             }
         }

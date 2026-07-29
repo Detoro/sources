@@ -3,16 +3,9 @@ package toro.sources.components
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -22,6 +15,7 @@ import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.SessionViewModel
@@ -45,6 +39,14 @@ fun AddChapterForm(
     val uploadSuccess by comicsViewModel.uploadSuccess.collectAsState()
     val currentUser by sessionViewModel.userProfile.collectAsState()
     var selectedAudioUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+
+    fun clearForm() {
+        expanded = false
+        selectedChapterUris = emptyList()
+        selectedAudioUris = emptyList()
+        selectedComicId = null
+        selectedComicTitle = ""
+    }
 
     val audioPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
@@ -72,17 +74,12 @@ fun AddChapterForm(
             TopAppBar(
                 title = { Text("Add Chapters") },
                 navigationIcon = {
-                    IconButton(onClick = onCancel) {
+                    IconButton(onClick = onCancel, enabled = !isUploading) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    IconButton(onClick = {
-                        expanded = false
-                        selectedChapterUris = emptyList()
-                        selectedComicId = null
-                        selectedComicTitle = ""
-                    }) {
+                    IconButton(onClick = { clearForm() }, enabled = !isUploading) {
                         Icon(Icons.Default.Close, contentDescription = "Clear")
                     }
                 }
@@ -93,61 +90,82 @@ fun AddChapterForm(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
                 .imePadding()
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
 
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
-                OutlinedTextField(
-                    value = selectedComicTitle,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Select Series") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier
-                        .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
-                        .fillMaxWidth()
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Series", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
 
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    userWorks.forEach { comic ->
-                        DropdownMenuItem(
-                            text = { Text(comic.title) },
-                            onClick = {
-                                selectedComicId = comic.id
-                                selectedComicTitle = comic.title
-                                expanded = false
-                            }
+                if (userWorks.isEmpty()) {
+                    Text(
+                        "You don't have any series yet — create one before adding chapters.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    ExposedDropdownMenuBox(
+                        expanded = expanded,
+                        onExpandedChange = { if (!isUploading) expanded = !expanded }
+                    ) {
+                        OutlinedTextField(
+                            value = selectedComicTitle,
+                            onValueChange = {},
+                            readOnly = true,
+                            enabled = !isUploading,
+                            label = { Text("Select Series") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable)
+                                .fillMaxWidth()
                         )
+
+                        ExposedDropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            userWorks.forEach { comic ->
+                                DropdownMenuItem(
+                                    text = { Text(comic.title) },
+                                    onClick = {
+                                        selectedComicId = comic.id
+                                        selectedComicTitle = comic.title
+                                        expanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }
 
-            OutlinedButton(
-                onClick = { chapterPickerLauncher.launch("application/*") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = selectedComicId != null
-            ) {
-                Icon(Icons.Default.CloudUpload, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(if (selectedChapterUris.isNotEmpty()) "${selectedChapterUris.size} Chapters Selected" else "Select .cbz Files")
-            }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("Files", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.primary)
 
-            OutlinedButton(
-                onClick = { audioPickerLauncher.launch("audio/*") },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = selectedComicId != null
-            ) {
-                Icon(Icons.Default.LibraryMusic, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(if (selectedAudioUris.isNotEmpty()) "${selectedAudioUris.size} Songs Selected" else "Select Background Music (Optional)")
+                OutlinedButton(
+                    onClick = { chapterPickerLauncher.launch("application/*") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = selectedComicId != null && !isUploading
+                ) {
+                    Icon(Icons.Default.CloudUpload, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (selectedChapterUris.isNotEmpty()) "${selectedChapterUris.size} Chapters Selected" else "Select .cbz Files")
+                }
+
+                OutlinedButton(
+                    onClick = { audioPickerLauncher.launch("audio/*") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = selectedComicId != null && !isUploading
+                ) {
+                    Icon(Icons.Default.LibraryMusic, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (selectedAudioUris.isNotEmpty()) "${selectedAudioUris.size} Songs Selected" else "Select Background Music (Optional)")
+                }
             }
 
             val isValid = selectedComicId != null && selectedChapterUris.isNotEmpty() && !isUploading
@@ -159,12 +177,23 @@ fun AddChapterForm(
                         audioUris = selectedAudioUris
                     )
                 },
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
                 enabled = isValid
             ) {
-                Text("Upload Chapters")
+                if (isUploading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Uploading...")
+                } else {
+                    Text("Upload Chapters")
+                }
             }
         }
     }

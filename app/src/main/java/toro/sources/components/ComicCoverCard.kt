@@ -32,8 +32,7 @@ fun ComicCoverCard(
     comic: Comic,
     comicsViewModel: ComicsViewModel,
     sessionViewModel: SessionViewModel,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    modifier: Modifier = Modifier
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
 
@@ -41,7 +40,7 @@ fun ComicCoverCard(
         modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
-                onClick = { onClick() },
+                onClick = { comicsViewModel.loadAndNavigateToComic(comic.id) },
                 onLongClick = { showOptionsMenu = true }
             ),
         shape = RoundedCornerShape(16.dp),

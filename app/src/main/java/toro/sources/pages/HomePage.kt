@@ -69,8 +69,7 @@ fun HomePage(
     ) { uri: Uri? ->
         uri?.let {
             comicsViewModel.importLocalComic(
-                title = "Imported Comic",
-                author = "Unknown",
+                author = "Unstated",
                 description = "Imported from device",
                 uri = it
             )
@@ -170,8 +169,7 @@ fun HomePage(
                                 title = "From Your Device",
                                 comics = localCatalog,
                                 comicsViewModel = comicsViewModel,
-                                sessionViewModel = sessionViewModel,
-                                onComicClick = onComicClick
+                                sessionViewModel = sessionViewModel
                             )
                         }
                     }
@@ -265,8 +263,7 @@ fun HomePage(
                             title = "For You",
                             comics = onlineCatalog,
                             comicsViewModel = comicsViewModel,
-                            sessionViewModel = sessionViewModel,
-                            onComicClick = onComicClick
+                            sessionViewModel = sessionViewModel
                         )
                     }
                     item {

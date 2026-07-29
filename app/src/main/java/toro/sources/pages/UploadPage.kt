@@ -37,7 +37,7 @@ import toro.sources.viewmodel.ComicsViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UploadPage(
-    viewModel: ComicsViewModel,
+    comicsViewModel: ComicsViewModel,
     onBackClick: () -> Unit,
     onUploadNewComic: () -> Unit,
     onUploadNewChapter: () -> Unit,
@@ -45,13 +45,13 @@ fun UploadPage(
 ) {
     var uploadMode by remember { mutableStateOf<UploadMode?>(null) }
 
-    val isUploading by viewModel.isUploading.collectAsState()
-    val uploadSuccess by viewModel.uploadSuccess.collectAsState()
+    val isUploading by comicsViewModel.isUploading.collectAsState()
+    val uploadSuccess by comicsViewModel.uploadSuccess.collectAsState()
 
     LaunchedEffect(uploadSuccess) {
         if (uploadSuccess) {
             onUploadComplete()
-            viewModel.resetUploadState()
+            comicsViewModel.resetUploadState()
         }
     }
 

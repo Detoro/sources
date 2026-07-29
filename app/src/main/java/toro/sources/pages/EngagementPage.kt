@@ -39,12 +39,21 @@ fun EngagementPage(
 ) {
     val communityState by communityViewModel.communityState.collectAsState()
     val posts = communityState.posts
+    val selectedAuthorIds by comicsViewModel.selectedAuthorIds.collectAsState()
+    val filteredPosts = remember(posts, selectedAuthorIds) {
+        if (selectedAuthorIds.isEmpty()) {
+            posts
+        } else {
+            posts.filter { it.authorId in selectedAuthorIds }
+        }
+    }
     val isLoading = communityState.isLoading
     val me by sessionViewModel.userProfile.collectAsState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
 
     LaunchedEffect(Unit) {
         communityViewModel.getCommunityPosts()
+        comicsViewModel.clearSelectedAuthorIds()
     }
 
     Scaffold(
@@ -111,7 +120,7 @@ fun EngagementPage(
                     PostCardShimmer()
                 }
             } else {
-                itemsIndexed(posts) { index, post ->
+                itemsIndexed(filteredPosts) { index, post ->
                     PostCard(
                         communityViewModel = communityViewModel,
                         sessionViewModel = sessionViewModel,

@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,6 +59,7 @@ fun PostPage(
                         tags = mentions,
                         attachment = attachment
                     )
+                    sessionViewModel.setSharedContent(null)
                 },
                 onTitleChange = { postTitle = it },
                 onValueChange = { title, text ->
@@ -91,7 +91,7 @@ fun PostPage(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.Black),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -100,15 +100,24 @@ fun PostPage(
                             modifier = Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
-                                .background(Color.LightGray),
+                                .background(MaterialTheme.colorScheme.primaryContainer),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(currentUser?.username?.take(1)?.uppercase() ?: "U", fontSize = 14.sp, color = Color.Black)
+                            Text(
+                                currentUser?.username?.take(1)?.uppercase() ?: "U",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
-                            Text(text = currentUser?.username ?: "User", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
-                            Text(text = "Just now", color = Color.Gray, fontSize = 12.sp)
+                            Text(
+                                text = currentUser?.username ?: "User",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(text = "Just now", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                         }
                     }
 
@@ -118,16 +127,17 @@ fun PostPage(
                         text = postTitle.ifBlank { "Post Title" },
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
-                        color = Color.White
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(4.dp))
-                    
+
                     if (sharedContent != null) {
                         SharedContentPlaceholder(
                             type = sharedContent!!.type,
                             title = sharedContent!!.title,
                             previewText = sharedContent!!.previewText,
-                            onClick = { /* No-op in post preview */ }
+                            onClick = { },
+                            clickable = false
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
@@ -135,7 +145,7 @@ fun PostPage(
                     Text(
                         text = postText.ifBlank { "Waiting on your post..." },
                         fontSize = 14.sp,
-                        color = if (postText.isBlank()) Color.Gray else Color.White
+                        color = if (postText.isBlank()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }

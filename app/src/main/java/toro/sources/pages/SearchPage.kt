@@ -202,7 +202,7 @@ fun SearchPage(
                                     modifier = Modifier.fillMaxSize()
                                 ) {
                                     items(searchResults) { comic ->
-                                        ComicCoverCard(comic = comic, comicsViewModel = comicsViewModel, sessionViewModel = sessionViewModel, onClick = { onComicClick(comic) })
+                                        ComicCoverCard(comic = comic, comicsViewModel = comicsViewModel, sessionViewModel = sessionViewModel)
                                     }
                                 }
                             } else {

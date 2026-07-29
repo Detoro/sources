@@ -1,6 +1,7 @@
 package toro.sources.pages
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -8,13 +9,13 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.toro.models.*
@@ -33,6 +34,7 @@ fun ActivityPage(
     communityViewModel: CommunityViewModel,
     onComicClick: (Comic) -> Unit,
     onAddComic: () -> Unit,
+    onCommentClick: (Comment) -> Unit = {},
 ) {
     val subscribed by comicsViewModel.subscribedComics.collectAsState()
     val recentlyRead by comicsViewModel.recentlyReadComics.collectAsState()
@@ -44,9 +46,15 @@ fun ActivityPage(
         comments = comments,
         onComicClick = onComicClick,
         onAddComic = onAddComic,
+        onCommentClick = onCommentClick,
         sessionViewModel = sessionViewModel
     )
 }
+
+private val sortOptionsByTab = listOf(
+    listOf("Recently Read", "Recently Updated"),           // Recents tab
+    listOf("Recently Subscribed", "Recently Updated"),     // Subscribed tab
+)
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -56,13 +64,21 @@ fun ActivityContent(
     comments: List<Comment>,
     onComicClick: (Comic) -> Unit,
     onAddComic: () -> Unit,
+    onCommentClick: (Comment) -> Unit = {},
     sessionViewModel: SessionViewModel
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var dropDownSelection by remember { mutableStateOf("Recently Updated") }
+    var dropDownSelection by remember { mutableStateOf(sortOptionsByTab[0].first()) }
     val tabs = listOf("Recents", "Subscribed", "Comments")
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(pagerState.currentPage) {
+        val page = pagerState.currentPage
+        if (page < sortOptionsByTab.size) {
+            dropDownSelection = sortOptionsByTab[page].first()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -77,7 +93,7 @@ fun ActivityContent(
             )},
         floatingActionButton = {
             FloatingActionButton(onClick = { onAddComic() }) {
-                Icon(Icons.Filled.Add, contentDescription = "Find a comic")
+                Icon(Icons.Filled.Add, contentDescription = "Add Comic")
             }
         }
     ) { paddingValues ->
@@ -109,7 +125,10 @@ fun ActivityContent(
                                 }
                                 if (count > 0) {
                                     Spacer(Modifier.width(8.dp))
-                                    Badge(containerColor = Color.Blue, contentColor = Color.DarkGray) { Text(count.toString()) }
+                                    Badge(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    ) { Text(count.toString()) }
                                 }
                             }
                         }
@@ -117,7 +136,7 @@ fun ActivityContent(
                 }
             }
 
-            if (pagerState.currentPage < 2) {
+            if (pagerState.currentPage < sortOptionsByTab.size) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -125,36 +144,23 @@ fun ActivityContent(
                     Spacer(modifier = Modifier.weight(1f))
 
                     Box {
-                        TextButton(
-                            onClick = { expanded = true }
-                        ) {
+                        TextButton(onClick = { expanded = true }) {
                             Text(dropDownSelection)
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                         }
                         DropdownMenu(
                             expanded = expanded,
                             onDismissRequest = { expanded = false }
                         ) {
-                            DropdownMenuItem(
-                                text = { Text("Recently Read") },
-                                onClick = {
-                                    expanded = false
-                                    dropDownSelection = "Recently Read"
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Recently Updated") },
-                                onClick = {
-                                    expanded = false
-                                    dropDownSelection = "Recently Updated"
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Recently Subscribed") },
-                                onClick = {
-                                    expanded = false
-                                    dropDownSelection = "Recently Subscribed"
-                                }
-                            )
+                            sortOptionsByTab[pagerState.currentPage].forEach { option ->
+                                DropdownMenuItem(
+                                    text = { Text(option) },
+                                    onClick = {
+                                        expanded = false
+                                        dropDownSelection = option
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -163,7 +169,9 @@ fun ActivityContent(
 
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
             ) { page ->
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
@@ -204,7 +212,8 @@ fun ActivityContent(
                             items(comments) { comment ->
                                 ListItem(
                                     headlineContent = { Text(comment.content, maxLines = 2) },
-                                    supportingContent = { Text("By ${comment.authorName}") }
+                                    supportingContent = { Text("By ${comment.authorName}") },
+                                    modifier = Modifier.clickable { onCommentClick(comment) }
                                 )
                                 HorizontalDivider()
                             }
