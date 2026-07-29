@@ -239,8 +239,6 @@ class CommunityViewModel @Inject constructor(
             }
         }
     }
-
-    fun clearCommunityError() { _communityState.update { it.copy(errorMessage = null) } }
 }
 
 data class CommunityUiState(

@@ -35,6 +35,7 @@ class AuthViewModel @Inject constructor(
                 sessionManager.updateUserProfile(profile)
 
                 _authState.update { it.copy(isLoading = false, isAuthenticated = true) }
+                sessionManager.registerFcmToken()
                 onSuccess()
             } catch (e: Exception) {
                 _authState.update { it.copy(isLoading = false, errorMessage = e.message ?: "Login failed") }
@@ -51,7 +52,6 @@ class AuthViewModel @Inject constructor(
 
                 val profile = RetrofitClient.comicApiService.getUserProfile(res.userId)
                 sessionManager.updateUserProfile(profile)
-                sessionManager.registerFcmToken()
 
                 _authState.update { it.copy(isLoading = false, isAuthenticated = true) }
                 onSuccess()
@@ -88,6 +88,7 @@ class AuthViewModel @Inject constructor(
                 Log.e("AuthViewModel", "Delete account failed", e)
             }
             logoutUser(onComplete)
+            sessionManager.clearDatabase()
         }
     }
 }

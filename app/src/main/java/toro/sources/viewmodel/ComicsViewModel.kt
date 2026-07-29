@@ -64,6 +64,9 @@ class ComicsViewModel @Inject constructor(
     private val _comicsUiState = MutableStateFlow(ComicsUiState())
     val comicsUiState = _comicsUiState.asStateFlow()
 
+    private val _subscribedComics = MutableStateFlow<List<Comic>>(emptyList())
+    private val _recentlyReadComics = MutableStateFlow<List<Comic>>(emptyList())
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val localLibrary: StateFlow<List<Comic>> = sessionManager.userProfile
         .flatMapLatest { user ->
@@ -74,14 +77,19 @@ class ComicsViewModel @Inject constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     val subscribedComics: StateFlow<List<Comic>> = sessionManager.userProfile
         .flatMapLatest { user ->
-            if (user != null) repository.getSubscribedComics() else flowOf(emptyList())
-        }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+            if (user == null) flowOf(emptyList())
+            else combine(repository.getSubscribedComics(), _subscribedComics) { localSubs, remoteSubs ->
+                (localSubs + remoteSubs).distinctBy { it.id }
+            }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val recentlyReadComics: StateFlow<List<Comic>> = sessionManager.userProfile
         .flatMapLatest { user ->
-            if (user != null) repository.getRecentlyReadComics() else flowOf(emptyList())
+            if (user == null) flowOf(emptyList())
+            else combine(repository.getRecentlyReadComics(), _recentlyReadComics) { local, remote ->
+                (local + remote).distinctBy { it.id }.sortedByDescending { it.lastReadTimestamp }
+            }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -194,8 +202,22 @@ class ComicsViewModel @Inject constructor(
                     withContext(Dispatchers.IO) { RetrofitClient.comicApiService.getRecommendation() }
                 _trending.value = trending
                 _onlineLibrary.value = recommended
+                fetchSubscribedAndHistory()
             } catch (e: Exception) {
                 Log.e("ComicsViewModel", "Failed to fetch trending/recommendations: ${e.message}")
+            }
+        }
+    }
+
+    private fun fetchSubscribedAndHistory() {
+        viewModelScope.launch {
+            try {
+                val subs = withContext(Dispatchers.IO) { RetrofitClient.comicApiService.getSubscribedComics() }
+                val history = withContext(Dispatchers.IO) { RetrofitClient.comicApiService.getRecentlyReadComics() }
+                _subscribedComics.value = subs
+                _recentlyReadComics.value = history
+            } catch (e: Exception) {
+                Log.e("ComicsViewModel", "Failed to fetch subs/history: ${e.message}")
             }
         }
     }
@@ -232,18 +254,18 @@ class ComicsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val current = _currentComic.value
-                val response = withContext(Dispatchers.IO) {
+                val nowSubscribed = withContext(Dispatchers.IO) {
                     val res = RetrofitClient.comicApiService.toggleComicSubscription(comicId)
-                    if (current?.id == comicId) {
-                        repository.insertComics(listOf(current.copy(isSubscribed = res.isSuccessful)))
-                    } else {
-                        repository.toggleLocalSubscription(comicId, res.isSuccessful)
+                    val subscribed = res.isSuccessful
+                    if (current?.id == comicId && current.isLocalSideload) {
+                        repository.toggleLocalSubscription(comicId, subscribed)
                     }
-                    res
+                    subscribed
                 }
                 if (current?.id == comicId) {
-                    _currentComic.value = current.copy(isSubscribed = response.isSuccessful)
+                    _currentComic.value = current.copy(isSubscribed = nowSubscribed)
                 }
+                fetchSubscribedAndHistory()
             } catch (e: Exception) {
                 _comicsUiState.update { it.copy(errorMessage = "Subscription toggle failed: ${e.message}") }
             }
@@ -260,12 +282,11 @@ class ComicsViewModel @Inject constructor(
         }
     }
 
-    fun importLocalComic(title: String, author: String, description: String, uri: Uri) {
+    fun importLocalComic(author: String, description: String, uri: Uri) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 repository.importLocalComic(
                     uri,
-                    title,
                     author,
                     description
                 )
@@ -340,6 +361,7 @@ class ComicsViewModel @Inject constructor(
                     )
                 }
                 _chapters.update { list -> list.map { if (it.id == chapterId) it.copy(isRead = true) else it } }
+                fetchSubscribedAndHistory()
             } catch (e: Exception) {
                 Log.e("ComicsViewModel", "Failed to mark chapter as read: ${e.message}")
             }
@@ -505,6 +527,9 @@ class ComicsViewModel @Inject constructor(
     fun clearCurrentComic() {
         _currentComic.value = null
         _chapters.value = emptyList()
+    }
+    fun clearSelectedAuthorIds() {
+        _selectedAuthorIds.value = emptySet()
     }
     fun clearComicsError() { _comicsUiState.update { it.copy(errorMessage = null) } }
 }

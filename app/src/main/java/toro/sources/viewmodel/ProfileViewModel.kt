@@ -105,7 +105,7 @@ class ProfileViewModel @Inject constructor(
                 val currentProfile = sessionManager.userProfile.value
                 sessionManager.updateUserProfile(currentProfile?.copy(bio = response.message))
             } catch (e: Exception) {
-                _errorMessage.value = "Failed to update bio"
+                _errorMessage.value = "Failed to update bio: ${e.message}"
             }
         }
     }
@@ -123,7 +123,7 @@ class ProfileViewModel @Inject constructor(
                 val currentProfile = sessionManager.userProfile.value
                 sessionManager.updateUserProfile(currentProfile?.copy(username = response.message))
             } catch (e: Exception) {
-                _errorMessage.value = "Failed to update username"
+                _errorMessage.value = "Failed to update username: ${e.message}"
             }
         }
     }
@@ -146,7 +146,7 @@ class ProfileViewModel @Inject constructor(
                                     val currentProfile = sessionManager.userProfile.value
                                     sessionManager.updateUserProfile(currentProfile?.copy(avatarUrl = publicUrl))
                                 } catch (e: Exception) {
-                                    _errorMessage.value = "Failed to sync avatar with server"
+                                    _errorMessage.value = "Failed to sync avatar with server: ${e.message}"
                                 }
                             }
                         }
@@ -156,7 +156,7 @@ class ProfileViewModel @Inject constructor(
                         override fun onReschedule(requestId: String, error: ErrorInfo) {}
                     }).dispatch()
             } catch (e: Exception) {
-                _errorMessage.value = "Failed to upload avatar"
+                _errorMessage.value = "Failed to upload avatar: ${e.message}"
             }
         }
     }
@@ -189,7 +189,7 @@ class ProfileViewModel @Inject constructor(
                 val currentProfile = sessionManager.userProfile.value
                 sessionManager.updateUserProfile(currentProfile?.copy(isPrivate = !currentProfile.isPrivate))
             } catch (e: Exception) {
-                _errorMessage.value = "Failed to toggle privacy"
+                _errorMessage.value = "Failed to toggle privacy: ${e.message}"
             }
         }
     }

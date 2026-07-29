@@ -86,12 +86,11 @@ class ComicRepository(
     // for local files
     suspend fun importLocalComic(
         fileUri: Uri,
-        title: String,
         author: String,
         description: String,
     ) {
         try {
-            val (comic, chapter) = cbzParser.parseAndSave(fileUri, title, author, description)
+            val (comic, chapter) = cbzParser.parseAndSave(fileUri, author, description)
 
             comicDao.insertComic(comic)
 

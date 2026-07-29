@@ -110,6 +110,9 @@ interface ComicApiService {
     @GET("api/comics/subscriptions")
     suspend fun getSubscribedComics(): List<Comic>
 
+    @GET("api/comics/history")
+    suspend fun getRecentlyReadComics(): List<Comic>
+
     // AUTH APIs
 
     @POST("api/auth/register")

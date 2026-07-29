@@ -406,13 +406,8 @@ class ChatViewModel @Inject constructor(
                 val conversations = withContext(Dispatchers.IO) {
                     RetrofitClient.comicApiService.getInbox()
                 }
-                val processed = conversations.map { convo ->
-                    convo.lastMessage?.let { last ->
-                        convo.copy(lastMessage = last.copy(content = chatConnectionManager.decryptContent(last.content)))
-                    } ?: convo
-                }
                 withContext(Dispatchers.IO) {
-                    repository.saveConversations(processed)
+                    repository.saveConversations(conversations)
                 }
             } catch (e: Exception) {
                 _chatUiState.update { it.copy(errorMessage = "Failed to fetch inbox: ${e.message}") }

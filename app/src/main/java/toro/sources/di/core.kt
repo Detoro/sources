@@ -42,9 +42,10 @@ object AppModule {
     @Provides
     @Singleton
     fun provideSessionManager(
-        preferenceManager: PreferenceManager
+        preferenceManager: PreferenceManager,
+        @ApplicationContext context: Context
     ): SessionManager {
-        return SessionManager(preferenceManager)
+        return SessionManager(preferenceManager, context)
     }
 
     @Provides

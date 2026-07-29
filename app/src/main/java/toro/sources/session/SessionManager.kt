@@ -1,5 +1,6 @@
 package toro.sources.session
 
+import android.content.Context
 import com.google.firebase.messaging.FirebaseMessaging
 import com.toro.models.UserProfile
 import kotlinx.coroutines.Dispatchers
@@ -10,7 +11,8 @@ import toro.sources.PreferenceManager
 import toro.sources.db.CanvasDatabase
 
 class SessionManager(
-    private val preferenceManager: PreferenceManager
+    private val preferenceManager: PreferenceManager,
+    private val context: Context
 ) {
     private val _userProfile = MutableStateFlow<UserProfile?>(null)
     val userProfile = _userProfile.asStateFlow()
@@ -48,6 +50,11 @@ class SessionManager(
         preferenceManager.clearTokens()
         FirebaseMessaging.getInstance().unregister()
         CanvasDatabase.resetDatabase()
+    }
+
+    suspend fun clearDatabase() = withContext(Dispatchers.IO) {
+        val userId = preferenceManager.getUserDataSync().userId
+        CanvasDatabase.deleteDatabase(context, userId)
     }
 
     fun registerFcmToken() {
