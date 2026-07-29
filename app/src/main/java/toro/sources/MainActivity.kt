@@ -217,6 +217,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
     val showShareDialog by sessionViewModel.showShareDialog.collectAsState()
     val sharedContent by sessionViewModel.sharedContent.collectAsState()
     val chatViewModel: ChatViewModel = hiltViewModel()
+    val comicsViewModel: ComicsViewModel = hiltViewModel()
 
     if (showShareDialog && sharedContent != null) {
         ShareDialog(
@@ -417,7 +418,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
             composable(Screen.Profile.route) { backStackEntry ->
                 val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
                 val profileViewModel: ProfileViewModel = hiltViewModel()
-                val chatViewModel: ChatViewModel = hiltViewModel()
                 val authViewModel: AuthViewModel = hiltViewModel()
                 val communityViewModel: CommunityViewModel = hiltViewModel()
                 ProfilePage(
@@ -441,7 +441,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 )
             }
             composable(Screen.Home.route) {
-                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 HomePage(
                     comicsViewModel = comicsViewModel,
                     sessionViewModel = sessionViewModel,
@@ -461,7 +460,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 )
             }
             composable(Screen.Search.route) {
-                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 SearchPage(
                     comicsViewModel = comicsViewModel,
                     sessionViewModel = sessionViewModel,
@@ -471,7 +469,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 )
             }
             composable(Screen.Activity.route) {
-                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 val communityViewModel: CommunityViewModel = hiltViewModel()
                 ActivityPage(
                     comicsViewModel = comicsViewModel,
@@ -485,8 +482,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
             }
             composable(Screen.Overview.route) { backStackEntry ->
                 val comicId = backStackEntry.arguments?.getString("comicId") ?: return@composable
-                val comicsViewModel: ComicsViewModel = hiltViewModel()
-                val chatViewModel: ChatViewModel = hiltViewModel()
                 val profileViewModel: ProfileViewModel = hiltViewModel()
 
                 LaunchedEffect(comicId) {
@@ -514,7 +509,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
             composable(Screen.Reader.route) { backStackEntry ->
                 val chapterId = backStackEntry.arguments?.getString("chapterId") ?: ""
                 val comicId = backStackEntry.arguments?.getString("comicId") ?: ""
-                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 val comic by comicsViewModel.currentComic.collectAsState()
                 val pageCount by comicsViewModel.pageCount.collectAsState()
                 val chapters by comicsViewModel.chapters.collectAsState()
@@ -585,7 +579,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 }
             }
             composable(Screen.Inbox.route) {
-                val chatViewModel: ChatViewModel = hiltViewModel()
                 ChatInboxPage(
                     chatViewModel = chatViewModel,
                     sessionViewModel = sessionViewModel,
@@ -602,9 +595,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
             }
             composable(Screen.Chat.route) { backStackEntry ->
                 val conversationId = backStackEntry.arguments?.getString("conversationId") ?: return@composable
-                val chatViewModel: ChatViewModel = hiltViewModel()
                 val profileViewModel: ProfileViewModel = hiltViewModel()
-                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 ChatThreadPage(
                     conversationId = conversationId,
                     chatViewModel = chatViewModel,
@@ -618,7 +609,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 )
             }
             composable(Screen.FriendRequest.route) {
-                val chatViewModel: ChatViewModel = hiltViewModel()
                 FriendRequestPage(
                     chatViewModel = chatViewModel,
                     onDismiss = { navController.popBackStack() }
@@ -626,7 +616,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
             }
             composable(Screen.AuthorSearch.route) {
                 val communityViewModel: CommunityViewModel = hiltViewModel()
-                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 AuthorSearchPage(
                     communityViewModel = communityViewModel,
                     comicsViewModel = comicsViewModel,
@@ -635,7 +624,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
             }
             composable(Screen.Engagement.route) {
                 val communityViewModel: CommunityViewModel = hiltViewModel()
-                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 EngagementPage(
                     communityViewModel = communityViewModel,
                     sessionViewModel = sessionViewModel,
@@ -731,9 +719,8 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 )
             }
             composable(Screen.Upload.route) {
-                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 UploadPage(
-                    viewModel = comicsViewModel,
+                    comicsViewModel = comicsViewModel,
                     onBackClick = { navController.popBackStack() },
                     onUploadNewComic = {
                         navController.navigate(Screen.AddComic.route)
@@ -749,7 +736,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 )
             }
             composable(Screen.AddComic.route) {
-                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 val communityViewModel: CommunityViewModel = hiltViewModel()
                 NewSeriesForm(
                     comicsViewModel = comicsViewModel,
@@ -766,7 +752,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 )
             }
             composable(Screen.AddChapter.route) {
-                val comicsViewModel: ComicsViewModel = hiltViewModel()
                 val profileViewModel: ProfileViewModel = hiltViewModel()
                 AddChapterForm(
                     comicsViewModel = comicsViewModel,
