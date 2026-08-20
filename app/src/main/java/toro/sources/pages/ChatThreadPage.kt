@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -25,7 +24,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
@@ -34,12 +32,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.toro.models.*
 import kotlinx.coroutines.delay
 import toro.sources.components.ChatBubble
+import toro.sources.components.ReplyPreview
 import toro.sources.components.SmartInput
 import toro.sources.components.TypingIndicator
 import toro.sources.viewmodel.ChatViewModel
@@ -56,7 +54,6 @@ fun ChatThreadPage(
     sessionViewModel: SessionViewModel,
     comicsViewModel: ComicsViewModel,
     profileViewModel: ProfileViewModel,
-    onBackClick: () -> Unit,
     onProfileClick: (String) -> Unit
 ) {
     val messages by chatViewModel.chatMessages.collectAsState()
@@ -181,25 +178,13 @@ fun ChatThreadPage(
                                     ) {
                                         Text(
                                             text = activeChat?.otherUser?.username ?: "Friend",
-                                            style = MaterialTheme.typography.labelMedium,
+                                            style = MaterialTheme.typography.labelLarge,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.onSurface
                                         )
                                     }
                                 }
                             }
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            if (isSearching) {
-                                isSearching = false
-                                searchQuery = ""
-                            } else {
-                                onBackClick()
-                            }
-                        }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     },
                     actions = {
@@ -228,7 +213,6 @@ fun ChatThreadPage(
                                         onClick = {
                                             expanded = false
                                             chatViewModel.unAddFriend(targetUserId)
-                                            onBackClick()
                                         }
                                     )
                                     DropdownMenuItem(
@@ -283,69 +267,22 @@ fun ChatThreadPage(
                                 visible = replyingToMessage != null,
                                 enter = expandVertically(),
                                 exit = shrinkVertically(),
-                                modifier = Modifier.padding(start = 12.dp, end = 12.dp)
+                                modifier = Modifier.padding(horizontal = 12.dp)
                             ) {
                                 replyingToMessage?.let { replyTarget ->
-                                    val cleanDecryptedText = replyTarget.content.replace("\u0000", "").trim()
-                                    val repliedSharedType =
-                                        if (replyTarget.sharedId != null) replyTarget.sharedType else if (replyTarget.sharedComicId != null) ShareType.COMIC else null
-                                    val replyText = when {
-                                        replyTarget.isSpoiler -> "Spoiler detected"
-                                        cleanDecryptedText.isNotEmpty() && cleanDecryptedText != "null" -> cleanDecryptedText
-                                        replyTarget.imageUrls.isNotEmpty() -> "Shared Image"
-                                        replyTarget.videoUrls.isNotEmpty() -> "Shared Video"
-                                        repliedSharedType != null -> "Shared ${
-                                            repliedSharedType.name.lowercase()
-                                                .replaceFirstChar { it.uppercase() }
-                                        }"
-
-                                        replyTarget.sharedId != null -> "Shared Content"
-                                        else -> "Attachment"
-                                    }
-
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .clip(RoundedCornerShape(14.dp))
-                                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                                            .padding(horizontal = 8.dp, vertical = 8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .width(4.dp)
-                                                .height(40.dp)
-                                                .background(MaterialTheme.colorScheme.primary)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(
-                                                text = if (replyTarget.senderId == me?.id) "You" else activeChat?.otherUser?.username ?: "Friend",
-                                                style = MaterialTheme.typography.labelMedium,
-                                                color = MaterialTheme.colorScheme.primary
-                                            )
-                                            Text(
-                                                text = replyText,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                maxLines = 1,
-                                                overflow = TextOverflow.Ellipsis
-                                            )
-                                        }
-
-                                        IconButton(onClick = { chatViewModel.setReplyTarget(null) }) {
-                                            Icon(
-                                                imageVector = Icons.Default.Close,
-                                                contentDescription = "Cancel Reply",
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
+                                    ReplyPreview(
+                                        label = if (replyTarget.senderId == me?.id) "You" else activeChat?.otherUser?.username ?: "Friend",
+                                        previewText = if (replyTarget.isSpoiler) "Spoiler content" else chatViewModel.conversationPreviewText(replyTarget.toContent()),
+                                        isFromMe = true,
+                                        onCancel = { chatViewModel.setReplyTarget(null) },
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
                                 }
                             }
                             val sharedContent by sessionViewModel.sharedContent.collectAsState()
                             val editingMessage by chatViewModel.editingMessage.collectAsState()
+                            val draftText by chatViewModel.draftText.collectAsState()
+
                             var isCurrentlyTyping by remember { mutableStateOf(false) }
                             LaunchedEffect(isCurrentlyTyping) {
                                 if (isCurrentlyTyping) {
@@ -361,6 +298,7 @@ fun ChatThreadPage(
                                     if (newText.isNotEmpty() && !isCurrentlyTyping) {
                                         isCurrentlyTyping = true
                                     }
+                                    chatViewModel.updateDraftText(newText)
                                 },
                                 onSend = { _, text, _, sharedComicIds, attachment, isSpoiler ->
                                     isCurrentlyTyping = false
@@ -397,7 +335,7 @@ fun ChatThreadPage(
                                         sessionViewModel.setSharedContent(null)
                                     }
                                 },
-                                initialText = editingMessage?.content ?: "",
+                                initialText = editingMessage?.content ?: draftText,
                                 placeholder = if (editingMessage != null) "Edit message..." else "Type a message...",
                                 supportUpload = editingMessage == null,
                                 sessionViewModel = sessionViewModel
@@ -442,16 +380,33 @@ fun ChatThreadPage(
                             }
                         }
 
-                        ChatBubble(
-                            message = msg,
-                            isFromMe = isFromMe,
-                            showStatus = isFromMe && index == lastUserMessageIndex,
-                            repliedMessage = msg.replyToMessageId?.let { messagesById[it] },
-                            chatViewModel = chatViewModel,
-                            comicsViewModel = comicsViewModel,
-                            sessionViewModel = sessionViewModel,
-                            profileViewModel = profileViewModel,
-                        )
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start
+                        ) {
+                            val repliedMsg = msg.replyToMessageId?.let { messagesById[it] }
+                            if (repliedMsg != null) {
+                                ReplyPreview(
+                                    label = if (repliedMsg.senderId == me?.id) "You" else activeChat?.otherUser?.username ?: "Friend",
+                                    previewText = if (repliedMsg.isSpoiler) "Spoiler content" else chatViewModel.conversationPreviewText(repliedMsg.toContent()),
+                                    isFromMe = isFromMe,
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.7f)
+                                        .padding(bottom = 2.dp)
+                                )
+                            }
+                            
+                            ChatBubble(
+                                message = msg,
+                                conversationId = conversationId,
+                                isFromMe = isFromMe,
+                                showStatus = isFromMe && index == lastUserMessageIndex,
+                                chatViewModel = chatViewModel,
+                                comicsViewModel = comicsViewModel,
+                                sessionViewModel = sessionViewModel,
+                                profileViewModel = profileViewModel,
+                            )
+                        }
                     }
 
                     item {

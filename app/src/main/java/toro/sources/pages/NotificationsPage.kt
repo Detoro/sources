@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
@@ -23,24 +22,18 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationsPage(
-    viewModel: NotificationsViewModel,
-    sessionViewModel: SessionViewModel = hiltViewModel(),
-    onBackClick: () -> Unit
+    notificationsViewModel: NotificationsViewModel,
+    sessionViewModel: SessionViewModel = hiltViewModel()
 ) {
-    val notifications by viewModel.notifications.collectAsState()
+    val notifications by notificationsViewModel.notifications.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Notifications") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 actions = {
                     if (notifications.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.clearNotifications() }) {
+                        IconButton(onClick = { notificationsViewModel.clearNotifications() }) {
                             Icon(Icons.Default.DeleteSweep, contentDescription = "Clear All")
                         }
                     }
@@ -83,7 +76,7 @@ fun NotificationsPage(
                                 Text("Delete", color = MaterialTheme.colorScheme.onErrorContainer)
                             }
                         },
-                        onDismiss = { viewModel.deleteNotification(notification.id) }
+                        onDismiss = { notificationsViewModel.deleteNotification(notification.id) }
                     ) {
                         ListItem(
                             headlineContent = { Text(notification.message) },
@@ -100,7 +93,7 @@ fun NotificationsPage(
                             modifier = Modifier
                                 .graphicsLayer(alpha = if (notification.isRead) 0.5f else 1.0f)
                                 .clickable {
-                                    viewModel.markNotificationAsRead(notification.id)
+                                    notificationsViewModel.markNotificationAsRead(notification.id)
                                     sessionViewModel.handleNavigation(Screen.Chat.createRoute(notification.relatedId ?: ""))
                             }
                         )

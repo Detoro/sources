@@ -8,7 +8,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -27,7 +26,6 @@ fun AddChapterForm(
     comicsViewModel: ComicsViewModel,
     sessionViewModel: SessionViewModel,
     profileViewModel: ProfileViewModel,
-    onCancel: () -> Unit,
     onUploadComplete: () -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -73,11 +71,6 @@ fun AddChapterForm(
         topBar = {
             TopAppBar(
                 title = { Text("Add Chapters") },
-                navigationIcon = {
-                    IconButton(onClick = onCancel, enabled = !isUploading) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 actions = {
                     IconButton(onClick = { clearForm() }, enabled = !isUploading) {
                         Icon(Icons.Default.Close, contentDescription = "Clear")

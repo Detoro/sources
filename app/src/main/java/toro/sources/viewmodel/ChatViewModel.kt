@@ -75,6 +75,9 @@ class ChatViewModel @Inject constructor(
     private val _editingMessage = MutableStateFlow<ChatMessage?>(null)
     val editingMessage = _editingMessage.asStateFlow()
 
+    private val _draftText = MutableStateFlow("")
+    val draftText = _draftText.asStateFlow()
+
     private val _inboxSearchQuery = MutableStateFlow("")
     val inboxSearchQuery = _inboxSearchQuery.asStateFlow()
     val pendingRequestsCount: StateFlow<Int> = _chatRequests
@@ -158,6 +161,14 @@ class ChatViewModel @Inject constructor(
         _currentConversationId.value = conversationId
         viewModelScope.launch {
             try {
+                val savedState = withContext(Dispatchers.IO) {
+                    repository.getConversationUiState(conversationId).first()
+                }
+                _draftText.value = savedState?.draftText ?: ""
+                _replyingToMessage.value = savedState?.replyToMessageId?.let { id ->
+                    withContext(Dispatchers.IO) { repository.getMessageById(id) }
+                }
+
                 withContext(Dispatchers.IO) {
                     val lastTs = repository.getLastMessageTimestamp(conversationId)
                     val messages = RetrofitClient.comicApiService.getChatMessages(conversationId, lastTs)
@@ -254,6 +265,7 @@ class ChatViewModel @Inject constructor(
                     repository.saveConversations(
                         listOf(convo.copy(lastMessage = summary, timestamp = newMessage.timestamp))
                     )
+                    repository.clearConversationUiState(conversationId)
                 }
 
                 if (!chatConnectionManager.sendMessage(newMessage)) {
@@ -438,7 +450,33 @@ class ChatViewModel @Inject constructor(
     fun clearChatHistory(conversationId: String) {
         viewModelScope.launch { withContext(Dispatchers.IO) { repository.deleteMessagesForConversation(conversationId) } }
     }
-    fun setReplyTarget(message: ChatMessage?) { _replyingToMessage.value = message }
+
+    fun updateDraftText(text: String) {
+        _draftText.value = text
+        saveUiState()
+    }
+
+    fun setReplyTarget(message: ChatMessage?) {
+        _replyingToMessage.value = message
+        saveUiState()
+    }
+
+    private var saveJob: Job? = null
+    private fun saveUiState() {
+        val id = _currentConversationId.value ?: return
+        saveJob?.cancel()
+        saveJob = viewModelScope.launch(Dispatchers.IO) {
+            delay(500.milliseconds)
+            repository.saveConversationUiState(
+                ConversationUiState(
+                    conversationId = id,
+                    draftText = _draftText.value,
+                    replyToMessageId = _replyingToMessage.value?.id
+                )
+            )
+        }
+    }
+
     fun setEditingMessage(message: ChatMessage?) { _editingMessage.value = message }
     fun clearChatError() { _chatUiState.update { it.copy(errorMessage = null) } }
 }

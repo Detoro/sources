@@ -61,7 +61,6 @@ fun ReaderPage(
     sessionViewModel: SessionViewModel,
     chapterId: String,
     startingIndex: Int = 0,
-    onBack: () -> Unit = {},
     onPageChanged: (Int) -> Unit,
     onNextChapter: () -> Unit = {},
     onPreviousChapter: () -> Unit = {},
@@ -262,8 +261,7 @@ fun ReaderPage(
         ) {
             ReaderHeaderBar(
                 comicTitle = comic.title,
-                chapterTitle = currentChapter?.chapterTitle ?: "Chapter",
-                onBack = onBack
+                chapterTitle = currentChapter?.chapterTitle ?: "Chapter"
             )
         }
 

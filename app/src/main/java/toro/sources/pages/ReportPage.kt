@@ -9,7 +9,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
@@ -32,7 +31,6 @@ fun ReportPage(
     communityViewModel: CommunityViewModel,
     targetType: ReportTargetType,
     targetId: String? = null,
-    onBackClick: () -> Unit,
     onSubmitSuccess: () -> Unit
 ) {
     var selectedReason by remember { mutableStateOf<String?>(null) }
@@ -53,11 +51,6 @@ fun ReportPage(
                         text = if (targetType == ReportTargetType.APP) "App Feedback" else "Report Issue",
                         fontWeight = FontWeight.Bold
                     )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Cancel")
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background

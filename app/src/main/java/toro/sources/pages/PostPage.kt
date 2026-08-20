@@ -6,8 +6,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,8 +23,7 @@ import toro.sources.viewmodel.SessionViewModel
 @Composable
 fun PostPage(
     communityViewModel: CommunityViewModel,
-    sessionViewModel: SessionViewModel,
-    onBackClick: () -> Unit
+    sessionViewModel: SessionViewModel
 ) {
     var postTitle by remember { mutableStateOf("") }
     var postText by remember { mutableStateOf("") }
@@ -37,11 +34,6 @@ fun PostPage(
         topBar = {
             TopAppBar(
                 title = { Text("Make a Post", style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 windowInsets = WindowInsets(top = 3.dp)
             )
         },

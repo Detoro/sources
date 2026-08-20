@@ -27,7 +27,7 @@ import javax.inject.Inject
 class SessionViewModel @Inject constructor(
     application: Application,
     private val preferenceManager: PreferenceManager,
-    private val sessionManager: SessionManager,
+    sessionManager: SessionManager,
     private val navigationState: NavigationState,
     private val deepLinkRouter: DeepLinkRouter,
     private val shareCoordinator: ShareCoordinator,

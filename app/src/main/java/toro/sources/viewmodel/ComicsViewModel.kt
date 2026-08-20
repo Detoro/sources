@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -132,7 +133,13 @@ class ComicsViewModel @Inject constructor(
 
     // Comic & Chapter State
     private val _currentComic = MutableStateFlow<Comic?>(null)
-    val currentComic = _currentComic.asStateFlow()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val currentComic: StateFlow<Comic?> = _currentComic.flatMapLatest { rawComic ->
+        if (rawComic == null) flowOf(null)
+        else subscribedComics.map { subs ->
+            rawComic.copy(isSubscribed = subs.any { it.id == rawComic.id })
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _chapters = MutableStateFlow<List<Chapter>>(emptyList())
     val chapters = _chapters.asStateFlow()
@@ -255,16 +262,12 @@ class ComicsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val current = _currentComic.value
-                val nowSubscribed = withContext(Dispatchers.IO) {
+                withContext(Dispatchers.IO) {
                     val res = RetrofitClient.comicApiService.toggleComicSubscription(comicId)
                     val subscribed = res.isSuccessful
                     if (current?.id == comicId && current.isLocalSideload) {
                         repository.toggleLocalSubscription(comicId, subscribed)
                     }
-                    subscribed
-                }
-                if (current?.id == comicId) {
-                    _currentComic.value = current.copy(isSubscribed = nowSubscribed)
                 }
                 fetchSubscribedAndHistory()
             } catch (e: Exception) {

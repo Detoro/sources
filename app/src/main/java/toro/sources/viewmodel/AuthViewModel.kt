@@ -91,6 +91,42 @@ class AuthViewModel @Inject constructor(
             sessionManager.clearDatabase()
         }
     }
+
+    fun sendEmail() {
+        viewModelScope.launch {
+            try {
+                val email = RetrofitClient.preferenceManager.getUserDataSync().username ?: ""
+                val forgotPasswordRequest = ForgotPasswordRequest(email = email)
+                RetrofitClient.comicApiService.forgotPassword(forgotPasswordRequest)
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Forgot password failed", e)
+            }
+        }
+    }
+
+    fun forgotPassword(email: String, onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                val forgotPasswordRequest = ForgotPasswordRequest(email = email)
+                RetrofitClient.comicApiService.forgotPassword(forgotPasswordRequest)
+                onSuccess()
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Forgot password failed", e)
+            }
+        }
+    }
+
+    fun resetPassword(password: String) {
+        viewModelScope.launch {
+            try {
+                val token = RetrofitClient.preferenceManager.getRefreshTokenSync() ?: ""
+                val resetPasswordRequest = ResetPasswordRequest(token = token, newPassword = password)
+                RetrofitClient.comicApiService.resetPassword(resetPasswordRequest)
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Reset password failed", e)
+            }
+        }
+    }
 }
 
 data class AuthUiState(

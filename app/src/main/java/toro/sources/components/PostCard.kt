@@ -22,14 +22,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.toro.models.*
+import toro.sources.Screen
+import toro.sources.sharing.handleSharedNavigation
+import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.viewmodel.SessionViewModel
-import toro.sources.Screen
-import com.toro.models.Post
 
 @Composable
 fun PostCard(
@@ -38,6 +41,7 @@ fun PostCard(
     post: Post,
     onCommentClick: () -> Unit,
     modifier: Modifier = Modifier,
+    comicsViewModel: ComicsViewModel? = null,
     onAuthorClick: (String) -> Unit = {},
     onShareClick: (Post) -> Unit = {},
     showAccentLine: Boolean = false,
@@ -46,6 +50,8 @@ fun PostCard(
     containerColor: Color = Color.Transparent
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    val content = remember(post) { post.toContent() }
+    var textExpanded by remember { mutableStateOf(false) }
 
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -85,7 +91,9 @@ fun PostCard(
                             text = post.authorName,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            overflow = TextOverflow.Ellipsis,
+                            softWrap = false
                         )
                         Text(
                             text = "2h ago", 
@@ -96,7 +104,9 @@ fun PostCard(
                     
                     // Follow Button
                     OutlinedButton(
-                        onClick = { },
+                        onClick = {
+                            comicsViewModel?.subscribeToAuthor(post.authorId)
+                        },
                         modifier = Modifier.height(32.dp),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
@@ -118,62 +128,96 @@ fun PostCard(
                             modifier = Modifier.background(MaterialTheme.colorScheme.surfaceContainerHighest)
                         ) {
                             DropdownMenuItem(text = { Text("Share") }, onClick = { showMenu = false; onShareClick(post) })
-                            DropdownMenuItem(text = { Text("Report", color = MaterialTheme.colorScheme.error) }, onClick = { showMenu = false; sessionViewModel.handleNavigation(Screen.Report.createRoute("POST", post.id)) })
-                            DropdownMenuItem(text = { Text("Delete") }, onClick = { showMenu = false; communityViewModel.deletePost(post.id) })
+                            DropdownMenuItem(text = { Text("Report") }, onClick = { showMenu = false; sessionViewModel.handleNavigation(Screen.Report.createRoute("POST", post.id)) })
+                            DropdownMenuItem(text = { Text("Delete", color = MaterialTheme.colorScheme.error) }, onClick = { showMenu = false; communityViewModel.deletePost(post.id) })
                         }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Media
-                if (post.imageUrls.isNotEmpty()) {
-                    AsyncImage(
-                        model = post.imageUrls.first(),
-                        contentDescription = "Post Content",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(300.dp)
-                            .clip(RoundedCornerShape(4.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                } else if (post.videoUrls.isNotEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(300.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(Color.Black),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = Color.White, modifier = Modifier.size(48.dp))
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
                 // Content
                 Column(modifier = Modifier.fillMaxWidth().animateContentSize()) {
-                    val annotatedContent = buildAnnotatedString {
-                        val keywords = listOf("toro", "deto")
-                        val parts = post.content.split(" ")
-                        parts.forEach { word ->
-                            if (keywords.any { word.contains(it, ignoreCase = true) }) {
-                                withStyle(SpanStyle(color = Color.Cyan, fontWeight = FontWeight.Bold)) {
+                    if (content.body.isNotEmpty()) {
+                        val annotatedContent = buildAnnotatedString {
+                            val keywords = listOf("toro", "deto")
+                            val parts = content.body.split(" ")
+                            parts.forEach { word ->
+                                if (keywords.any { word.contains(it, ignoreCase = true) }) {
+                                    withStyle(SpanStyle(color = Color.Cyan, fontWeight = FontWeight.Bold)) {
+                                        append("$word ")
+                                    }
+                                } else {
                                     append("$word ")
                                 }
-                            } else {
-                                append("$word ")
                             }
                         }
+
+                        Text(
+                            text = annotatedContent,
+                            style = MaterialTheme.typography.bodyLarge,
+                            lineHeight = 24.sp,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f),
+                            maxLines = if (textExpanded) Int.MAX_VALUE else 3,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        TextButton(
+                            onClick = { textExpanded = !textExpanded },
+                            contentPadding = PaddingValues(0.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text(
+                                if (textExpanded) "Read Less" else "Read More",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Thin
+                            )
+                        }
                     }
-                    
-                    Text(
-                        text = annotatedContent,
-                        style = MaterialTheme.typography.bodyLarge,
-                        lineHeight = 24.sp,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.9f)
-                    )
+                    content.shared?.let { shared ->
+                        SharedContentPlaceholder(
+                            type = shared.type,
+                            title = shared.title?.lowercase() ?: "Item",
+                            previewText = shared.preview ?: "Tap to view details",
+                            imageUrl = shared.imageUrl,
+                            modifier = Modifier.padding(bottom = 8.dp),
+                            onClick = { 
+                                handleSharedNavigation(
+                                    id = shared.id,
+                                    type = shared.type,
+                                    comicsViewModel = comicsViewModel,
+                                    sessionViewModel = sessionViewModel
+                                )
+                            }
+                        )
+                    }
+                }
+
+                // Media
+                if (content is FeedContent.Media) {
+                    if (content.imageUrls.isNotEmpty()) {
+                        AsyncImage(
+                            model = content.imageUrls.first(),
+                            contentDescription = "Post Content",
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(300.dp)
+                                .clip(RoundedCornerShape(4.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    } else if (content.videoUrls.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(300.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(Color.Black),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.PlayArrow, contentDescription = "Play", tint = Color.White, modifier = Modifier.size(48.dp))
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

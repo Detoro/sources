@@ -11,7 +11,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
@@ -69,9 +68,7 @@ private val SpecialThanks = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AboutPage(
-    onBackClick: () -> Unit,
-) {
+fun AboutPage() {
     val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
 
@@ -90,11 +87,6 @@ fun AboutPage(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("About", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Navigate back")
-                    }
-                },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,

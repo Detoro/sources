@@ -90,12 +90,9 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
             relatedId = targetId
         )
 
-        val friendRequest = Int.MAX_VALUE
-
         scope.launch {
             NotificationEventBus.postNotification(notification)
-            NotificationEventBus.postFriendRequest(friendRequest)
-
+            displayOnNotificationPage(notification)
             if (notification.type == NotificationType.CHAT && targetId.isNotEmpty()) {
                 try {
                     RetrofitClient.comicApiService.markMessageAsDelivered(targetId)
@@ -170,6 +167,18 @@ class SourcesFirebaseMessagingService: FirebaseMessagingService() {
         scope.launch {
             try {
                 Log.i("FCM", "Processed new friend request: $requestId")
+            } catch (e: Exception) {
+                Log.e("FCM", "Error handling friend request", e)
+            }
+        }
+    }
+
+    private fun displayOnNotificationPage(notification: Notification) {
+        scope.launch {
+            try {
+                val db = CanvasDatabase.getDatabase(applicationContext)
+                db.notificationDao().insert(notification)
+                Log.i("FCM", "Successfully displayed notification on notification page")
             } catch (e: Exception) {
                 Log.e("FCM", "Error handling friend request", e)
             }

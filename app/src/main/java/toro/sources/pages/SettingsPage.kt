@@ -7,7 +7,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -33,8 +32,8 @@ fun SettingsPage(
     sessionViewModel: SessionViewModel,
     profileViewModel: ProfileViewModel,
     onLogoutClick: () -> Unit,
-    onDeleteAccountClick: () -> Unit,
-    onBackClick: () -> Unit
+    onResetPassword: () -> Unit,
+    onDeleteAccountClick: () -> Unit
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
@@ -54,11 +53,6 @@ fun SettingsPage(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Settings") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 actions = {
                     IconButton(onClick = onLogoutClick) {
                         Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout")
@@ -204,7 +198,10 @@ fun SettingsPage(
                 title = { Text("Reset Password") },
                 text = { Text("A password reset link has been sent to your registered email address.") },
                 confirmButton = {
-                    TextButton(onClick = { showResetPasswordDialog = false }) { Text("OK") }
+                    TextButton(onClick = {
+                        onResetPassword()
+                        showResetPasswordDialog = false
+                    }) { Text("OK") }
                 }
             )
         }

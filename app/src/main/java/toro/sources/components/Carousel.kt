@@ -20,6 +20,7 @@ import com.toro.models.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -27,8 +28,11 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
@@ -46,15 +50,26 @@ import kotlin.time.Duration.Companion.milliseconds
 @Composable
 fun SectionHeader(
     title: String,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp)
-    )
+    Row(
+        modifier = modifier
+            .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp)
+            .clickable { onClick() }
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Icon(
+            Icons.Default.ChevronRight,
+            null,
+            tint = MaterialTheme.colorScheme.primary
+        )
+    }
 }
 
 @Composable
@@ -145,13 +160,14 @@ fun BillboardCarousel(
 @Composable
 fun ContinueReadingCarousel(
     comics: List<Comic>,
+    onClick: () -> Unit,
     onComicClick: (Comic) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (comics.isEmpty()) return
 
     Column(modifier = modifier) {
-        SectionHeader(title = "Continue Reading")
+        SectionHeader(title = "Continue Reading", onClick = onClick)
 
         LazyRow(
             modifier = Modifier.fillMaxWidth(),
@@ -193,12 +209,13 @@ fun ComicCarousel(
     comics: List<Comic>,
     comicsViewModel: ComicsViewModel,
     sessionViewModel: SessionViewModel,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (comics.isEmpty()) return
 
     Column(modifier = modifier) {
-        SectionHeader(title = title)
+        SectionHeader(title = title, onClick = onClick)
 
         LazyRow(
             modifier = Modifier.fillMaxWidth(),

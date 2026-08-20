@@ -32,32 +32,16 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.toro.models.ChatMessage
-import com.toro.models.MessageContent
-import com.toro.models.ShareType
-import com.toro.models.toContent
+import com.toro.models.*
 import toro.sources.Screen
+import toro.sources.sharing.handleSharedNavigation
 import toro.sources.viewmodel.ChatViewModel
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.ProfileViewModel
 import toro.sources.viewmodel.SessionViewModel
-
-private fun handleSharedClick(
-    shared: MessageContent.Shared,
-    comicsViewModel: ComicsViewModel,
-    sessionViewModel: SessionViewModel
-) {
-    when (shared.type) {
-        ShareType.COMIC -> comicsViewModel.loadAndNavigateToComic(shared.id)
-        ShareType.POST -> sessionViewModel.handleNavigation(Screen.PostComments.createRoute(shared.id))
-        ShareType.COMMENT -> sessionViewModel.handleNavigation(Screen.Engagement.route)
-        ShareType.USER -> sessionViewModel.handleNavigation(Screen.Profile.createRoute(shared.id))
-    }
-}
 
 @Composable
 private fun ChatImage(imageUrl: String) {
@@ -176,7 +160,12 @@ private fun ChatText(
                             }
 
                             if (content is MessageContent.Shared) {
-                                handleSharedClick(content, comicsViewModel, sessionViewModel)
+                                handleSharedNavigation(
+                                    id = content.id,
+                                    type = content.type,
+                                    comicsViewModel = comicsViewModel,
+                                    sessionViewModel = sessionViewModel
+                                )
                             } else if (isSpoiler) {
                                 isRevealed = false
                             }
@@ -192,13 +181,13 @@ private fun ChatText(
 @Composable
 fun ChatBubble(
     message: ChatMessage,
+    conversationId: String,
     isFromMe: Boolean,
     chatViewModel: ChatViewModel,
     comicsViewModel: ComicsViewModel,
     sessionViewModel: SessionViewModel,
     profileViewModel: ProfileViewModel,
     showStatus: Boolean = false,
-    repliedMessage: ChatMessage? = null,
 ) {
     var showOptionsMenu by remember { mutableStateOf(false) }
     val content = remember(message) { message.toContent() }
@@ -208,25 +197,21 @@ fun ChatBubble(
     val text = remember(message.content) {
         message.content
     }
-    
-    val dismissState = rememberSwipeToDismissBoxState()
 
-    LaunchedEffect(dismissState.currentValue) {
-        when (dismissState.currentValue) {
-            SwipeToDismissBoxValue.StartToEnd -> {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                chatViewModel.setReplyTarget(message)
-            }
-            SwipeToDismissBoxValue.EndToStart -> {
-                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                chatViewModel.setReplyTarget(message)
-            }
-            SwipeToDismissBoxValue.Settled -> {}
+    val swipeState = rememberSwipeToDismissBoxState(
+        positionalThreshold = { totalDistance -> totalDistance * 0.25f }
+    )
+
+    LaunchedEffect(swipeState.currentValue, conversationId) {
+        if (swipeState.currentValue == SwipeToDismissBoxValue.StartToEnd) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            chatViewModel.setReplyTarget(message)
         }
+        swipeState.reset()
     }
 
     SwipeToDismissBox(
-        state = dismissState,
+        state = swipeState,
         enableDismissFromStartToEnd = true,
         enableDismissFromEndToStart = false,
         backgroundContent = {}
@@ -258,8 +243,11 @@ fun ChatBubble(
                         .combinedClickable(
                             onClick = {
                                 when (content) {
-                                    is MessageContent.Shared -> handleSharedClick(
-                                        content, comicsViewModel, sessionViewModel
+                                    is MessageContent.Shared -> handleSharedNavigation(
+                                        id = content.id,
+                                        type = content.type,
+                                        comicsViewModel = comicsViewModel,
+                                        sessionViewModel = sessionViewModel
                                     )
                                     is MessageContent.Text,
                                     is MessageContent.TextWithMedia,
@@ -273,61 +261,6 @@ fun ChatBubble(
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Column {
-                        if (message.replyToMessageId != null) {
-                            if (repliedMessage != null) {
-                                val replyDisplay = if (repliedMessage.isSpoiler) {
-                                    "Spoiler detected"
-                                } else {
-                                    chatViewModel.conversationPreviewText(repliedMessage.toContent())
-                                }
-
-                                val myUserId = sessionViewModel.userProfile.collectAsState().value?.id
-                                val isReplyToMe = repliedMessage.senderId == myUserId
-
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(bottom = 8.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
-                                        .padding(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .width(3.dp)
-                                            .height(30.dp)
-                                            .clip(RoundedCornerShape(2.dp))
-                                            .background(if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary)
-                                    )
-
-                                    Spacer(modifier = Modifier.width(8.dp))
-
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = if (isReplyToMe) "You" else "Replied Message",
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                        Text(
-                                            text = replyDisplay,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = if (isFromMe) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                }
-                            } else {
-                                Text(
-                                    text = "Message deleted",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
-                            }
-                        }
                         when (content) {
                             is MessageContent.Shared -> {
                                 SharedContentPlaceholder(
@@ -336,7 +269,14 @@ fun ChatBubble(
                                     previewText = message.mediaType ?: "Tap to view details",
                                     imageUrl = message.imageUrls.firstOrNull(),
                                     modifier = Modifier.padding(bottom = 8.dp),
-                                    onClick = { handleSharedClick(content, comicsViewModel, sessionViewModel) }
+                                    onClick = {
+                                        handleSharedNavigation(
+                                            id = content.id,
+                                            type = content.type,
+                                            comicsViewModel = comicsViewModel,
+                                            sessionViewModel = sessionViewModel
+                                        )
+                                    }
                                 )
                             }
                             is MessageContent.Image -> {

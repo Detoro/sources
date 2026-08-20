@@ -1,5 +1,6 @@
 package toro.sources.viewmodel.common
 
+import android.util.Log
 import com.toro.models.UserProfile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +22,7 @@ class UserSearchDelegate(private val scope: CoroutineScope) {
                     RetrofitClient.comicApiService.searchUsers(query)
                 }
             } catch (e: Exception) {
-                // tbd man
+                Log.e("UserSearchDelegate", "Error searching users: ${e.message}")
             }
         }
     }

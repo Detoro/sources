@@ -293,6 +293,7 @@ fun SmartInput(
                                 isSpoiler = false
                                 sessionViewModel.setSharedContent(null)
                             }
+                            sessionViewModel.setSharedContent(null)
                         },
                         colors = IconButtonDefaults.iconButtonColors(
                             containerColor = if (canSend) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,

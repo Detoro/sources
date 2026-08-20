@@ -13,6 +13,7 @@ import com.toro.models.Notification
 import com.toro.models.Comment
 import com.toro.models.Post
 import com.toro.models.UserProfile
+import com.toro.models.ConversationUiState
 import toro.sources.PreferenceManager
 
 @Database(
@@ -24,9 +25,10 @@ import toro.sources.PreferenceManager
         Notification::class,
         Comment::class,
         Post::class,
-        UserProfile::class
+        UserProfile::class,
+        ConversationUiState::class
     ],
-    version = 29,
+    version = 30,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -40,6 +42,7 @@ abstract class CanvasDatabase : RoomDatabase() {
     abstract fun commentDao(): CommentDao
     abstract fun postDao(): PostDao
     abstract fun authorDao(): AuthorDao
+    abstract fun conversationUiStateDao(): ConversationUiStateDao
 
     companion object {
         @Volatile

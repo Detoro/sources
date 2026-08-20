@@ -80,6 +80,7 @@ import toro.sources.ui.theme.SourcesTheme
 import toro.sources.components.ShareDialog
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.pages.AboutPage
+import toro.sources.pages.EmailInputPage
 import toro.sources.pages.InterestsPage
 import toro.sources.pages.ReportPage
 import toro.sources.pages.ReportTargetType
@@ -91,6 +92,7 @@ import toro.sources.viewmodel.SessionViewModel
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object SignUp : Screen("signup")
+    object EmailInput : Screen("email_input")
     object About : Screen("about")
     object Welcome : Screen("welcome")
     object Interests : Screen("interest")
@@ -333,6 +335,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 val authState by authViewModel.authState.collectAsState()
                 LoginPage(
                     onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
+                    onForgotPassword = { navController.navigate(Screen.EmailInput.route) },
                     onLoginSubmit = { credentials ->
                         authViewModel.loginUser(credentials, onSuccess = {
                             navController.navigate("home/${currentUser?.id}") {
@@ -358,6 +361,16 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                     },
                     signError = authState.errorMessage,
                     isLoading = authState.isLoading
+                )
+            }
+            composable(Screen.EmailInput.route) {
+                val authViewModel: AuthViewModel = hiltViewModel()
+                EmailInputPage(
+                    onConfirm = { email ->
+                        authViewModel.forgotPassword(email, onSuccess = {
+                            navController.popBackStack()
+                        })
+                    }
                 )
             }
             composable(Screen.Welcome.route) {
@@ -404,6 +417,9 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                             }
                         })
                     },
+                    onResetPassword = {
+                        authViewModel.sendEmail()
+                    },
                     onDeleteAccountClick = {
                         authViewModel.deleteAccount(onComplete = {
                             navController.navigate(Screen.Login.route) {
@@ -411,8 +427,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                                 launchSingleTop = true
                             }
                         })
-                    },
-                    onBackClick = { navController.popBackStack() }
+                    }
                 )
             }
             composable(Screen.Profile.route) { backStackEntry ->
@@ -436,8 +451,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                                 launchSingleTop = true
                             }
                         })
-                    },
-                    onBackClick = { navController.popBackStack() }
+                    }
                 )
             }
             composable(Screen.Home.route) {
@@ -457,6 +471,9 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                     onNotificationsClick = {
                         navController.navigate(Screen.Notifications.route)
                     },
+                    onSectionClick = {
+                        navController.navigate(Screen.Activity.route)
+                    }
                 )
             }
             composable(Screen.Search.route) {
@@ -493,7 +510,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                     sessionViewModel = sessionViewModel,
                     chatViewModel = chatViewModel,
                     profileViewModel = profileViewModel,
-                    onBackClick = { navController.popBackStack() },
                     onAuthorClick = { authorId ->
                         navController.navigate(Screen.Profile.createRoute(authorId))
                     },
@@ -537,7 +553,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                             sessionViewModel = sessionViewModel,
                             chapterId = chapterId,
                             startingIndex = 0,
-                            onBack = { navController.popBackStack() },
                             onPageChanged = { newPageIndex ->
                                 comicsViewModel.onPageTurned(chapterId, newPageIndex)
                             },
@@ -602,7 +617,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                     comicsViewModel = comicsViewModel,
                     profileViewModel = profileViewModel,
                     sessionViewModel = sessionViewModel,
-                    onBackClick = { navController.popBackStack() },
                     onProfileClick = { userId ->
                         navController.navigate(Screen.Profile.createRoute(userId))
                     }
@@ -643,8 +657,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 val communityViewModel: CommunityViewModel = hiltViewModel()
                 PostPage(
                     communityViewModel = communityViewModel,
-                    sessionViewModel = sessionViewModel,
-                    onBackClick = { navController.popBackStack() }
+                    sessionViewModel = sessionViewModel
                 )
             }
             composable(Screen.PostComments.route) { backStackEntry ->
@@ -653,9 +666,9 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 CommentsPage(
                     communityViewModel = communityViewModel,
                     sessionViewModel = sessionViewModel,
+                    comicsViewModel = comicsViewModel,
                     commentLocation = CommentLocation.ON_POST,
                     targetId = targetId,
-                    onBackClick = { navController.popBackStack() },
                     onCommentClick = { comment ->
                         navController.navigate(Screen.PostCommentThread.createRoute(targetId, comment.id))
                     }
@@ -668,10 +681,10 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 CommentThreadPage(
                     communityViewModel = communityViewModel,
                     sessionViewModel = sessionViewModel,
+                    comicsViewModel = comicsViewModel,
                     commentLocation = CommentLocation.ON_POST,
                     targetId = targetId,
-                    commentId = commentId,
-                    onBackClick = { navController.popBackStack() }
+                    commentId = commentId
                 )
             }
             composable(Screen.ChapterComments.route) { backStackEntry ->
@@ -680,9 +693,9 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 CommentsPage(
                     communityViewModel = communityViewModel,
                     sessionViewModel = sessionViewModel,
+                    comicsViewModel = comicsViewModel,
                     commentLocation = CommentLocation.ON_CHAPTER,
                     targetId = targetId,
-                    onBackClick = { navController.popBackStack() },
                     onCommentClick = { comment ->
                         navController.navigate(Screen.ChapterCommentThread.createRoute(targetId, comment.id))
                     }
@@ -695,10 +708,10 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 CommentThreadPage(
                     communityViewModel = communityViewModel,
                     sessionViewModel = sessionViewModel,
+                    comicsViewModel = comicsViewModel,
                     commentLocation = CommentLocation.ON_CHAPTER,
                     targetId = targetId,
-                    commentId = commentId,
-                    onBackClick = { navController.popBackStack() }
+                    commentId = commentId
                 )
             }
             composable(Screen.Report.route) { backStackEntry ->
@@ -711,7 +724,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                     communityViewModel = communityViewModel,
                     targetType = targetType,
                     targetId = targetId,
-                    onBackClick = { navController.popBackStack() },
                     onSubmitSuccess = {
                         navController.popBackStack()
                         Toast.makeText(context, "Successfully sent", Toast.LENGTH_SHORT).show()
@@ -721,7 +733,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
             composable(Screen.Upload.route) {
                 UploadPage(
                     comicsViewModel = comicsViewModel,
-                    onBackClick = { navController.popBackStack() },
                     onUploadNewComic = {
                         navController.navigate(Screen.AddComic.route)
                     },
@@ -741,7 +752,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                     comicsViewModel = comicsViewModel,
                     communityViewModel = communityViewModel,
                     sessionViewModel = sessionViewModel,
-                    onCancel = { navController.popBackStack() },
                     onUploadComplete = {
                         navController.navigate(Screen.Success.createRoute("Upload Successful!")) {
                             popUpTo(navController.graph.findStartDestination().id) {
@@ -757,7 +767,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                     comicsViewModel = comicsViewModel,
                     profileViewModel = profileViewModel,
                     sessionViewModel = sessionViewModel,
-                    onCancel = { navController.popBackStack() },
                     onUploadComplete = {
                         navController.navigate(Screen.Success.createRoute("Upload Successful!")) {
                             popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
@@ -768,15 +777,12 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
             composable(Screen.Notifications.route) {
                 val notificationsViewModel: NotificationsViewModel = hiltViewModel()
                 NotificationsPage(
-                    viewModel = notificationsViewModel,
-                    sessionViewModel = sessionViewModel,
-                    onBackClick = { navController.popBackStack() }
+                    notificationsViewModel = notificationsViewModel,
+                    sessionViewModel = sessionViewModel
                 )
             }
             composable(Screen.About.route) {
-                AboutPage (
-                    onBackClick = { navController.popBackStack() },
-                )
+                AboutPage ()
             }
             composable(Screen.Success.route) { backStackEntry ->
                 val successMessage = backStackEntry.arguments?.getString("successMessage") ?: ""

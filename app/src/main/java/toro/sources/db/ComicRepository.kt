@@ -12,6 +12,7 @@ import toro.sources.network.ComicApiService
 import com.toro.models.Chapter
 import com.toro.models.Comic
 import com.toro.models.Conversation
+import com.toro.models.ConversationUiState
 import com.toro.models.ChatMessage
 import com.toro.models.Comment
 import com.toro.models.Notification
@@ -39,6 +40,7 @@ class ComicRepository(
     private val commentDao get() = database.commentDao()
     private val postDao get() = database.postDao()
     private val authorDao get() = database.authorDao()
+    private val uiStateDao get() = database.conversationUiStateDao()
 
     // new novels
     fun getMyLibrary(): Flow<List<Comic>> {
@@ -307,10 +309,6 @@ class ComicRepository(
         return notificationDao.getAllNotifications()
     }
 
-    suspend fun saveNotification(notification: Notification) {
-        notificationDao.insert(notification)
-    }
-
     suspend fun deleteNotificationById(notificationId: String) {
         notificationDao.deleteById(notificationId)
     }
@@ -351,5 +349,15 @@ class ComicRepository(
 
     suspend fun saveAuthors(authors: List<UserProfile>) {
         authorDao.insertAuthors(authors)
+    }
+
+    fun getConversationUiState(conversationId: String) = uiStateDao.getUiState(conversationId)
+
+    suspend fun saveConversationUiState(state: ConversationUiState) {
+        uiStateDao.insertUiState(state)
+    }
+
+    suspend fun clearConversationUiState(conversationId: String) {
+        uiStateDao.clearUiState(conversationId)
     }
 }

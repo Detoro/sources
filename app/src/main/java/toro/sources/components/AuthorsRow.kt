@@ -66,7 +66,7 @@ fun AuthorsRow(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     modifier = Modifier
-                        .size(64.dp)
+                        .size(50.dp)
                         .clickable { onAddAuthorClick() },
                     contentAlignment = Alignment.Center
                 ) {
@@ -106,7 +106,7 @@ fun AuthorsRow(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(64.dp)
+                        .size(50.dp)
                         .padding(2.dp)
                         .clickable { comicsViewModel.toggleAuthorFilter(user.id) },
                     contentAlignment = Alignment.Center

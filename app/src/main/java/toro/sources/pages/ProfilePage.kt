@@ -16,7 +16,6 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.rounded.Message
 import androidx.compose.material.icons.filled.*
@@ -57,8 +56,7 @@ fun ProfilePage(
     chatViewModel: ChatViewModel,
     userId: String? = null,
     onSettingsClick: () -> Unit,
-    onLogoutClick: () -> Unit,
-    onBackClick: (() -> Unit)? = null
+    onLogoutClick: () -> Unit
 ) {
     val me by sessionViewModel.userProfile.collectAsState()
     val communityState by communityViewModel.communityState.collectAsState()
@@ -132,13 +130,6 @@ fun ProfilePage(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(if (isMyProfile) "My Profile" else "Profile") },
-                navigationIcon = {
-                    if (onBackClick != null) {
-                        IconButton(onClick = onBackClick) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    }
-                },
                 actions = {
                     if (isMyProfile) {
                         IconButton(onClick = onSettingsClick) {

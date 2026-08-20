@@ -23,7 +23,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
-    private val sessionManager: SessionManager,
+    sessionManager: SessionManager,
     private val repository: ComicRepository
 ) : ViewModel() {
 
@@ -44,7 +44,7 @@ class NotificationsViewModel @Inject constructor(
                     RetrofitClient.comicApiService.markNotificationAsRead(notificationId)
                 }
             } catch (e: Exception) {
-                _notificationsUiState.update { it.copy(errorMessage = "Failed to mark notification as read") }
+                _notificationsUiState.update { it.copy(errorMessage = "Failed to mark notification as read ${e.message}") }
             }
         }
     }
