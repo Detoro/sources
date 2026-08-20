@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.toro.models.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -25,6 +26,9 @@ class CommunityViewModel @Inject constructor(
     private val repository: ComicRepository,
     private val mediaUploadManager: MediaUploadManager
 ) : ViewModel() {
+
+    val userPosts: Flow<List<Post>> = repository.getPosts()
+    val userComments: Flow<List<Comment>> = repository.getComments()
 
     private val _communityState = MutableStateFlow(CommunityUiState())
     val communityState = _communityState.asStateFlow()

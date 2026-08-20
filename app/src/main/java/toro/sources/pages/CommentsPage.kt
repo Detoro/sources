@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +17,7 @@ import toro.sources.components.SmartInput
 import com.toro.models.Comment
 import com.toro.models.CommentLocation
 import com.toro.models.SharedContent
+import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.viewmodel.SessionViewModel
 
@@ -26,9 +26,9 @@ import toro.sources.viewmodel.SessionViewModel
 fun CommentsPage(
     communityViewModel: CommunityViewModel,
     sessionViewModel: SessionViewModel,
+    comicsViewModel: ComicsViewModel,
     commentLocation: CommentLocation,
     targetId: String,
-    onBackClick: () -> Unit,
     onCommentClick: (Comment) -> Unit = {}
 ) {
     val comments by when (commentLocation) {
@@ -55,11 +55,6 @@ fun CommentsPage(
         topBar = {
             TopAppBar(
                 title = { Text("Comments", style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 windowInsets = WindowInsets(top = 3.dp)
             )
         },
@@ -161,7 +156,8 @@ fun CommentsPage(
                                 comment.id
                             )
                         },
-                        sessionViewModel = sessionViewModel
+                        sessionViewModel = sessionViewModel,
+                        comicsViewModel = comicsViewModel
                     )
                 }
             }

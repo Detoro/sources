@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,6 +17,7 @@ import toro.sources.components.SmartInput
 import com.toro.models.Comment
 import com.toro.models.CommentLocation
 import com.toro.models.SharedContent
+import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.viewmodel.SessionViewModel
 
@@ -26,10 +26,10 @@ import toro.sources.viewmodel.SessionViewModel
 fun CommentThreadPage(
     communityViewModel: CommunityViewModel,
     sessionViewModel: SessionViewModel,
+    comicsViewModel: ComicsViewModel,
     commentLocation: CommentLocation,
     targetId: String,
-    commentId: String,
-    onBackClick: () -> Unit
+    commentId: String
 ) {
     val comments by when (commentLocation) {
         CommentLocation.ON_CHAPTER -> communityViewModel.chapterComments
@@ -53,11 +53,6 @@ fun CommentThreadPage(
         topBar = {
             TopAppBar(
                 title = { Text("Thread", style = MaterialTheme.typography.titleLarge) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 windowInsets = WindowInsets(top = 3.dp)
             )
         },
@@ -145,7 +140,8 @@ fun CommentThreadPage(
                             )
                             sessionViewModel.showShareDialog(true)
                         },
-                        sessionViewModel = sessionViewModel
+                        sessionViewModel = sessionViewModel,
+                        comicsViewModel = comicsViewModel
                     )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     Text(
@@ -192,7 +188,8 @@ fun CommentThreadPage(
                             )
                             sessionViewModel.showShareDialog(true)
                         },
-                        sessionViewModel = sessionViewModel
+                        sessionViewModel = sessionViewModel,
+                        comicsViewModel = comicsViewModel
                     )
                 }
             }

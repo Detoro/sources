@@ -123,6 +123,7 @@ fun EngagementPage(
                     PostCard(
                         communityViewModel = communityViewModel,
                         sessionViewModel = sessionViewModel,
+                        comicsViewModel = comicsViewModel,
                         post = post,
                         onCommentClick = { onCommentClick(post.id) },
                         onAuthorClick = { userId ->

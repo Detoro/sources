@@ -46,6 +46,7 @@ import toro.sources.R
 
 @Composable
 fun LoginPage(
+    onForgotPassword: () -> Unit,
     onNavigateToSignUp: () -> Unit,
     onLoginSubmit: (LoginCredentials) -> Unit,
     loginError: String? = null,
@@ -207,6 +208,12 @@ fun LoginPage(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                TextButton(onClick = onForgotPassword, enabled = !isLoading) {
+                    Text(
+                        text = stringResource(R.string.forgot_password),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
                 TextButton(onClick = onNavigateToSignUp, enabled = !isLoading) {
                     Text(
                         text = stringResource(R.string.signup_recommendation),

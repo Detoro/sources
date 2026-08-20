@@ -22,10 +22,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.toro.models.*
 import toro.sources.Screen
+import toro.sources.sharing.handleSharedNavigation
 import toro.sources.utils.convertTimestamp
-import com.toro.models.Comment
-import com.toro.models.ShareType
+import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.SessionViewModel
 
 @Composable
@@ -39,11 +40,13 @@ fun CommentItem(
     onCommentClick: (Comment) -> Unit = {},
     onAuthorClick: (String) -> Unit = {},
     onShareClick: (Comment) -> Unit = {},
-    sessionViewModel: SessionViewModel? = null
+    sessionViewModel: SessionViewModel? = null,
+    comicsViewModel: ComicsViewModel? = null
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var showComment by remember { mutableStateOf(!comment.isSpoiler) }
     var isExpanded by remember { mutableStateOf(false) }
+    val content = remember(comment) { comment.toContent() }
 
     val backgroundColor = if (isThreadHeader) MaterialTheme.colorScheme.surfaceContainerLow else Color.Transparent
 
@@ -132,24 +135,21 @@ fun CommentItem(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                val sharedId = comment.sharedId
-                val sharedType = comment.sharedType
-
-                if (sharedId != null && sharedType != null) {
+                content.shared?.let { shared ->
                     SharedContentPlaceholder(
-                        type = sharedType,
-                        title = "Shared ${sharedType.name.lowercase()}",
-                        previewText = "Tap to view details",
-                        imageUrl = comment.authorAvatarUrl,
+                        type = shared.type,
+                        title = "Shared ${shared.type.name.lowercase()}",
+                        previewText = shared.preview ?: "Tap to view details",
+                        imageUrl = shared.imageUrl,
                         modifier = Modifier.padding(bottom = 8.dp),
                         onClick = {
                             if (sessionViewModel != null) {
-                                when (sharedType) {
-                                    ShareType.COMIC -> sessionViewModel.handleNavigation(Screen.Overview.createRoute(sharedId))
-                                    ShareType.POST -> sessionViewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
-                                    ShareType.COMMENT -> sessionViewModel.handleNavigation(Screen.PostComments.createRoute(sharedId))
-                                    ShareType.USER -> sessionViewModel.handleNavigation(Screen.Profile.createRoute(sharedId))
-                                }
+                                handleSharedNavigation(
+                                    id = shared.id,
+                                    type = shared.type,
+                                    comicsViewModel = comicsViewModel,
+                                    sessionViewModel = sessionViewModel
+                                )
                             }
                         }
                     )
@@ -193,17 +193,17 @@ fun CommentItem(
                                 .animateContentSize()
                         ) {
                             SpoilerText(
-                                text = comment.content,
+                                text = content.body,
                                 isSpoiler = comment.isSpoiler,
                                 style = if (isThreadHeader) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = if (isExpanded) Int.MAX_VALUE else 4,
                                 overflow = TextOverflow.Ellipsis,
                                 onClick = {
-                                    if (comment.content.length > 200) isExpanded = !isExpanded
+                                    if (content.body.length > 200) isExpanded = !isExpanded
                                 }
                             )
-                            if (comment.content.length > 200) {
+                            if (content.body.length > 200) {
                                 Text(
                                     text = if (isExpanded) "Show Less" else "Read More",
                                     style = MaterialTheme.typography.labelMedium,

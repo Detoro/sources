@@ -41,6 +41,7 @@ fun HomePage(
     sessionViewModel: SessionViewModel = hiltViewModel(),
     onComicClick: (Comic) -> Unit,
     onAccountClick: () -> Unit,
+    onSectionClick: () -> Unit,
     onNotificationsClick: () -> Unit
 ) {
     val localCatalog by comicsViewModel.localLibrary.collectAsState()
@@ -158,6 +159,7 @@ fun HomePage(
                         item {
                             ContinueReadingCarousel(
                                 comics = recentlyRead,
+                                onClick = onSectionClick,
                                 onComicClick = onComicClick
                             )
                         }
@@ -169,7 +171,9 @@ fun HomePage(
                                 title = "From Your Device",
                                 comics = localCatalog,
                                 comicsViewModel = comicsViewModel,
-                                sessionViewModel = sessionViewModel
+                                sessionViewModel = sessionViewModel,
+                                onClick = onSectionClick
+
                             )
                         }
                     }
@@ -180,6 +184,7 @@ fun HomePage(
                         item {
                             SectionHeader(
                                 title = "Creator Feed",
+                                onClick = onSectionClick,
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                         }
@@ -229,6 +234,7 @@ fun HomePage(
                         item {
                             SectionHeader(
                                 title = "Announcements",
+                                onClick = onSectionClick,
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                         }
@@ -263,7 +269,8 @@ fun HomePage(
                             title = "For You",
                             comics = onlineCatalog,
                             comicsViewModel = comicsViewModel,
-                            sessionViewModel = sessionViewModel
+                            sessionViewModel = sessionViewModel,
+                            onClick = onSectionClick
                         )
                     }
                     item {
