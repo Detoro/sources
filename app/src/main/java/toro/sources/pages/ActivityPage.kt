@@ -114,13 +114,15 @@ fun ActivityContent(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onAddComic,
-                icon = { Icon(Icons.Filled.Add, null) },
-                text = { Text("Add Series") },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            )
+            if (pagerState.currentPage < 2) {
+                ExtendedFloatingActionButton(
+                    onClick = onAddComic,
+                    icon = { Icon(Icons.Filled.Add, null) },
+                    text = { Text("Add Series") },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            }
         }
     ) { paddingValues ->
         Column(

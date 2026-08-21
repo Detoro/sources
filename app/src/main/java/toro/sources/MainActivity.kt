@@ -439,6 +439,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                     profileViewModel = profileViewModel,
                     sessionViewModel = sessionViewModel,
                     communityViewModel = communityViewModel,
+                    comicsViewModel = comicsViewModel,
                     chatViewModel = chatViewModel,
                     userId = userId,
                     onSettingsClick = {

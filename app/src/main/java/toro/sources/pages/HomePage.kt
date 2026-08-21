@@ -238,7 +238,7 @@ fun HomePage(
                                 modifier = Modifier.padding(horizontal = 16.dp)
                             )
                         }
-                        items(announcements.take(2)) { post ->
+                        items(announcements) { post ->
                             PostCard(
                                 communityViewModel = communityViewModel,
                                 sessionViewModel = sessionViewModel,

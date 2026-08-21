@@ -32,7 +32,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.AsyncImage
 import com.toro.models.*
@@ -43,7 +42,6 @@ import toro.sources.viewmodel.SessionViewModel
 import toro.sources.viewmodel.ChatViewModel
 import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.components.ComicCoverCard
-import toro.sources.components.PostCard
 import toro.sources.viewmodel.ComicsViewModel
 import androidx.compose.runtime.collectAsState
 
@@ -53,26 +51,17 @@ fun ProfilePage(
     profileViewModel: ProfileViewModel,
     sessionViewModel: SessionViewModel,
     communityViewModel: CommunityViewModel,
+    comicsViewModel: ComicsViewModel,
     chatViewModel: ChatViewModel,
     userId: String? = null,
     onSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
     val me by sessionViewModel.userProfile.collectAsState()
-    val communityState by communityViewModel.communityState.collectAsState()
-    val targetPosts by profileViewModel.targetUserPosts.collectAsState()
     val targetUserId = userId ?: me?.id
     val isMyProfile = targetUserId == me?.id
 
     val userProfile by (if (isMyProfile) sessionViewModel.userProfile else profileViewModel.targetUserProfile).collectAsState()
-
-    val userPosts = remember(isMyProfile, communityState.posts, targetPosts, me?.id) {
-        if (isMyProfile) {
-            communityState.posts.filter { it.authorId == me?.id }
-        } else {
-            targetPosts
-        }
-    }
     val userWorks by (if (isMyProfile) profileViewModel.userWorks else profileViewModel.targetUserWorks).collectAsState()
     val userFriends by chatViewModel.inbox.collectAsState()
 
@@ -283,7 +272,7 @@ fun ProfilePage(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    val tabs = mutableListOf("Posts", "Friends")
+                    val tabs = mutableListOf("Friends")
                     if (profile.isAuthor) tabs.add("Works")
                     val pagerState = rememberPagerState(pageCount = { tabs.size })
                     val coroutineScope = rememberCoroutineScope()
@@ -311,9 +300,8 @@ fun ProfilePage(
                                         )
                                         Spacer(Modifier.width(10.dp))
                                         val count = when (index) {
-                                            0 -> userPosts.size
-                                            1 -> userFriends.size
-                                            2 -> userWorks.size
+                                            0 -> userFriends.size
+                                            1 -> userWorks.size
                                             else -> 0
                                         }
 
@@ -337,39 +325,6 @@ fun ProfilePage(
                     ) { page ->
                         when (page) {
                             0 -> {
-                                if (userPosts.isEmpty()) {
-                                    EmptyState("No posts yet.")
-                                } else {
-                                    LazyColumn(
-                                        contentPadding = PaddingValues(16.dp),
-                                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        items(userPosts) { post ->
-                                            PostCard(
-                                                communityViewModel = communityViewModel,
-                                                sessionViewModel = sessionViewModel,
-                                                post = post,
-                                                onCommentClick = { sessionViewModel.handleNavigation(Screen.PostComments.createRoute(post.id)) },
-                                                onAuthorClick = { uId ->
-                                                    if (uId != targetUserId) sessionViewModel.handleNavigation(Screen.Profile.createRoute(uId))
-                                                },
-                                                onShareClick = { p ->
-                                                    sessionViewModel.setSharedContent(
-                                                        SharedContent(
-                                                            id = p.id,
-                                                            type = ShareType.POST,
-                                                            title = p.title ?: "Post by ${p.authorName}",
-                                                            previewText = p.content.take(50)
-                                                        )
-                                                    )
-                                                    sessionViewModel.showShareDialog(true)
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                            1 -> {
                                 if (userFriends.isEmpty()) {
                                     EmptyState("No Friends to see")
                                 } else {
@@ -387,8 +342,7 @@ fun ProfilePage(
                                     }
                                 }
                             }
-                            2 -> {
-                                val comicsViewModel: ComicsViewModel = hiltViewModel()
+                            1 -> {
                                 if (userWorks.isEmpty()) {
                                     EmptyState("No works published yet.")
                                 } else {
