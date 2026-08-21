@@ -197,15 +197,16 @@ class ChatViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                val resolvedContent = if (attachment != null && content is MessageContent.Text) {
+                val resolvedContent = if (attachment != null) {
                     try {
                         val (url, isVideo) = uploadAttachment(attachment)
-                        val body = content.body
+                        val body = if (content is MessageContent.Text) content.body else ""
+                        val shared = content.shared
                         when {
-                            body.isNotBlank() && isVideo -> MessageContent.TextWithMedia(body, emptyList(), listOf(url))
-                            body.isNotBlank() -> MessageContent.TextWithMedia(body, listOf(url), emptyList())
-                            isVideo -> MessageContent.Video(listOf(url))
-                            else -> MessageContent.Image(listOf(url))
+                            body.isNotBlank() && isVideo -> MessageContent.TextWithMedia(body, emptyList(), listOf(url), shared)
+                            body.isNotBlank() -> MessageContent.TextWithMedia(body, listOf(url), emptyList(), shared)
+                            isVideo -> MessageContent.Video(listOf(url), shared)
+                            else -> MessageContent.Image(listOf(url), shared)
                         }
                     } catch (e: Exception) {
                         _chatUiState.update { it.copy(errorMessage = "Failed to upload attachment: ${e.message}") }
@@ -254,7 +255,10 @@ class ChatViewModel @Inject constructor(
                     replyToMessageId = _replyingToMessage.value?.id,
                     sharedId = fields.sharedId,
                     sharedType = fields.sharedType,
-                    sharedComicId = fields.sharedComicId,
+                    sharedTitle = fields.sharedTitle,
+                    sharedPreview = fields.sharedPreview,
+                    sharedImageUrl = fields.sharedImageUrl,
+                    sharedComicId = if (fields.sharedType == ShareType.COMIC) fields.sharedId else null,
                     imageUrls = fields.imageUrls,
                     videoUrls = fields.videoUrls
                 )

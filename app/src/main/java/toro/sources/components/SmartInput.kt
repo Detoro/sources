@@ -51,10 +51,16 @@ fun SmartInput(
     comicsViewModel: ComicsViewModel = hiltViewModel(),
     sessionViewModel: SessionViewModel,
     onValueChange: ((String?, String) -> Unit)? = null,
+    onMediaSelected: ((Uri?) -> Unit)? = null,
     maxChars: Int = 1000
 ) {
     var inputText by remember(initialText) { mutableStateOf(initialText) }
     var selectedUri by remember { mutableStateOf<Uri?>(null) }
+    
+    LaunchedEffect(selectedUri) {
+        onMediaSelected?.invoke(selectedUri)
+    }
+
     var isSpoiler by remember { mutableStateOf(false) }
     var titleText by remember(title) { mutableStateOf(title ?: "") }
     var showAttachComicSheet by remember { mutableStateOf(false) }
@@ -155,57 +161,74 @@ fun SmartInput(
 
                 // Attachments Preview Area
                 if (sharedContent != null || selectedUri != null) {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surface)
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(bottom = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         if (selectedUri != null) {
                             val isVideo = selectedUri?.toString()?.contains("video") == true || selectedUri?.toString()?.endsWith(".mp4") == true
 
-                            AsyncImage(
-                                model = selectedUri,
-                                contentDescription = "Attachment",
+                            Row(
                                 modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-                                contentScale = ContentScale.Crop
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(if (isVideo) "Video Attached" else "Image Attached", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-                            IconButton(onClick = { selectedUri = null }) {
-                                Icon(Icons.Default.Close, contentDescription = "Remove")
-                            }
-                        } else if (sharedContent != null) {
-                            if (sharedContent!!.type == ShareType.COMIC && comic != null) {
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 AsyncImage(
-                                    model = comic!!.coverImageUrl,
-                                    contentDescription = "Attached Comic",
+                                    model = selectedUri,
+                                    contentDescription = "Attachment",
                                     modifier = Modifier
                                         .size(48.dp)
                                         .clip(RoundedCornerShape(8.dp)),
                                     contentScale = ContentScale.Crop
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(comic!!.title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = Ellipsis)
-                                    Text(comic!!.authorName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(if (isVideo) "Video Attached" else "Image Attached", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                                IconButton(onClick = { selectedUri = null }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Remove")
                                 }
-                            } else {
-                                SharedContentPlaceholder(
-                                    type = sharedContent!!.type,
-                                    title = sharedContent!!.title,
-                                    previewText = sharedContent!!.previewText,
-                                    onClick = { },
-                                    clickable = false,
-                                    modifier = Modifier.weight(1f))
                             }
-                            IconButton(onClick = { sessionViewModel.setSharedContent(null) }) {
-                                Icon(Icons.Default.Close, contentDescription = "Remove")
+                        }
+
+                        if (sharedContent != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (sharedContent!!.type == ShareType.COMIC && comic != null) {
+                                    AsyncImage(
+                                        model = comic!!.coverImageUrl,
+                                        contentDescription = "Attached Comic",
+                                        modifier = Modifier
+                                            .size(48.dp)
+                                            .clip(RoundedCornerShape(8.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(comic!!.title, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = Ellipsis)
+                                        Text(comic!!.authorName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                } else {
+                                    SharedContentPlaceholder(
+                                        type = sharedContent!!.type,
+                                        title = sharedContent!!.title,
+                                        previewText = sharedContent!!.previewText,
+                                        onClick = { },
+                                        clickable = false,
+                                        modifier = Modifier.weight(1f))
+                                }
+                                IconButton(onClick = { sessionViewModel.setSharedContent(null) }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Remove")
+                                }
                             }
                         }
                     }

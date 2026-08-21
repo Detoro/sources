@@ -138,6 +138,24 @@ fun PostCard(
 
                 // Content
                 Column(modifier = Modifier.fillMaxWidth().animateContentSize()) {
+                    content.shared?.let { shared ->
+                        SharedContentPlaceholder(
+                            type = shared.type,
+                            title = shared.title?.lowercase() ?: "Item",
+                            previewText = shared.preview ?: "Tap to view details",
+                            imageUrl = shared.imageUrl,
+                            modifier = Modifier.padding(bottom = 8.dp),
+                            onClick = { 
+                                handleSharedNavigation(
+                                    id = shared.id,
+                                    type = shared.type,
+                                    comicsViewModel = comicsViewModel,
+                                    sessionViewModel = sessionViewModel
+                                )
+                            }
+                        )
+                    }
+
                     if (content.body.isNotEmpty()) {
                         val annotatedContent = buildAnnotatedString {
                             val keywords = listOf("toro", "deto")
@@ -161,34 +179,19 @@ fun PostCard(
                             maxLines = if (textExpanded) Int.MAX_VALUE else 3,
                             overflow = TextOverflow.Ellipsis
                         )
-                        TextButton(
-                            onClick = { textExpanded = !textExpanded },
-                            contentPadding = PaddingValues(0.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Text(
-                                if (textExpanded) "Read Less" else "Read More",
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Thin
-                            )
-                        }
-                    }
-                    content.shared?.let { shared ->
-                        SharedContentPlaceholder(
-                            type = shared.type,
-                            title = shared.title?.lowercase() ?: "Item",
-                            previewText = shared.preview ?: "Tap to view details",
-                            imageUrl = shared.imageUrl,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                            onClick = { 
-                                handleSharedNavigation(
-                                    id = shared.id,
-                                    type = shared.type,
-                                    comicsViewModel = comicsViewModel,
-                                    sessionViewModel = sessionViewModel
+                        if (annotatedContent.length > 100) {
+                            TextButton(
+                                onClick = { textExpanded = !textExpanded },
+                                contentPadding = PaddingValues(0.dp),
+                                modifier = Modifier.height(32.dp)
+                            ) {
+                                Text(
+                                    if (textExpanded) "Read Less" else "Read More",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Thin
                                 )
                             }
-                        )
+                        }
                     }
                 }
 

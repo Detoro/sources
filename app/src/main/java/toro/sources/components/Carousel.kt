@@ -21,13 +21,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.Card
@@ -35,7 +34,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -64,6 +62,7 @@ fun SectionHeader(
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
+        Spacer(modifier = Modifier.weight(1f))
         Icon(
             Icons.Default.ChevronRight,
             null,
@@ -114,7 +113,6 @@ fun BillboardCarousel(
                     alpha = 1f - (pageOffset * 0.5f).coerceIn(0f, 1f)
                 }
                 .clickable { onComicClick(comic) },
-            shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -185,8 +183,7 @@ fun ContinueReadingCarousel(
                         model = comic.coverImageUrl,
                         contentDescription = comic.title,
                         modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape),
+                            .size(80.dp),
                         contentScale = ContentScale.Crop
                     )
                     Text(

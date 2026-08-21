@@ -261,24 +261,26 @@ fun ChatBubble(
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Column {
+                        content.shared?.let { shared ->
+                            SharedContentPlaceholder(
+                                type = shared.type,
+                                title = "Shared ${shared.type.name.lowercase().replaceFirstChar { it.uppercase() }}",
+                                previewText = shared.preview ?: "Tap to view details",
+                                imageUrl = shared.imageUrl,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                                onClick = {
+                                    handleSharedNavigation(
+                                        id = shared.id,
+                                        type = shared.type,
+                                        comicsViewModel = comicsViewModel,
+                                        sessionViewModel = sessionViewModel
+                                    )
+                                }
+                            )
+                        }
+
                         when (content) {
-                            is MessageContent.Shared -> {
-                                SharedContentPlaceholder(
-                                    type = content.type,
-                                    title = "Shared ${content.type.name.lowercase().replaceFirstChar { it.uppercase() }}",
-                                    previewText = message.mediaType ?: "Tap to view details",
-                                    imageUrl = message.imageUrls.firstOrNull(),
-                                    modifier = Modifier.padding(bottom = 8.dp),
-                                    onClick = {
-                                        handleSharedNavigation(
-                                            id = content.id,
-                                            type = content.type,
-                                            comicsViewModel = comicsViewModel,
-                                            sessionViewModel = sessionViewModel
-                                        )
-                                    }
-                                )
-                            }
+                            is MessageContent.Shared -> Unit
                             is MessageContent.Image -> {
                                 content.urls.forEach { imageUrl ->
                                     ChatImage(imageUrl)
