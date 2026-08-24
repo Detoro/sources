@@ -1,13 +1,10 @@
 package toro.sources.components
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -19,20 +16,31 @@ fun ChapterRow(
     chapter: Chapter,
     onClick: () -> Unit
 ) {
-    Surface(
+    Row(
         modifier = Modifier
+            .padding(horizontal = 16.dp, vertical = 28.dp)
             .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+            .clickable{ onClick() }
             .graphicsLayer(alpha = if (chapter.isRead) 0.5f else 1.0f),
-        color = MaterialTheme.colorScheme.background,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
+        Row {
             Text(
-                text = "${chapter.chapterNumber} ${chapter.chapterTitle}",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold
+                text = "Ch ${chapter.chapterNumber?.toInt() ?: 0}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = chapter.chapterTitle.take(15),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (chapter.isRead) FontWeight.Normal else FontWeight.SemiBold,
+                color = if (chapter.isRead)
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    else MaterialTheme.colorScheme.onSurface
             )
         }
     }
+    HorizontalDivider()
 }

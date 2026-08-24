@@ -220,6 +220,7 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
     val sharedContent by sessionViewModel.sharedContent.collectAsState()
     val chatViewModel: ChatViewModel = hiltViewModel()
     val comicsViewModel: ComicsViewModel = hiltViewModel()
+    val notificationsViewModel: NotificationsViewModel = hiltViewModel()
 
     if (showShareDialog && sharedContent != null) {
         ShareDialog(
@@ -456,8 +457,11 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 )
             }
             composable(Screen.Home.route) {
+                val communityViewModel: CommunityViewModel = hiltViewModel()
                 HomePage(
                     comicsViewModel = comicsViewModel,
+                    communityViewModel = communityViewModel,
+                    notificationsViewModel = notificationsViewModel,
                     sessionViewModel = sessionViewModel,
                     onComicClick = { comic ->
                         comicsViewModel.loadAndNavigateToComic(comic.id)
@@ -776,7 +780,6 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 )
             }
             composable(Screen.Notifications.route) {
-                val notificationsViewModel: NotificationsViewModel = hiltViewModel()
                 NotificationsPage(
                     notificationsViewModel = notificationsViewModel,
                     sessionViewModel = sessionViewModel

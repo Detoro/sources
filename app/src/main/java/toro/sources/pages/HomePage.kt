@@ -25,7 +25,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.LaunchedEffect
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.toro.models.*
 import toro.sources.viewmodel.NotificationsViewModel
 import toro.sources.Screen
@@ -38,7 +37,9 @@ import toro.sources.viewmodel.ComicsViewModel
 @Composable
 fun HomePage(
     comicsViewModel: ComicsViewModel,
-    sessionViewModel: SessionViewModel = hiltViewModel(),
+    communityViewModel: CommunityViewModel,
+    notificationsViewModel: NotificationsViewModel,
+    sessionViewModel: SessionViewModel,
     onComicClick: (Comic) -> Unit,
     onAccountClick: () -> Unit,
     onSectionClick: () -> Unit,
@@ -48,8 +49,7 @@ fun HomePage(
     val onlineCatalog by comicsViewModel.onlineLibrary.collectAsState()
     val trending by comicsViewModel.trending.collectAsState()
     val recentlyRead by comicsViewModel.recentlyReadComics.collectAsState()
-    
-    val communityViewModel: CommunityViewModel = hiltViewModel()
+
     val communityState by communityViewModel.communityState.collectAsState()
     val comicsState by comicsViewModel.comicsUiState.collectAsState()
     val communityPosts = communityState.posts
@@ -60,8 +60,7 @@ fun HomePage(
 
     val isCommunityLoading = communityState.isLoading
     val isComicsLoading = comicsState.isLoading
-    
-    val notificationsViewModel: NotificationsViewModel = hiltViewModel()
+
     val notifications by notificationsViewModel.notifications.collectAsState()
     val unreadCount = notifications.count { !it.isRead }
 
