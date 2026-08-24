@@ -41,6 +41,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
+import toro.sources.utils.getOptimizedUrl
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.milliseconds
@@ -117,7 +118,7 @@ fun BillboardCarousel(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 AsyncImage(
-                    model = comic.coverImageUrl,
+                    model = comic.coverImageUrl.getOptimizedUrl(width = 1080),
                     contentDescription = comic.title,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
@@ -180,7 +181,7 @@ fun ContinueReadingCarousel(
                         .clickable { onComicClick(comic) }
                 ) {
                     AsyncImage(
-                        model = comic.coverImageUrl,
+                        model = comic.coverImageUrl.getOptimizedUrl(width = 240),
                         contentDescription = comic.title,
                         modifier = Modifier
                             .size(80.dp),

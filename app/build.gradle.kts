@@ -42,9 +42,11 @@ android {
     buildTypes {
         debug {
             buildConfigField("String", "BASE_API_URL","\"https://sources-comic-server.onrender.com\"")
+            buildConfigField("String", "WEB_SOCKET_URL","\"wss://sources-comic-server.onrender.com/chat/stream\"")
         }
         release {
             buildConfigField("String", "BASE_API_URL","\"https://sources-comic-server.onrender.com\"")
+            buildConfigField("String", "WEB_SOCKET_URL","\"wss://sources-comic-server.onrender.com/chat/stream\"")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -115,6 +117,6 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.hilt.library)
     ksp(libs.hilt.compiler)
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-    implementation("androidx.hilt:hilt-lifecycle-viewmodel-compose:1.3.0")
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
 }

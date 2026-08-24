@@ -106,7 +106,7 @@ interface ComicApiService {
 
     // SUBSCRIPTION APIs
 
-    @POST("comics/subscribe/comic/{comicId}")
+    @POST("comics/comic/{comicId}/subscribe")
     suspend fun toggleComicSubscription(@Path("comicId") comicId: String): BoolResponse
 
     @GET("comics/subscriptions")

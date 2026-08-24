@@ -1,6 +1,8 @@
 package toro.sources.media
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.provider.OpenableColumns
 import com.cloudinary.android.MediaManager
@@ -21,6 +23,7 @@ import kotlin.coroutines.resumeWithException
 
 class MediaUploadManager(private val context: Context) {
 
+    private val MAX_IMAGE_DIMENSION = 2500
     suspend fun processAndUploadChapter(uri: Uri, chapterNumber: Float): ChapterUploadData = withContext(Dispatchers.IO) {
         val tempDir = File(context.cacheDir, "upload_extract_${System.currentTimeMillis()}")
         tempDir.mkdirs()
@@ -41,7 +44,9 @@ class MediaUploadManager(private val context: Context) {
                     if (!entry.isDirectory && isImageFile(entry.name)) {
                         val file = File(tempDir, entry.name.split("/").last())
                         FileOutputStream(file).use { output -> zipInput.copyTo(output) }
-                        pageFiles.add(file)
+
+                        val optimizedFile = compressAndResizeLocally(file)
+                        pageFiles.add(optimizedFile)
                     }
                     entry = zipInput.nextEntry
                 }
@@ -49,12 +54,10 @@ class MediaUploadManager(private val context: Context) {
         }
         pageFiles.sortBy { it.name }
 
-        // Upload all unzipped files concurrently
         val pageUrls = pageFiles.map { file ->
             async { uploadFileToCloudinary(Uri.fromFile(file)) }
         }.awaitAll()
 
-        // Clean up cache
         tempDir.deleteRecursively()
 
         ChapterUploadData(
@@ -63,6 +66,43 @@ class MediaUploadManager(private val context: Context) {
             pageCount = pageUrls.size,
             pageUrls = pageUrls
         )
+    }
+
+    private fun compressAndResizeLocally(file: File): File {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.absolutePath, options)
+
+        var width = options.outWidth
+        var height = options.outHeight
+
+        if (width <= MAX_IMAGE_DIMENSION && height <= MAX_IMAGE_DIMENSION) {
+            if (file.length() < 500 * 1024) return file
+        }
+
+        if (width > height) {
+            if (width > MAX_IMAGE_DIMENSION) {
+                height = (height * MAX_IMAGE_DIMENSION.toFloat() / width).toInt()
+                width = MAX_IMAGE_DIMENSION
+            }
+        } else {
+            if (height > MAX_IMAGE_DIMENSION) {
+                width = (width * MAX_IMAGE_DIMENSION.toFloat() / height).toInt()
+                height = MAX_IMAGE_DIMENSION
+            }
+        }
+
+        val originalBitmap = BitmapFactory.decodeFile(file.absolutePath)
+        val scaledBitmap = Bitmap.createScaledBitmap(originalBitmap, width, height, true)
+        
+        val optimizedFile = File(file.parent, "opt_${file.name.substringBeforeLast(".")}.webp")
+        FileOutputStream(optimizedFile).use { out ->
+            scaledBitmap.compress(Bitmap.CompressFormat.WEBP, 85, out)
+        }
+        
+        originalBitmap.recycle()
+        if (scaledBitmap != originalBitmap) scaledBitmap.recycle()
+        
+        return optimizedFile
     }
 
     suspend fun uploadFileToCloudinary(uri: Uri): String = suspendCancellableCoroutine { continuation ->

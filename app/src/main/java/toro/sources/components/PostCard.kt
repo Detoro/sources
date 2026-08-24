@@ -30,6 +30,7 @@ import coil.compose.AsyncImage
 import com.toro.models.*
 import toro.sources.Screen
 import toro.sources.sharing.handleSharedNavigation
+import toro.sources.utils.getOptimizedUrl
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.viewmodel.SessionViewModel
@@ -199,7 +200,7 @@ fun PostCard(
                 if (content is FeedContent.Media) {
                     if (content.imageUrls.isNotEmpty()) {
                         AsyncImage(
-                            model = content.imageUrls.first(),
+                            model = content.imageUrls.first().getOptimizedUrl(width = 1080),
                             contentDescription = "Post Content",
                             modifier = Modifier
                                 .fillMaxWidth()

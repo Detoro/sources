@@ -162,7 +162,7 @@ fun LoginPage(
                     },
                     supportingText = {
                         Text(
-                            text = activeErrorMessage ?: stringResource(R.string.password_warning),
+                            text = activeErrorMessage ?: "",
                             style = MaterialTheme.typography.bodySmall,
                             color = if (hasError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.fillMaxWidth()

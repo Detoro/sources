@@ -37,6 +37,7 @@ import toro.sources.viewmodel.SessionViewModel
 import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.utils.formatRelativeTimestamp
+import toro.sources.utils.getOptimizedUrl
 
 @Composable
 fun ActivityPage(
@@ -350,7 +351,7 @@ private fun ActivityComicItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = comic.coverImageUrl,
+                model = comic.coverImageUrl.getOptimizedUrl(width = 300),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier

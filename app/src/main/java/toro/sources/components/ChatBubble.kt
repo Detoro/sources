@@ -38,6 +38,7 @@ import coil.compose.AsyncImage
 import com.toro.models.*
 import toro.sources.Screen
 import toro.sources.sharing.handleSharedNavigation
+import toro.sources.utils.getOptimizedUrl
 import toro.sources.viewmodel.ChatViewModel
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.ProfileViewModel
@@ -46,7 +47,7 @@ import toro.sources.viewmodel.SessionViewModel
 @Composable
 private fun ChatImage(imageUrl: String) {
     AsyncImage(
-        model = imageUrl,
+        model = imageUrl.getOptimizedUrl(width = 800),
         contentDescription = "Shared Image",
         modifier = Modifier
             .fillMaxWidth()
@@ -67,7 +68,7 @@ private fun ChatVideo(videoUrl: String) {
         contentAlignment = Alignment.Center
     ) {
         AsyncImage(
-            model = videoUrl,
+            model = videoUrl.getOptimizedUrl(width = 800),
             contentDescription = "Shared Video",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop

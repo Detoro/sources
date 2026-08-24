@@ -28,7 +28,7 @@ import toro.sources.PreferenceManager
         UserProfile::class,
         ConversationUiState::class
     ],
-    version = 30,
+    version = 31,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

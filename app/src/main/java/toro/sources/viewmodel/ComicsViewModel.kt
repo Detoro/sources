@@ -49,7 +49,9 @@ import toro.sources.media.MediaUploadManager
 import toro.sources.navigation.NavigationState
 import toro.sources.network.RetrofitClient
 import toro.sources.session.SessionManager
+import toro.sources.viewmodel.common.optimisticToggle
 import javax.inject.Inject
+import kotlin.collections.map
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(FlowPreview::class)
@@ -259,21 +261,30 @@ class ComicsViewModel @Inject constructor(
     }
 
     fun toggleComicSubscription(comicId: String) {
-        viewModelScope.launch {
-            try {
-                val current = _currentComic.value
-                withContext(Dispatchers.IO) {
-                    val res = RetrofitClient.comicApiService.toggleComicSubscription(comicId)
-                    val subscribed = res.isSuccessful
-                    if (current?.id == comicId && current.isLocalSideload) {
-                        repository.toggleLocalSubscription(comicId, subscribed)
-                    }
+        val current = _currentComic.value
+        optimisticToggle(
+            scope = viewModelScope,
+            applyOptimistically = {
+                val previous = _subscribedComics.value
+                val isSubscribed = previous.any { it.id == comicId }
+                if (isSubscribed) {
+                    _subscribedComics.update { list -> list.filter { it.id != comicId } }
+                } else {
+                    val comicToAdd = current ?: Comic(id = comicId, title = "", description = "", coverImageUrl = "")
+                    _subscribedComics.update { list -> (list + comicToAdd.copy(isSubscribed = true)).distinctBy { it.id } }
+                }
+                previous
+            },
+            networkCall = {
+                val res = RetrofitClient.comicApiService.toggleComicSubscription(comicId)
+                if (current?.id == comicId && current.isLocalSideload) {
+                    repository.toggleLocalSubscription(comicId, res.isSuccessful)
+                    repository.syncSubscriptions()
                 }
                 fetchSubscribedAndHistory()
-            } catch (e: Exception) {
-                _comicsUiState.update { it.copy(errorMessage = "Subscription toggle failed: ${e.message}") }
-            }
-        }
+            },
+            rollback = { previous -> _subscribedComics.value = previous }
+        )
     }
 
     fun removeComicFromLibrary(comicId: String) {
@@ -299,19 +310,16 @@ class ComicsViewModel @Inject constructor(
     }
 
     fun rateComic(comicId: String, rating: Float) {
-        viewModelScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    RetrofitClient.comicApiService.rateComic(
-                        comicId,
-                        rating
-                    )
-                }
+        optimisticToggle(
+            scope = viewModelScope,
+            applyOptimistically = {
+                val previous = _currentComic.value
                 _currentComic.update { if (it?.id == comicId) it.copy(rating = rating) else it }
-            } catch (e: Exception) {
-                _comicsUiState.update { it.copy(errorMessage = "Rating failed: ${e.message}") }
-            }
-        }
+                previous
+            },
+            networkCall = { RetrofitClient.comicApiService.rateComic(comicId, rating) },
+            rollback = { previous -> _currentComic.value = previous }
+        )
     }
 
     // Reading Logic
@@ -356,37 +364,47 @@ class ComicsViewModel @Inject constructor(
     }
 
     fun markChapterAsRead(comicId: String, chapterId: String) {
-        viewModelScope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    RetrofitClient.comicApiService.markChapterAsRead(
-                        comicId,
-                        chapterId
-                    )
+        val stateFlow = _chapters
+        optimisticToggle(
+            scope = viewModelScope,
+            applyOptimistically = {
+                val previous = stateFlow.value
+                stateFlow.update { list ->
+                    list.map { if (it.id == chapterId && !it.isRead) it.copy(isRead = true) else it }
                 }
-                _chapters.update { list -> list.map { if (it.id == chapterId) it.copy(isRead = true) else it } }
+                _currentComic.update { if (it?.id == comicId && it.readChapterCount < it.chapterCount) it.copy(readChapterCount = it.readChapterCount + 1) else it }
+                previous
+            },
+            networkCall = {
+                RetrofitClient.comicApiService.markChapterAsRead(comicId, chapterId)
                 fetchSubscribedAndHistory()
-            } catch (e: Exception) {
-                Log.e("ComicsViewModel", "Failed to mark chapter as read: ${e.message}")
+            },
+            rollback = { previous -> 
+                stateFlow.value = previous 
+                _currentComic.update { if (it?.id == comicId) it.copy(readChapterCount = it.readChapterCount - 1) else it }
             }
-        }
+        )
     }
 
     fun likeChapter(comicId: String, chapterId: String) {
-        viewModelScope.launch {
-            try {
-                val currentChapters = _chapters.value
-                val chapter = currentChapters.find { it.id == chapterId } ?: return@launch
-                val newLikedState = !chapter.isLiked
-                _chapters.value = currentChapters.map { if (it.id == chapterId) it.copy(isLiked = newLikedState) else it }
-                withContext(Dispatchers.IO) {
-                    RetrofitClient.comicApiService.likeChapter(comicId, chapterId)
-                    repository.updateChapterLikeState(chapterId, newLikedState)
+        val stateFlow = _chapters
+        val previous = stateFlow.value
+        val chapter = previous.find { it.id == chapterId } ?: return
+        val newLikedState = !chapter.isLiked
+        optimisticToggle(
+            scope = viewModelScope,
+            applyOptimistically = {
+                stateFlow.update { list ->
+                    list.map { if (it.id == chapterId) it.copy(isLiked = newLikedState) else it }
                 }
-            } catch (e: Exception) {
-                Log.e("ComicsViewModel", "Like chapter failed: ${e.message}")
-            }
-        }
+                previous
+            },
+            networkCall = {
+                RetrofitClient.comicApiService.likeChapter(comicId, chapterId)
+                repository.updateChapterLikeState(chapterId, newLikedState)
+            },
+            rollback = { previous -> stateFlow.value = previous }
+        )
     }
 
     // Upload Logic
@@ -452,13 +470,11 @@ class ComicsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    RetrofitClient.comicApiService.subscribeToAuthor(
-                        AuthorRequest(authorId)
-                    )
+                    RetrofitClient.comicApiService.subscribeToAuthor(AuthorRequest(authorId))
                 }
                 getSubscribedAuthors()
             } catch (e: Exception) {
-                _comicsUiState.update { it.copy(errorMessage = "Author subscription failed: ${e.message}") }
+                Log.e("ComicsViewModel", "Failed to subscribe: ${e.message}")
             }
         }
     }

@@ -25,7 +25,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 
 interface AuthApi {
-    @POST("api/auth/refresh")
+    @POST("auth/refresh")
     fun refreshToken(@Body request: RefreshTokenRequest): Call<AuthResponse>
 }
 
@@ -132,7 +132,7 @@ object RetrofitClient {
 
     fun createChatWebSocket(listener: WebSocketListener): WebSocket {
         val request = Request.Builder()
-            .url("wss://sources-comic-server.onrender.com/api/chat/stream")
+            .url(BuildConfig.WEB_SOCKET_URL)
             .build()
 
         return webSocketClient.newWebSocket(request, listener)

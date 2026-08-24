@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import toro.sources.utils.getOptimizedUrl
 import com.toro.models.*
 
 @Composable
@@ -36,7 +37,7 @@ fun ComicCard(
     ) {
         Row {
             AsyncImage(
-                model = comic.coverImageUrl,
+                model = comic.coverImageUrl.getOptimizedUrl(width = 200),
                 contentDescription = null,
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
