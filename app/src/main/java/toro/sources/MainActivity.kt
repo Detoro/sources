@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -49,13 +50,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import models.CommentLocation
 import toro.sources.network.RetrofitClient
 import toro.sources.pages.AuthorSearchPage
 import toro.sources.pages.ChatInboxPage
 import toro.sources.pages.ChatThreadPage
 import toro.sources.pages.CommentThreadPage
 import toro.sources.pages.CommentsPage
-import com.toro.models.*
 import toro.sources.viewmodel.AuthViewModel
 import toro.sources.viewmodel.ChatViewModel
 import toro.sources.viewmodel.CommunityViewModel
@@ -78,6 +79,7 @@ import toro.sources.pages.UploadPage
 import toro.sources.pages.WelcomePage
 import toro.sources.ui.theme.SourcesTheme
 import toro.sources.components.ShareDialog
+import toro.sources.models.Comic
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.pages.AboutPage
 import toro.sources.pages.EmailInputPage
@@ -85,6 +87,7 @@ import toro.sources.pages.InterestsPage
 import toro.sources.pages.ReportPage
 import toro.sources.pages.ReportTargetType
 import toro.sources.pages.SuccessfulTaskPage
+import toro.sources.pages.ThemePage
 import toro.sources.viewmodel.NotificationsViewModel
 import toro.sources.viewmodel.ProfileViewModel
 import toro.sources.viewmodel.SessionViewModel
@@ -94,6 +97,7 @@ sealed class Screen(val route: String) {
     object SignUp : Screen("signup")
     object EmailInput : Screen("email_input")
     object About : Screen("about")
+    object Theme : Screen("theme")
     object Welcome : Screen("welcome")
     object Interests : Screen("interest")
     object Home : Screen("home/{userId}")
@@ -169,6 +173,7 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -178,11 +183,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val sessionViewModel: SessionViewModel = hiltViewModel()
-            val isDarkTheme by sessionViewModel.isDarkTheme.collectAsState()
+            val theme by sessionViewModel.themeSelection.collectAsState()
 
             SourcesTheme(
-                darkTheme = isDarkTheme,
-                dynamicColor = true
+                appTheme = theme
             ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -507,7 +511,14 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 val profileViewModel: ProfileViewModel = hiltViewModel()
 
                 LaunchedEffect(comicId) {
-                    comicsViewModel.setCurrentComic(Comic(id = comicId, title = "", description = "", coverImageUrl = ""))
+                    comicsViewModel.setCurrentComic(
+                        Comic(
+                            id = comicId,
+                            title = "",
+                            description = "",
+                            coverImageUrl = ""
+                        )
+                    )
                 }
 
                 OverviewPage(
@@ -631,6 +642,11 @@ fun AppNavigation(sessionViewModel: SessionViewModel) {
                 FriendRequestPage(
                     chatViewModel = chatViewModel,
                     onDismiss = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.Theme.route) { 
+                ThemePage(
+                    sessionViewModel = sessionViewModel
                 )
             }
             composable(Screen.AuthorSearch.route) {
