@@ -9,10 +9,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.toro.models.Comment
-import com.toro.models.CommentLocation
-import com.toro.models.SharedContent
-import com.toro.models.ShareType
+import models.CommentLocation
+import models.ShareType
+import models.SharedContent
+import toro.sources.models.Comment
 import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.viewmodel.SessionViewModel
 

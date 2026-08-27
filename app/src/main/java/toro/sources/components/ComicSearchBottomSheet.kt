@@ -11,9 +11,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.unit.dp
-import com.toro.models.SearchSource
-import com.toro.models.ShareType
-import com.toro.models.SharedContent
+import models.SearchSource
+import models.ShareType
+import models.SharedContent
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.SessionViewModel
 

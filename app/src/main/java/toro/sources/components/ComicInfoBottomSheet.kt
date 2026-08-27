@@ -11,9 +11,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.toro.models.Comic
-import com.toro.models.*
 import toro.sources.Screen
+import toro.sources.models.Comic
+import toro.sources.models.creditsMap
+import toro.sources.models.writtenBy
 import toro.sources.viewmodel.ProfileViewModel
 import toro.sources.viewmodel.SessionViewModel
 

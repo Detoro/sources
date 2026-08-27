@@ -1,6 +1,7 @@
 package toro.sources.components
 
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,11 +14,13 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import toro.sources.models.Comic
+import toro.sources.models.authorName
 import toro.sources.utils.getOptimizedUrl
-import com.toro.models.*
 
 @Composable
 fun ComicCard(
@@ -42,7 +45,7 @@ fun ComicCard(
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = androidx.compose.ui.layout.ContentScale.Crop
             )
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column(modifier = Modifier.padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                 Text(text = comic.title, style = MaterialTheme.typography.labelLarge, maxLines = 1)
                 Text(text = comic.authorName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }

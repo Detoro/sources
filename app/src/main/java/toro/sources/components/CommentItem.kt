@@ -22,8 +22,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.toro.models.*
 import toro.sources.Screen
+import toro.sources.models.Comment
+import toro.sources.models.toContent
 import toro.sources.sharing.handleSharedNavigation
 import toro.sources.utils.convertTimestamp
 import toro.sources.viewmodel.ComicsViewModel
@@ -32,6 +33,7 @@ import toro.sources.viewmodel.SessionViewModel
 @Composable
 fun CommentItem(
     comment: Comment,
+    sessionViewModel: SessionViewModel,
     isThreadHeader: Boolean = false,
     isReply: Boolean = false,
     onReplyClick: (Comment) -> Unit = {},
@@ -40,7 +42,6 @@ fun CommentItem(
     onCommentClick: (Comment) -> Unit = {},
     onAuthorClick: (String) -> Unit = {},
     onShareClick: (Comment) -> Unit = {},
-    sessionViewModel: SessionViewModel? = null,
     comicsViewModel: ComicsViewModel? = null
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -118,7 +119,7 @@ fun CommentItem(
                             DropdownMenuItem(
                                 text = { Text("Report", color = MaterialTheme.colorScheme.error) },
                                 onClick = { showMenu = false
-                                    sessionViewModel?.handleNavigation(Screen.Report.createRoute("COMMENT", comment.id))
+                                    sessionViewModel.handleNavigation(Screen.Report.createRoute("COMMENT", comment.id))
                                 }
                             )
                             HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
@@ -135,32 +136,12 @@ fun CommentItem(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                content.shared?.let { shared ->
-                    SharedContentPlaceholder(
-                        type = shared.type,
-                        title = "Shared ${shared.type.name.lowercase()}",
-                        previewText = shared.preview ?: "Tap to view details",
-                        imageUrl = shared.imageUrl,
-                        modifier = Modifier.padding(bottom = 8.dp),
-                        onClick = {
-                            if (sessionViewModel != null) {
-                                handleSharedNavigation(
-                                    id = shared.id,
-                                    type = shared.type,
-                                    comicsViewModel = comicsViewModel,
-                                    sessionViewModel = sessionViewModel
-                                )
-                            }
-                        }
-                    )
-                }
-
                 AnimatedContent(
                     targetState = showComment,
                     transitionSpec = { fadeIn() togetherWith fadeOut() },
                     label = "SpoilerToggle"
-                ) { isVisible ->
-                    if (!isVisible) {
+                ) { visible ->
+                    if (!visible) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
@@ -192,6 +173,23 @@ fun CommentItem(
                             modifier = Modifier
                                 .animateContentSize()
                         ) {
+                            content.shared?.let { shared ->
+                                SharedContentPlaceholder(
+                                    type = shared.type,
+                                    title = shared.type.name.lowercase(),
+                                    previewText = shared.preview,
+                                    imageUrl = shared.imageUrl,
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                    onClick = {
+                                        handleSharedNavigation(
+                                            id = shared.id,
+                                            type = shared.type,
+                                            comicsViewModel = comicsViewModel,
+                                            sessionViewModel = sessionViewModel
+                                        )
+                                    }
+                                )
+                            }
                             SpoilerText(
                                 text = content.body,
                                 isSpoiler = comment.isSpoiler,

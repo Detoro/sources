@@ -17,7 +17,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.toro.models.*
+import toro.sources.models.Comic
+import toro.sources.models.authorName
 
 @Composable
 fun ComicRow(

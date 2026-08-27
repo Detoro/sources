@@ -2,7 +2,6 @@ package toro.sources.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,14 +22,14 @@ import coil.compose.AsyncImage
 import toro.sources.utils.getOptimizedUrl
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.SessionViewModel
-import com.toro.models.Comic
-import com.toro.models.ShareType
-import com.toro.models.SharedContent
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.style.TextOverflow
+import models.ShareType
+import models.SharedContent
+import toro.sources.models.Comic
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -64,7 +63,6 @@ fun ComicCoverCard(
                 .aspectRatio(1f)
         )
         Column(
-            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
