@@ -5,15 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.toro.models.Comic
-import com.toro.models.Chapter
-import com.toro.models.Conversation
-import com.toro.models.ChatMessage
-import com.toro.models.Notification
-import com.toro.models.Comment
-import com.toro.models.Post
-import com.toro.models.UserProfile
-import com.toro.models.ConversationUiState
+import toro.sources.models.ChatMessage
+import toro.sources.models.Comic
+import toro.sources.models.Chapter
+import toro.sources.models.Comment
+import toro.sources.models.Conversation
+import toro.sources.models.ConversationUiState
+import toro.sources.models.Post
+import toro.sources.models.Notification
+import toro.sources.models.UserProfile
 import toro.sources.PreferenceManager
 
 @Database(

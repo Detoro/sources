@@ -1,7 +1,6 @@
 package toro.sources.network
 
 import android.util.Log
-import com.toro.models.ChatMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -12,6 +11,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import toro.sources.models.ChatMessage
 import toro.sources.utils.CryptoUtils
 import kotlin.time.Duration.Companion.milliseconds
 

@@ -26,13 +26,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.toro.models.*
 import kotlinx.coroutines.launch
+import models.CommentLocation
+import models.ShareType
+import models.SharedContent
 import toro.sources.R
 import toro.sources.Screen
 import toro.sources.components.CommentItem
 import toro.sources.components.PostCard
 import toro.sources.components.shimmerEffect
+import toro.sources.models.Comic
+import toro.sources.models.Comment
+import toro.sources.models.Post
+import toro.sources.models.authorName
 import toro.sources.viewmodel.SessionViewModel
 import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.viewmodel.ComicsViewModel
@@ -316,7 +322,8 @@ fun ActivityContent(
                                                     SharedContent(
                                                         id = it.id,
                                                         type = ShareType.POST,
-                                                        title = it.title ?: "Post by ${it.authorName}",
+                                                        title = it.title
+                                                            ?: "Post by ${it.authorName}",
                                                         previewText = it.content.take(50)
                                                     )
                                                 )

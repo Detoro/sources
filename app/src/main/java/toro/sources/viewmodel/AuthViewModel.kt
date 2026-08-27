@@ -3,12 +3,16 @@ package toro.sources.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.toro.models.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import models.AuthRequest
+import models.ForgotPasswordRequest
+import models.LoginCredentials
+import models.RefreshTokenRequest
+import models.ResetPasswordRequest
 import toro.sources.network.RetrofitClient
 import toro.sources.session.SessionManager
 import toro.sources.network.ChatConnectionManager
@@ -27,7 +31,8 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _authState.update { it.copy(isLoading = true, errorMessage = null) }
             try {
-                val authRequest = AuthRequest(email = credentials.email, password = credentials.password)
+                val authRequest =
+                    AuthRequest(email = credentials.email, password = credentials.password)
                 val res = RetrofitClient.comicApiService.login(authRequest)
                 sessionManager.saveSession(res.accessToken, res.refreshToken)
 
@@ -120,7 +125,8 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val token = RetrofitClient.preferenceManager.getRefreshTokenSync() ?: ""
-                val resetPasswordRequest = ResetPasswordRequest(token = token, newPassword = password)
+                val resetPasswordRequest =
+                    ResetPasswordRequest(token = token, newPassword = password)
                 RetrofitClient.comicApiService.resetPassword(resetPasswordRequest)
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Reset password failed", e)

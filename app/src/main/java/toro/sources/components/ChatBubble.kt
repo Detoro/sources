@@ -35,8 +35,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.toro.models.*
+import models.MessageContent
 import toro.sources.Screen
+import toro.sources.models.ChatMessage
+import toro.sources.models.toContent
 import toro.sources.sharing.handleSharedNavigation
 import toro.sources.utils.getOptimizedUrl
 import toro.sources.viewmodel.ChatViewModel
@@ -44,6 +46,14 @@ import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.ProfileViewModel
 import toro.sources.viewmodel.SessionViewModel
 
+data class ReplyTarget(
+    val id: String,
+    val senderName: String,
+    val previewText: String,
+    var isFromMe: Boolean = true,
+    val callback: (String) -> Unit,
+    val onCancel: () -> Unit,
+)
 @Composable
 private fun ChatImage(imageUrl: String) {
     AsyncImage(
@@ -182,6 +192,7 @@ private fun ChatText(
 @Composable
 fun ChatBubble(
     message: ChatMessage,
+    replyTarget: ReplyTarget?,
     conversationId: String,
     isFromMe: Boolean,
     chatViewModel: ChatViewModel,
@@ -262,11 +273,21 @@ fun ChatBubble(
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Column {
+                        if (replyTarget != null) {
+                            ReplyPreview(
+                                senderName = replyTarget.senderName,
+                                previewText = replyTarget.previewText,
+                                shouldBeVisible = false,
+                                isFromMe = isFromMe,
+                                onClick = { replyTarget.callback(replyTarget.id) },
+                                onCancel = { chatViewModel.setReplyTarget(null) }
+                            )
+                        }
                         content.shared?.let { shared ->
                             SharedContentPlaceholder(
                                 type = shared.type,
-                                title = "Shared ${shared.type.name.lowercase().replaceFirstChar { it.uppercase() }}",
-                                previewText = shared.preview ?: "Tap to view details",
+                                title = shared.type.name.lowercase().replaceFirstChar { it.uppercase() },
+                                previewText = shared.preview,
                                 imageUrl = shared.imageUrl,
                                 modifier = Modifier.padding(bottom = 8.dp),
                                 onClick = {

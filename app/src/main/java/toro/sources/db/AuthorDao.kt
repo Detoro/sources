@@ -4,8 +4,8 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.toro.models.UserProfile
 import kotlinx.coroutines.flow.Flow
+import toro.sources.models.UserProfile
 
 @Dao
 interface AuthorDao {

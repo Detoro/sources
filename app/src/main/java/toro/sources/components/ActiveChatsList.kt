@@ -27,8 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.toro.models.Conversation
-import com.toro.models.MessageSummary
+import models.MessageSummary
+import toro.sources.models.Conversation
 import toro.sources.utils.formatRelativeTimestamp
 import toro.sources.viewmodel.ChatViewModel
 import toro.sources.viewmodel.SessionViewModel

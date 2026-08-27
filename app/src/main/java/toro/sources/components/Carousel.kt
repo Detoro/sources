@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.SessionViewModel
-import com.toro.models.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -43,6 +42,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import toro.sources.utils.getOptimizedUrl
 import kotlinx.coroutines.delay
+import toro.sources.models.Comic
+import toro.sources.models.authorName
 import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.milliseconds
 

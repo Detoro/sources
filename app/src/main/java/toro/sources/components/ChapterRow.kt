@@ -9,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.toro.models.Chapter
+import toro.sources.models.Chapter
 
 @Composable
 fun ChapterRow(
@@ -18,7 +18,7 @@ fun ChapterRow(
 ) {
     Row(
         modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 28.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
             .fillMaxWidth()
             .clickable{ onClick() }
             .graphicsLayer(alpha = if (chapter.isRead) 0.5f else 1.0f),

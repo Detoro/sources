@@ -5,14 +5,14 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import models.Creator
+import models.Role
+import toro.sources.models.Chapter
+import toro.sources.models.Comic
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
 import java.util.UUID
-import com.toro.models.Comic
-import com.toro.models.Creator
-import com.toro.models.Chapter
-import com.toro.models.Role
 
 class CbzParser(private val context: Context) {
 

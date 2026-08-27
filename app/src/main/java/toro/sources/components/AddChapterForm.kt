@@ -69,13 +69,14 @@ fun AddChapterForm(
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text("Add Chapters") },
                 actions = {
                     IconButton(onClick = { clearForm() }, enabled = !isUploading) {
                         Icon(Icons.Default.Close, contentDescription = "Clear")
                     }
-                }
+                },
+                windowInsets = WindowInsets(top = 0.dp)
             )
         }
     ) { paddingValues ->
