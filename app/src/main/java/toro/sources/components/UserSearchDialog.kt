@@ -16,8 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.toro.models.Role
-import com.toro.models.UserProfile
+import models.Role
+import toro.sources.models.UserProfile
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

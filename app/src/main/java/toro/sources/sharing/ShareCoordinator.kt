@@ -1,8 +1,8 @@
 package toro.sources.sharing
 
-import com.toro.models.SharedContent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import models.SharedContent
 import javax.inject.Inject
 import javax.inject.Singleton
 

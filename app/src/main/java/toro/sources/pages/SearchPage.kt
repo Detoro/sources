@@ -36,8 +36,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import toro.sources.viewmodel.SessionViewModel
-import com.toro.models.*
+import models.SearchSource
 import toro.sources.components.ComicCoverCard
+import toro.sources.models.Comic
+import toro.sources.models.authorName
 import toro.sources.viewmodel.ComicsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)

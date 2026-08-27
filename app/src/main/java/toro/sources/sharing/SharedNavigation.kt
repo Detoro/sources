@@ -1,6 +1,6 @@
 package toro.sources.sharing
 
-import com.toro.models.ShareType
+import models.ShareType
 import toro.sources.Screen
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.SessionViewModel

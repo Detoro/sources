@@ -16,11 +16,11 @@ import okhttp3.Response
 import okhttp3.Route
 import toro.sources.PreferenceManager
 import toro.sources.BuildConfig
-import com.toro.models.AuthResponse
-import com.toro.models.RefreshTokenRequest
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.TimeUnit
 import android.util.Log
+import models.AuthResponse
+import models.RefreshTokenRequest
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 

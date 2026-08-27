@@ -18,10 +18,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import models.ShareType
+import models.SharedContent
 import toro.sources.viewmodel.SessionViewModel
 import toro.sources.Screen
-import com.toro.models.ShareType
-import com.toro.models.SharedContent
 import toro.sources.viewmodel.ChatViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,7 +69,13 @@ fun ShareDialog(
                                 .fillMaxWidth()
                                 .clickable {
                                     sessionViewModel.setSharedContent(
-                                        SharedContent(sharedId, sharedType, sharedTitle, sharedPreview, sharedTargetId)
+                                        SharedContent(
+                                            sharedId,
+                                            sharedType,
+                                            sharedTitle,
+                                            sharedPreview,
+                                            sharedTargetId
+                                        )
                                     )
                                     sessionViewModel.handleNavigation(Screen.Chat.createRoute(conversation.conversationId))
                                     onDismiss()

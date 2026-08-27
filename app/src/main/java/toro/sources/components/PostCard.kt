@@ -27,8 +27,10 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.toro.models.*
+import models.FeedContent
 import toro.sources.Screen
+import toro.sources.models.Post
+import toro.sources.models.toContent
 import toro.sources.sharing.handleSharedNavigation
 import toro.sources.utils.getOptimizedUrl
 import toro.sources.viewmodel.ComicsViewModel
@@ -42,7 +44,7 @@ fun PostCard(
     post: Post,
     onCommentClick: () -> Unit,
     modifier: Modifier = Modifier,
-    comicsViewModel: ComicsViewModel? = null,
+    comicsViewModel: ComicsViewModel,
     onAuthorClick: (String) -> Unit = {},
     onShareClick: (Post) -> Unit = {},
     showAccentLine: Boolean = false,
@@ -104,19 +106,21 @@ fun PostCard(
                     }
                     
                     // Follow Button
-                    OutlinedButton(
-                        onClick = {
-                            comicsViewModel?.subscribeToAuthor(post.authorId)
-                        },
-                        modifier = Modifier.height(32.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color.Blue
-                        ),
-                        border = BorderStroke(1.dp, Color.Blue.copy(alpha = 0.5f)),
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Text("Follow", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    if (comicsViewModel.subscribedAuthors.collectAsState().value.find { it.id == post.authorId } == null) {
+                        OutlinedButton(
+                            onClick = {
+                                comicsViewModel.subscribeToAuthor(post.authorId)
+                            },
+                            modifier = Modifier.height(32.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.Blue
+                            ),
+                            border = BorderStroke(1.dp, Color.Blue.copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(50)
+                        ) {
+                            Text("Follow", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                     
                     Box {
@@ -142,8 +146,8 @@ fun PostCard(
                     content.shared?.let { shared ->
                         SharedContentPlaceholder(
                             type = shared.type,
-                            title = shared.title?.lowercase() ?: "Item",
-                            previewText = shared.preview ?: "Tap to view details",
+                            title = shared.title?.lowercase(),
+                            previewText = shared.preview,
                             imageUrl = shared.imageUrl,
                             modifier = Modifier.padding(bottom = 8.dp),
                             onClick = { 

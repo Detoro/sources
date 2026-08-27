@@ -2,13 +2,13 @@ package toro.sources.session
 
 import android.content.Context
 import com.google.firebase.messaging.FirebaseMessaging
-import com.toro.models.UserProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import toro.sources.PreferenceManager
 import toro.sources.db.CanvasDatabase
+import toro.sources.models.UserProfile
 
 class SessionManager(
     private val preferenceManager: PreferenceManager,

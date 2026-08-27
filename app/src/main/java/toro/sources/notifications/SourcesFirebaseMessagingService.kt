@@ -5,15 +5,15 @@ import android.util.Log
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import toro.sources.network.RetrofitClient
-import com.toro.models.FcmTokenRequest
-import com.toro.models.Notification
-import com.toro.models.NotificationType
 import toro.sources.db.CanvasDatabase
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import models.FcmTokenRequest
+import models.NotificationType
+import toro.sources.models.Notification
 
 @SuppressLint("MissingFirebaseInstanceTokenRefresh")
 class SourcesFirebaseMessagingService: FirebaseMessagingService() {

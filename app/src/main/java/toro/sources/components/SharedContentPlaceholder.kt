@@ -16,28 +16,26 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.toro.models.ShareType
+import models.ShareType
 
 @Composable
 fun SharedContentPlaceholder(
     type: ShareType,
-    title: String,
-    previewText: String,
+    title: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    previewText: String? = "Tap to view details",
     imageUrl: String? = null,
     clickable: Boolean = true
 ) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
             .then(if (clickable) Modifier.clickable(onClick = onClick) else Modifier),
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
         shape = RoundedCornerShape(16.dp)
@@ -83,7 +81,7 @@ fun SharedContentPlaceholder(
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = title.ifBlank { "Shared ${type.name.lowercase()}" },
+                    text = title?.ifBlank { "Shared ${type.name.lowercase()}" } ?: "Item",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -92,7 +90,7 @@ fun SharedContentPlaceholder(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = previewText,
+                    text = previewText ?: "Open me",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,

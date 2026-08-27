@@ -34,7 +34,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.annotation.ExperimentalCoilApi
 import coil.compose.AsyncImage
-import com.toro.models.*
 import kotlinx.coroutines.launch
 import toro.sources.viewmodel.ProfileViewModel
 import toro.sources.Screen
@@ -44,6 +43,7 @@ import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.components.ComicCoverCard
 import toro.sources.viewmodel.ComicsViewModel
 import androidx.compose.runtime.collectAsState
+import toro.sources.models.Conversation
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalCoilApi::class)
 @Composable

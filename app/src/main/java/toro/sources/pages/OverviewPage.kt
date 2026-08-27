@@ -30,11 +30,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import models.Role
+import models.ShareType
 import toro.sources.components.*
+import toro.sources.models.Chapter
+import toro.sources.models.Comic
+import toro.sources.models.authorId
 import toro.sources.utils.getOptimizedUrl
-import com.toro.models.ShareType
-import com.toro.models.Chapter
-import com.toro.models.*
 import toro.sources.viewmodel.ChatViewModel
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.ProfileViewModel

@@ -45,11 +45,11 @@ import toro.sources.components.ReaderNavigationBar
 import toro.sources.components.SmartContentPage
 import toro.sources.components.ChapterBgmPlayer
 import toro.sources.components.ReaderHeaderBar
-import com.toro.models.Comic
-import com.toro.models.ScrollDirection
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.CommunityViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
+import models.ScrollDirection
+import toro.sources.models.Comic
 import toro.sources.viewmodel.SessionViewModel
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)

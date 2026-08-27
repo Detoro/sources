@@ -24,7 +24,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.toro.models.*
+import models.Genre
+import models.Creator
+import models.PgRating
+import models.Role
+import models.ScrollDirection
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.SessionViewModel
 import toro.sources.viewmodel.CommunityViewModel

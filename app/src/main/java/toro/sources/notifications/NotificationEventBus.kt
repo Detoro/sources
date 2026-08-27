@@ -2,7 +2,7 @@ package toro.sources.notifications
 
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import com.toro.models.Notification
+import toro.sources.models.Notification
 
 object NotificationEventBus {
     private val _notifications = MutableSharedFlow<Notification>()

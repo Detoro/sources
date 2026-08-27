@@ -23,6 +23,7 @@ import coil.ImageLoader
 import coil.annotation.ExperimentalCoilApi
 import toro.sources.R
 import toro.sources.Screen
+import toro.sources.models.AppTheme
 import toro.sources.viewmodel.SessionViewModel
 import toro.sources.viewmodel.ProfileViewModel
 
@@ -38,7 +39,6 @@ fun SettingsPage(
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val userProfile by sessionViewModel.userProfile.collectAsState()
-    val isDarkTheme by sessionViewModel.isDarkTheme.collectAsState()
     var showResetPasswordDialog by remember { mutableStateOf(false) }
     var showStorageDialog by remember { mutableStateOf(false) }
     var showUsernameDialog by remember { mutableStateOf(false) }
@@ -94,11 +94,21 @@ fun SettingsPage(
 
             SettingsGroup(title = "App Settings") {
                 ListItem(
-                    headlineContent = { Text("Dark Theme") },
+                    headlineContent = { Text("Theme") },
                     leadingContent = { Icon(Icons.Default.ColorLens, contentDescription = null) },
                     trailingContent = {
-                        Switch(checked = isDarkTheme, onCheckedChange = { sessionViewModel.toggleDarkTheme(it) })
+                        Text(
+                            text = when (sessionViewModel.themeSelection.collectAsState().value) {
+                                AppTheme.SYSTEM -> "System Default"
+                                AppTheme.LIGHT -> "Light"
+                                AppTheme.DARK -> "Dark"
+                                AppTheme.PINK -> "Pink"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     },
+                    modifier = Modifier.clickable { sessionViewModel.handleNavigation(Screen.Theme.route) },
                     colors = ListItemDefaults.colors(containerColor = Color.Transparent)
                 )
             }

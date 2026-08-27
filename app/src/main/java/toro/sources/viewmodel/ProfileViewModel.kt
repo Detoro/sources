@@ -8,12 +8,6 @@ import androidx.lifecycle.viewModelScope
 import com.cloudinary.android.MediaManager
 import com.cloudinary.android.callback.ErrorInfo
 import com.cloudinary.android.callback.UploadCallback
-import com.toro.models.Comic
-import com.toro.models.Post
-import com.toro.models.UpdateBioRequest
-import com.toro.models.UpdateInterestsRequest
-import com.toro.models.UpdateUsernameRequest
-import com.toro.models.UserProfile
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -21,11 +15,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import models.UpdateBioRequest
+import models.UpdateInterestsRequest
+import models.UpdateUsernameRequest
 import toro.sources.BuildConfig
 import toro.sources.db.ComicRepository
+import toro.sources.models.Comic
+import toro.sources.models.Post
+import toro.sources.models.UserProfile
 import toro.sources.network.RetrofitClient
 import toro.sources.session.SessionManager
 import javax.inject.Inject
+import kotlin.collections.find
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(

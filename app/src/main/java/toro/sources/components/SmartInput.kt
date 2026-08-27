@@ -4,6 +4,9 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,8 +31,10 @@ import androidx.compose.ui.text.style.TextOverflow.Companion.Ellipsis
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
-import com.toro.models.*
 import kotlinx.coroutines.delay
+import models.ShareType
+import toro.sources.models.Comic
+import toro.sources.models.authorName
 import toro.sources.viewmodel.SessionViewModel
 import toro.sources.viewmodel.ComicsViewModel
 import toro.sources.viewmodel.CommunityViewModel
@@ -39,6 +44,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @Composable
 fun SmartInput(
     modifier: Modifier = Modifier,
+    replyTarget: ReplyTarget? = null,
     title: String? = null,
     onTitleChange: ((String) -> Unit)? = null,
     supportTitle: Boolean = false,
@@ -83,7 +89,14 @@ fun SmartInput(
     LaunchedEffect(sharedContent) {
         val content = sharedContent
         if (content?.type == ShareType.COMIC) {
-            comicsViewModel.setCurrentComic(Comic(id = content.id, title = content.title, description = "", coverImageUrl = ""))
+            comicsViewModel.setCurrentComic(
+                Comic(
+                    id = content.id,
+                    title = content.title,
+                    description = "",
+                    coverImageUrl = ""
+                )
+            )
         } else {
             comicsViewModel.clearCurrentComic()
         }
@@ -231,6 +244,24 @@ fun SmartInput(
                                 }
                             }
                         }
+                    }
+                }
+
+                AnimatedVisibility(
+                    visible = replyTarget != null,
+                    enter = expandVertically(),
+                    exit = shrinkVertically(),
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                ) {
+                    replyTarget?.let { replyTarget ->
+                        ReplyPreview(
+                            senderName = replyTarget.senderName,
+                            previewText = replyTarget.previewText,
+                            shouldBeVisible = true,
+                            isFromMe = replyTarget.isFromMe,
+                            onClick = { replyTarget.callback(replyTarget.id) },
+                            onCancel = replyTarget.onCancel
+                        )
                     }
                 }
 

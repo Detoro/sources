@@ -1,13 +1,13 @@
 package toro.sources.viewmodel.common
 
 import android.util.Log
-import com.toro.models.UserProfile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import toro.sources.models.UserProfile
 import toro.sources.network.RetrofitClient
 
 class UserSearchDelegate(private val scope: CoroutineScope) {

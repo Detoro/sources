@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.toro.models.Post
+import toro.sources.models.Post
 import kotlinx.coroutines.flow.Flow
 
 @Dao

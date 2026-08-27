@@ -4,19 +4,21 @@ import android.app.Application
 import android.content.Intent
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.toro.models.SharedContent
-import com.toro.models.UserProfile
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import models.SharedContent
 import toro.sources.PreferenceManager
 import toro.sources.db.ComicRepository
+import toro.sources.models.AppTheme
+import toro.sources.models.UserProfile
 import toro.sources.navigation.DeepLinkRouter
 import toro.sources.navigation.NavigationState
 import toro.sources.session.SessionManager
@@ -38,8 +40,14 @@ class SessionViewModel @Inject constructor(
     val sharedContent: StateFlow<SharedContent?> = shareCoordinator.sharedContent
     val pendingNavigation: StateFlow<String?> = navigationState.pendingNavigation
 
-    val isDarkTheme: StateFlow<Boolean> = preferenceManager.isDarkTheme
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+    val themeSelection: StateFlow<AppTheme> = preferenceManager.theme.map {
+        theme ->
+        try {
+            AppTheme.valueOf(theme)
+        } catch (_: Exception) {
+            AppTheme.SYSTEM
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AppTheme.SYSTEM)
 
     private val _showShareDialog = MutableStateFlow(false)
     val showShareDialog = _showShareDialog.asStateFlow()
@@ -64,10 +72,10 @@ class SessionViewModel @Inject constructor(
         deepLinkRouter.handleIntent(intent)
     }
 
-    fun toggleDarkTheme(enabled: Boolean) {
+    fun editTheme(theme: AppTheme) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                preferenceManager.setDarkTheme(enabled)
+                preferenceManager.setTheme(theme)
             }
         }
     }

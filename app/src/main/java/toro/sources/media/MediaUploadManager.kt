@@ -8,7 +8,7 @@ import android.provider.OpenableColumns
 import com.cloudinary.android.MediaManager
 import com.cloudinary.android.callback.ErrorInfo
 import com.cloudinary.android.callback.UploadCallback
-import com.toro.models.ChapterUploadData
+import models.ChapterUploadData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll

@@ -56,10 +56,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import com.toro.models.AuthRequest
 import toro.sources.R
 import kotlinx.datetime.toKotlinLocalDate
 import kotlinx.datetime.toJavaLocalDate
+import models.AuthRequest
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
