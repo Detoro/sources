@@ -3,16 +3,14 @@ package toro.sources.pages
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -34,16 +32,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.toro.models.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import models.MessageContent
+import models.ShareType
 import toro.sources.components.ChatBubble
-import toro.sources.components.ReplyPreview
+import toro.sources.components.ReplyTarget
 import toro.sources.components.SmartInput
 import toro.sources.components.TypingIndicator
+import toro.sources.models.toContent
 import toro.sources.viewmodel.ChatViewModel
 import toro.sources.viewmodel.SessionViewModel
 import toro.sources.viewmodel.ProfileViewModel
 import toro.sources.viewmodel.ComicsViewModel
+import kotlin.String
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,6 +73,7 @@ fun ChatThreadPage(
         inbox.find { it.conversationId == conversationId }
     }
     val targetUserId = activeChat?.otherUser?.userId ?: ""
+    val isTargetTyping = typingUsers.contains(targetUserId)
 
     var debouncedSearchQuery by remember { mutableStateOf("") }
     LaunchedEffect(searchQuery) {
@@ -112,6 +115,33 @@ fun ChatThreadPage(
     }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
+
+    var highlightedMessageId by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(highlightedMessageId) {
+        if (highlightedMessageId != null) {
+            delay(1200.milliseconds)
+            highlightedMessageId = null
+        }
+    }
+
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    fun scrollToMessage(messageId: String) {
+        if (isSearching) {
+            isSearching = false
+            searchQuery = ""
+        }
+        val targetIndex = messages.indexOfFirst { it.id == messageId }
+        if (targetIndex == -1) return
+
+        val headerOffset = 1 + if (isTargetTyping) 1 else 0
+        coroutineScope.launch {
+            listState.animateScrollToItem(headerOffset + targetIndex)
+            highlightedMessageId = messageId
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (backgroundUri != null) {
@@ -262,22 +292,15 @@ fun ChatThreadPage(
                         color = Color.Transparent,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column {
-                            AnimatedVisibility(
-                                visible = replyingToMessage != null,
-                                enter = expandVertically(),
-                                exit = shrinkVertically(),
-                                modifier = Modifier.padding(horizontal = 12.dp)
-                            ) {
-                                replyingToMessage?.let { replyTarget ->
-                                    ReplyPreview(
-                                        label = if (replyTarget.senderId == me?.id) "You" else activeChat?.otherUser?.username ?: "Friend",
-                                        previewText = if (replyTarget.isSpoiler) "Spoiler content" else chatViewModel.conversationPreviewText(replyTarget.toContent()),
-                                        isFromMe = true,
-                                        onCancel = { chatViewModel.setReplyTarget(null) },
-                                        modifier = Modifier.padding(bottom = 8.dp)
-                                    )
-                                }
+                        Column(modifier = Modifier.padding(vertical = 8.dp)) {
+                            val replyTarget = replyingToMessage?.let { replyTarget ->
+                                ReplyTarget(
+                                    id = replyTarget.id,
+                                    senderName = if (replyTarget.senderId == me?.id) "You" else activeChat?.otherUser?.username ?: "Friend",
+                                    previewText = if (replyTarget.isSpoiler) "Spoiler content" else chatViewModel.conversationPreviewText(replyTarget.toContent()),
+                                    callback = { scrollToMessage(replyTarget.id) },
+                                    onCancel = { chatViewModel.setReplyTarget(null) }
+                                )
                             }
                             val sharedContent by sessionViewModel.sharedContent.collectAsState()
                             val editingMessage by chatViewModel.editingMessage.collectAsState()
@@ -294,6 +317,7 @@ fun ChatThreadPage(
                             }
                             SmartInput(
                                 modifier = Modifier,
+                                replyTarget = replyTarget,
                                 onTextChange = { newText ->
                                     if (newText.isNotEmpty() && !isCurrentlyTyping) {
                                         isCurrentlyTyping = true
@@ -351,10 +375,10 @@ fun ChatThreadPage(
                     .padding(paddingValues)
             ) {
                 val lastUserMessageIndex = messages.indexOfFirst { it.senderId == me?.id }
-                val isTargetTyping = typingUsers.contains(targetUserId)
                 val messagesById = remember(messages) { messages.associateBy { it.id } }
 
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 16.dp),
@@ -385,19 +409,17 @@ fun ChatThreadPage(
                             horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start
                         ) {
                             val repliedMsg = msg.replyToMessageId?.let { messagesById[it] }
-                            if (repliedMsg != null) {
-                                ReplyPreview(
-                                    label = if (repliedMsg.senderId == me?.id) "You" else activeChat?.otherUser?.username ?: "Friend",
-                                    previewText = if (repliedMsg.isSpoiler) "Spoiler content" else chatViewModel.conversationPreviewText(repliedMsg.toContent()),
-                                    isFromMe = isFromMe,
-                                    modifier = Modifier
-                                        .fillMaxWidth(0.7f)
-                                        .padding(bottom = 2.dp)
-                                )
-                            }
+                            val replyTarget = if (repliedMsg != null) ReplyTarget(
+                                id = repliedMsg.id,
+                                senderName= if (repliedMsg.senderId == me?.id) "You" else activeChat?.otherUser?.username ?: "Friend",
+                                previewText = if (repliedMsg.isSpoiler) "Spoiler content" else chatViewModel.conversationPreviewText(repliedMsg.toContent()),
+                                callback = { scrollToMessage(repliedMsg.id) },
+                                onCancel = { chatViewModel.setReplyTarget(null) },
+                            ) else null
                             
                             ChatBubble(
                                 message = msg,
+                                replyTarget = replyTarget,
                                 conversationId = conversationId,
                                 isFromMe = isFromMe,
                                 showStatus = isFromMe && index == lastUserMessageIndex,

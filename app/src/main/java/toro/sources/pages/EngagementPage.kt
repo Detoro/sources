@@ -16,13 +16,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import models.ShareType
+import models.SharedContent
 import toro.sources.Screen
 import toro.sources.components.AuthorsRow
 import toro.sources.components.PostCard
 import toro.sources.components.PostCardShimmer
 import toro.sources.components.DefaultAvatar
-import com.toro.models.ShareType
-import com.toro.models.SharedContent
 import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.viewmodel.SessionViewModel
 import toro.sources.viewmodel.ComicsViewModel

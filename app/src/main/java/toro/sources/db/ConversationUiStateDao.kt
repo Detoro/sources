@@ -2,7 +2,7 @@ package toro.sources.db
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
-import com.toro.models.ConversationUiState
+import toro.sources.models.ConversationUiState
 
 @Dao
 interface ConversationUiStateDao {

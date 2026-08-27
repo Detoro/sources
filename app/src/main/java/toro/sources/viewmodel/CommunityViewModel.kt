@@ -3,7 +3,6 @@ package toro.sources.viewmodel
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.toro.models.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -12,8 +11,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import models.CommentLocation
+import models.CommentRequest
+import models.PostRequest
+import models.ReportRequest
 import toro.sources.db.ComicRepository
 import toro.sources.media.MediaUploadManager
+import toro.sources.models.Comment
+import toro.sources.models.Post
 import toro.sources.network.RetrofitClient
 import toro.sources.sharing.ShareCoordinator
 import toro.sources.viewmodel.common.UserSearchDelegate
@@ -126,7 +131,16 @@ class CommunityViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val shared = shareCoordinator.sharedContent.value
-                val request = CommentRequest(content, isSpoiler, muids, paid, shared?.id, shared?.type, shared?.title, shared?.previewText)
+                val request = CommentRequest(
+                    content,
+                    isSpoiler,
+                    muids,
+                    paid,
+                    shared?.id,
+                    shared?.type,
+                    shared?.title,
+                    shared?.previewText
+                )
                 RetrofitClient.comicApiService.addPostComment(postId, request)
                 getPostComments(postId)
             } catch (e: Exception) {

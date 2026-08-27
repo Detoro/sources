@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.NotificationsNone
@@ -21,16 +20,13 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.LaunchedEffect
-import com.toro.models.*
 import toro.sources.viewmodel.NotificationsViewModel
-import toro.sources.Screen
 import toro.sources.viewmodel.SessionViewModel
 import toro.sources.viewmodel.CommunityViewModel
 import toro.sources.components.*
+import toro.sources.models.Comic
 import toro.sources.viewmodel.ComicsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,10 +48,7 @@ fun HomePage(
 
     val communityState by communityViewModel.communityState.collectAsState()
     val comicsState by comicsViewModel.comicsUiState.collectAsState()
-    val communityPosts = communityState.posts
-    
-    val followedAuthors by comicsViewModel.subscribedAuthors.collectAsState()
-    val followedAuthorIds = followedAuthors.map { it.id }.toSet()
+
     val me by sessionViewModel.userProfile.collectAsState()
 
     val isCommunityLoading = communityState.isLoading
@@ -177,92 +170,6 @@ fun HomePage(
                         }
                     }
 
-                    val followedPosts =
-                        communityPosts.filter { followedAuthorIds.contains(it.authorId) }
-                    if (followedPosts.isNotEmpty()) {
-                        item {
-                            SectionHeader(
-                                title = "Creator Feed",
-                                onClick = onSectionClick,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                        }
-                        item {
-                            val pagerState = rememberPagerState(
-                                initialPage = 0,
-                                pageCount = { followedPosts.size }
-                            )
-                            HorizontalPager(
-                                state = pagerState,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(),
-                                contentPadding = PaddingValues(horizontal = 24.dp),
-                                pageSpacing = 16.dp
-                            ) { postIndex ->
-                                val post = followedPosts[postIndex]
-                                PostCard(
-                                    communityViewModel = communityViewModel,
-                                    sessionViewModel = sessionViewModel,
-                                    post = post,
-                                    onCommentClick = { onNotificationsClick() },
-                                    onAuthorClick = { userId ->
-                                        sessionViewModel.handleNavigation(Screen.Profile.createRoute(userId))
-                                    },
-                                    onShareClick = {
-                                        sessionViewModel.setSharedContent(
-                                            SharedContent(
-                                                id = it.id,
-                                                type = ShareType.POST,
-                                                title = it.title ?: "Post by ${it.authorName}",
-                                                previewText = it.content.take(50)
-                                            )
-                                        )
-                                        sessionViewModel.showShareDialog(true)
-                                    },
-                                    modifier = Modifier
-                                        .padding(horizontal = 16.dp)
-                                        .fillMaxWidth()
-                                )
-                            }
-                        }
-                    }
-
-                    val announcements = communityPosts.filter { it.authorId == "toro_creator" }
-                    if (announcements.isNotEmpty()) {
-                        item {
-                            SectionHeader(
-                                title = "Announcements",
-                                onClick = onSectionClick,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                        }
-                        items(announcements) { post ->
-                            PostCard(
-                                communityViewModel = communityViewModel,
-                                sessionViewModel = sessionViewModel,
-                                post = post,
-                                onCommentClick = { onNotificationsClick() },
-                                onAuthorClick = { userId ->
-                                    sessionViewModel.handleNavigation(Screen.Profile.createRoute(userId))
-                                },
-                                onShareClick = {
-                                    sessionViewModel.setSharedContent(
-                                        SharedContent(
-                                            id = it.id,
-                                            type = ShareType.POST,
-                                            title = it.title ?: "Announcement",
-                                            previewText = it.content.take(50)
-                                        )
-                                    )
-                                    sessionViewModel.showShareDialog(true)
-                                },
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .fillMaxWidth()
-                            )
-                        }
-                    }
                     item {
                         ComicCarousel(
                             title = "For You",

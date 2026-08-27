@@ -1,7 +1,7 @@
 package toro.sources.navigation
 
 import android.content.Intent
-import com.toro.models.NotificationType
+import models.NotificationType
 import toro.sources.Screen
 import javax.inject.Inject
 

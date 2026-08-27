@@ -2,11 +2,11 @@ package toro.sources.db
 
 import androidx.room.TypeConverter
 import kotlinx.serialization.json.Json
-import com.toro.models.ComicStatus
-import com.toro.models.PgRating
-import com.toro.models.ShareType
-import com.toro.models.Genre
-import com.toro.models.Creator
+import models.ComicStatus
+import models.Creator
+import models.Genre
+import models.PgRating
+import models.ShareType
 
 class Converters {
     @TypeConverter
